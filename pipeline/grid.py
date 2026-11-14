@@ -3,6 +3,8 @@
 
   docs/data/grid/<region>/<year>.json   per month, every 0.1 degree cell with at least one counted
                                         detection, split by satellite and by data quality
+  docs/data/grid/<region>/all_years.json  every cell's total over all complete standard years, per
+                                        satellite (the map's default view)
   docs/data/grid/<region>/index.json    the years written, file sizes and the largest cell values
 
 Which detections are inside the region and which are counted comes from export.detections(), the
@@ -10,7 +12,13 @@ same rule that sets the `counted` column in the hotspot CSVs. Nothing is re-impl
 
 Before writing, the grid is checked against step 2: summed over all cells, every sensor in every
 month must equal monthly_series.csv, and the month-to-date cells must reproduce the month-to-date
-numbers in calibration.json. If either check fails the step stops and writes nothing.
+numbers in calibration.json, and the all-years cells must add up to monthly_series.csv summed over
+the same years. If any check fails the step stops and writes nothing.
+
+All-years file
+  A year counts for a satellite when all 12 of its months are complete, standard-quality data under
+  calibrate.usable(), the rule calibration uses. Each satellite has its own list of years, stored in
+  the file; "cells" is the same flat layout as a month.
 
 Year file layout (kept small: flat arrays, no per-cell objects)
   "origin":  [row, col] of the region's south-west cell; cells are stored relative to it
@@ -33,6 +41,7 @@ from pathlib import Path
 from statistics import median
 
 sys.path.insert(0, str(Path(__file__).parent))
+from calibrate import load_monthly, usable  # noqa: E402
 from export import detections  # noqa: E402
 from ingest import CELL_DEG  # noqa: E402
 
@@ -109,11 +118,54 @@ def check_against_month_to_date(mtd, current):
     return [f"month-to-date {k}: grid {v}, calibration.json {current[k]}" for k, v in got.items() if v != current[k]]
 
 
+def complete_years(processed):
+    """sensor -> years in which all 12 months are complete standard data (calibrate.usable())."""
+    monthly = load_monthly(processed / "daily_counts.csv")
+    through = max(c["last_day"] for m in monthly.values() for c in m.values())[:7]
+    years = {int(m[:4]) for m in monthly}
+    return {s: [y for y in sorted(years) if all(usable(monthly, f"{y}-{m:02d}", s, through) for m in range(1, 13))]
+            for s in SENSORS}
+
+
+def all_years_cells(grid, years):
+    """(row, col) -> [aqua, terra, snpp, n20], each satellite summed over its own complete years."""
+    cells = defaultdict(lambda: [0, 0, 0, 0])
+    for i, sensor in enumerate(SENSORS):
+        for year in years[sensor]:
+            for qualities in grid.get(str(year), {}).values():
+                for q_cells in qualities.values():
+                    for cell, counts in q_cells.items():
+                        cells[cell][i] += counts[i]
+    return cells
+
+
+def check_all_years(cells, years, series_path):
+    """All-years totals per satellite must equal monthly_series.csv summed over the same years."""
+    want = [0, 0, 0, 0]
+    with open(series_path, newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            for i, sensor in enumerate(SENSORS):
+                if int(r["month"][:4]) in years[sensor]:
+                    want[i] += int(r[SERIES_COLUMN[sensor]] or 0)
+    got = [sum(c[i] for c in cells.values()) for i in range(4)]
+    return [f"all years {s}: grid {g}, monthly_series.csv {w}" for s, g, w in zip(SENSORS, got, want) if g != w]
+
+
 def flat(cells, origin):
     out = []
     for (r, c), counts in sorted(cells.items()):
         out.extend([r - origin[0], c - origin[1], *counts])
     return out
+
+
+def write_all_years(region_id, bbox, cells, years, out_dir):
+    origin = cell_index(bbox[1], bbox[0])
+    doc = {"cell_deg": CELL_DEG, "origin": list(origin), "columns": ["row", "col", "aqua", "terra", "snpp", "n20"],
+           "years": years, "max_cell": {s: max((c[i] for c in cells.values()), default=0) for i, s in enumerate(SENSORS)},
+           "cells": flat(cells, origin)}
+    path = out_dir / "grid" / region_id / "all_years.json"
+    path.write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
+    return path.stat().st_size
 
 
 def write(region_id, bbox, grid, mtd, mtd_info, out_dir):
@@ -165,6 +217,9 @@ def main():
     problems = check_against_series(grid, processed / "monthly_series.csv")
     if current:
         problems += check_against_month_to_date(mtd, current)
+    years = complete_years(processed)
+    every = all_years_cells(grid, years)
+    problems += check_all_years(every, years, processed / "monthly_series.csv")
     if problems:
         print(f"{args.id}: GRID DOES NOT MATCH THE COUNTED SERIES. Nothing written.", file=sys.stderr)
         for p in problems[:40]:
@@ -174,9 +229,14 @@ def main():
         sys.exit(1)
 
     sizes = write(args.id, tuple(args.bbox), grid, mtd, mtd_info, args.out)
+    all_size = write_all_years(args.id, tuple(args.bbox), every, years, args.out)
     cells = sum(len(c) for months in grid.values() for qs in months.values() for c in qs.values())
     print(f"{args.id}: grid matches monthly_series.csv for every sensor and month"
-          + (" and the month-to-date numbers" if current else ""))
+          + (" and the month-to-date numbers" if current else "") + ", and over all complete years")
+    for s in SENSORS:
+        y = years[s]
+        print(f"  all years {s:13s} {len(y):2d} complete years" + (f" ({y[0]}-{y[-1]})" if y else ""))
+    print(f"  all_years.json {all_size / 1e3:.1f} kB, {len(every):,} cells")
     print(f"  {cells:,} cell-months in {len(sizes)} yearly files, {sum(sizes.values()) / 1e6:.2f} MB total")
     for year, size in sizes.items():
         print(f"  {year}.json {size / 1e3:8.1f} kB")
