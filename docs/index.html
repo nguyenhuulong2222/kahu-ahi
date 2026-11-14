@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kahu Ahi: one fire record across MODIS and VIIRS</title>
+<meta name="description" content="A burning-activity calendar that puts VIIRS fire detections on the MODIS Aqua scale and shows how far that can be trusted.">
+<style>
+:root{
+  --paper:#eef1f4; --panel:#ffffff; --ink:#14213d; --muted:#55627a; --line:#cfd6df;
+  --action:#0b6e6e; --warn:#8a4b00; --nodata:#dfe4ea;
+  --font:"Avenir Next","Segoe UI","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--font)}
+main{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:clamp(1.7rem,4.6vw,2.6rem);line-height:1.12;margin:0 0 8px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.25rem;margin:0 0 4px;font-weight:700}
+p{margin:0 0 12px;max-width:68ch}
+.lede{color:var(--muted);font-size:1.05rem}
+section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;margin-top:20px}
+.controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;margin-top:20px}
+label{font-size:.9rem;color:var(--muted);display:block}
+select,button,input{font:inherit;color:var(--ink);background:#fff;border:1px solid #8793a6;border-radius:4px;padding:8px 10px;min-height:44px}
+button{background:var(--action);color:#fff;border-color:var(--action);cursor:pointer;font-weight:600}
+button:disabled{opacity:.55;cursor:default}
+:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+.note{font-size:.9rem;color:var(--muted)}
+.banner{border-left:4px solid var(--warn);background:#fff6e5;padding:10px 12px;margin:12px 0;font-size:.95rem}
+/* calendar */
+.calwrap{overflow-x:auto;margin-top:12px}
+table.cal{border-collapse:separate;border-spacing:2px;font-variant-numeric:tabular-nums;font-size:.8rem}
+.cal th{font-weight:600;color:var(--muted);padding:2px 4px;text-align:center}
+.cal th.yr{text-align:right;padding-right:8px}
+.cal td{width:44px;min-width:38px;height:30px;padding:0;text-align:center;border-radius:3px}
+.cal td button{all:unset;display:block;width:100%;height:30px;line-height:30px;cursor:pointer;border-radius:3px;font-size:.72rem}
+.cal td button:focus-visible{outline:3px solid #f2a900;outline-offset:1px}
+.cal td.terra button{background:repeating-linear-gradient(45deg,var(--nodata) 0 4px,#fff 4px 8px);color:var(--muted)}
+.cal td.none button{background:var(--nodata);color:var(--muted)}
+.cal td.prov button{box-shadow:inset 0 0 0 2px #fff, inset 0 0 0 3px var(--ink)}
+.cal td.partial button{box-shadow:inset 0 0 0 2px #fff;outline:2px dashed var(--ink);outline-offset:-2px}
+.cal td.sel button{outline:3px solid #f2a900;outline-offset:1px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:.85rem;color:var(--muted);margin-top:12px}
+.ramp{display:inline-block;width:160px;height:12px;border-radius:2px;vertical-align:middle}
+.sw{display:inline-block;width:22px;height:14px;border-radius:2px;vertical-align:middle;margin-right:4px}
+#detail{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;min-height:5.5em}
+#detail table,table.plain{border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.95rem}
+#detail td,#detail th,table.plain td,table.plain th{padding:3px 14px 3px 0;text-align:left;vertical-align:top}
+table.plain th{color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+td.num,th.num{text-align:right}
+/* bars */
+.bar{height:14px;background:var(--ink);border-radius:2px;min-width:2px}
+.bar.raw{background:#b3bccb}
+.barrow{display:grid;grid-template-columns:minmax(150px,230px) 1fr 70px;gap:10px;align-items:center;margin:6px 0;font-size:.95rem}
+.range{position:relative;height:38px;margin:14px 0 26px;background:linear-gradient(var(--line),var(--line)) center/100% 2px no-repeat}
+.range i{position:absolute;top:6px;width:2px;height:26px;background:var(--muted)}
+.range b{position:absolute;top:0;transform:translateX(-50%);font-size:.8rem;white-space:nowrap}
+.range .pt{position:absolute;top:11px;width:16px;height:16px;border-radius:50%;transform:translateX(-50%);border:2px solid #fff}
+.range .lab{position:absolute;top:40px;transform:translateX(-50%);font-size:.78rem;color:var(--muted);white-space:nowrap}
+.two{display:grid;grid-template-columns:1fr;gap:20px}
+@media(min-width:820px){.two{grid-template-columns:1fr 1fr}.two>section{margin-top:0}.two{margin-top:20px}}
+footer{margin-top:28px;font-size:.88rem;color:var(--muted)}
+a{color:var(--action)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Kahu Ahi: one fire record across two generations of satellites</h1>
+  <p class="lede">MODIS has counted fires since 2000 and is near the end of its life. VIIRS took over in 2012 and sees several times more. This calendar puts both on one scale, and shows how far that scale can be trusted.</p>
+
+  <div class="controls">
+    <div><label for="region">Region</label>
+      <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option></select></div>
+    <div><label for="mode">Colour shows</label>
+      <select id="mode"><option value="count">Fire detections</option><option value="anom">Compared with the usual for that month</option></select></div>
+    <p class="note" id="through" style="margin:0"></p>
+  </div>
+
+  <section aria-labelledby="h-cal">
+    <h2 id="h-cal">Burning calendar</h2>
+    <p class="note" id="calnote"></p>
+    <div id="banner"></div>
+    <div class="calwrap"><table class="cal" id="cal"></table></div>
+    <div class="legend" id="legend"></div>
+    <div id="detail" aria-live="polite"><p class="note">Select a month to see what each satellite recorded.</p></div>
+  </section>
+
+  <div class="two">
+    <section aria-labelledby="h-now">
+      <h2 id="h-now">This month so far</h2>
+      <div id="now"></div>
+    </section>
+    <section aria-labelledby="h-season">
+      <h2 id="h-season">When it usually burns</h2>
+      <p class="note" id="seasonnote"></p>
+      <div id="season"></div>
+    </section>
+  </div>
+
+  <section aria-labelledby="h-trust">
+    <h2 id="h-trust">How far to trust the harmonized numbers</h2>
+    <div id="trust"></div>
+  </section>
+
+  <section aria-labelledby="h-dl">
+    <h2 id="h-dl">Download the hotspots</h2>
+    <p>Every detection inside the region, from all four satellites, with the flag that says whether it was counted above.</p>
+    <div class="controls" style="margin-top:8px">
+      <div><label for="y0">From year</label><select id="y0"></select></div>
+      <div><label for="y1">To year</label><select id="y1"></select></div>
+      <button id="dl" type="button">Download CSV</button>
+    </div>
+    <p class="note" id="dlnote" aria-live="polite" style="margin-top:10px"></p>
+  </section>
+
+  <section aria-labelledby="h-limits">
+    <h2 id="h-limits">What this does not tell you</h2>
+    <p>No detection is not the same as no fire. Clouds, smoke, short-lived fires and the time of the satellite pass all hide burning, and this tool has no record of when a place could not be observed.</p>
+    <p>This is a history of satellite detections. It is not an alert, a forecast or a count of fires, and it does not replace official emergency information.</p>
+    <p>Only the regions listed here are supported. Each region is checked on its own data before its VIIRS numbers are converted; where the check fails, they are not converted.</p>
+  </section>
+
+  <footer>
+    <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p>
+  </footer>
+</main>
+
+<script>
+"use strict";
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const SENSOR = {MODIS_AQUA:"MODIS Aqua", MODIS_TERRA:"MODIS Terra", VIIRS_SNPP:"VIIRS Suomi NPP", VIIRS_NOAA20:"VIIRS NOAA-20", VIIRS:"VIIRS"};
+const STATUS = {
+  standard:"Standard-quality data, measured by MODIS Aqua",
+  standard_calibrated:"VIIRS, converted to the Aqua scale",
+  provisional_nrt:"Provisional: near-real-time data, not yet reprocessed by NASA",
+  partial_first_month:"Aqua's first month, only partly observed",
+  terra_only_not_harmonized:"Before Aqua: only MODIS Terra, a morning satellite. Not on the same scale, so not coloured",
+  not_calibrated_insufficient_overlap:"VIIRS only, and not converted in this region",
+  no_detections_coverage_unknown:"No satellite in this record was observing yet"
+};
+// Cividis, sampled: readable with colour-vision deficiency and in greyscale.
+const CIVIDIS = ["#00224e","#123570","#3b496c","#575d6d","#707173","#8a8678","#a59c74","#c3b369","#e1cc55","#fee838"];
+const DIVERGE = ["#2166ac","#67a9cf","#d1e5f0","#f7f7f7","#fddbc7","#ef8a62","#b2182b"];
+const $ = id => document.getElementById(id);
+const fmt = n => n == null ? "none" : Number(n).toLocaleString("en-US", {maximumFractionDigits: 0});
+const pct = n => n == null ? "n/a" : n + "%";
+let D = null, medians = [], selected = null;
+
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in attrs || {}) { if (k === "class") e.className = attrs[k]; else if (k === "text") e.textContent = attrs[k]; else e.setAttribute(k, attrs[k]); }
+  kids.forEach(k => e.append(k));
+  return e;
+}
+function median(a) { const s = [...a].sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
+function textOn(hex) { const c = parseInt(hex.slice(1), 16), l = .299 * (c >> 16) + .587 * (c >> 8 & 255) + .114 * (c & 255); return l > 140 ? "#14213d" : "#fff"; }
+
+function baseStatus(s) { return s.replace(/^partial_month_/, ""); }
+function isPartial(s) { return s.startsWith("partial_month_") || s === "partial_first_month"; }
+
+async function load(region) {
+  $("banner").replaceChildren(); $("cal").replaceChildren(el("caption", {text: "Loading the record"}));
+  try {
+    const r = await fetch("data/" + region + ".json");
+    if (!r.ok) throw new Error(r.status);
+    D = await r.json();
+  } catch (e) {
+    $("cal").replaceChildren();
+    $("banner").replaceChildren(el("p", {class: "banner", text: "The data for this region could not be loaded. Reload the page to try again."}));
+    return;
+  }
+  // The usual for each calendar month: median of complete, standard Aqua months.
+  medians = MONTHS.map((_, i) => median(D.months.filter(x => x.status === "standard" && +x.m.slice(5) === i + 1 && x.m.slice(0, 4) >= "2003").map(x => x.h)));
+  selected = null;
+  $("through").textContent = "Data through " + D.data_through + ". Detections of presumed vegetation fire, low-confidence ones removed.";
+  drawCalendar(); drawNow(); drawSeason(); drawTrust(); setupDownload();
+}
+
+function colour(x) {
+  if (x.h == null) return null;
+  if ($("mode").value === "anom") {
+    const med = medians[+x.m.slice(5) - 1];
+    if (med == null) return null;
+    // Compare the month with its usual on a log scale: half, about the same, double, four times and more.
+    const r = Math.log2((x.h + 5) / (med + 5));
+    const i = r < -1.5 ? 0 : r < -.75 ? 1 : r < -.25 ? 2 : r <= .25 ? 3 : r <= .75 ? 4 : r <= 1.5 ? 5 : 6;
+    return DIVERGE[i];
+  }
+  const max = Math.max(...D.months.map(m => m.h || 0), 10);
+  const t = Math.log10(x.h + 1) / Math.log10(max + 1);
+  return CIVIDIS[Math.min(9, Math.floor(t * 10))];
+}
+
+function drawCalendar() {
+  const byYear = {};
+  D.months.forEach(x => (byYear[x.m.slice(0, 4)] = byYear[x.m.slice(0, 4)] || {})[+x.m.slice(5)] = x);
+  const t = $("cal"); t.replaceChildren();
+  t.append(el("caption", {text: "Fire detections by month and year, " + D.region.name, style: "caption-side:top;text-align:left;font-size:.85rem;color:#55627a;padding-bottom:4px"}));
+  const head = el("tr", {}, el("th", {scope: "col", text: "Year", class: "yr"}));
+  MONTHS.forEach(m => head.append(el("th", {scope: "col", text: m})));
+  head.append(el("th", {scope: "col", text: "Year total"}));
+  t.append(el("thead", {}, head));
+  const body = el("tbody");
+  Object.keys(byYear).sort().reverse().forEach(y => {
+    const tr = el("tr", {}, el("th", {scope: "row", text: y, class: "yr"}));
+    let total = 0, n = 0;
+    for (let m = 1; m <= 12; m++) {
+      const x = byYear[y][m], td = el("td");
+      if (!x) { tr.append(td); continue; }
+      const c = colour(x), st = baseStatus(x.status), b = el("button", {type: "button"});
+      if (st === "terra_only_not_harmonized") td.className = "terra";
+      else if (c == null) td.className = "none";
+      else { b.style.background = c; b.style.color = textOn(c); }
+      if (st === "provisional_nrt") td.classList.add("prov");
+      if (isPartial(x.status)) td.classList.add("partial");
+      b.textContent = x.h == null ? (st === "terra_only_not_harmonized" ? "T" : "") : (x.h >= 10000 ? Math.round(x.h / 1000) + "k" : fmt(x.h));
+      b.setAttribute("aria-label", MONTHS[m - 1] + " " + y + ": " + (x.h == null ? "no harmonized value" : fmt(x.h) + " detections") + ". " + (STATUS[st] || st));
+      b.addEventListener("click", () => { selected = x.m; document.querySelectorAll(".cal td.sel").forEach(e => e.classList.remove("sel")); td.classList.add("sel"); drawDetail(x); });
+      td.append(b); tr.append(td);
+      if (x.h != null && !isPartial(x.status)) { total += x.h; n++; }
+    }
+    tr.append(el("td", {class: "num", style: "width:auto;padding:0 6px;text-align:right", text: n === 12 ? fmt(total) : n ? fmt(total) + " (" + n + " mo)" : ""}));
+    body.append(tr);
+  });
+  t.append(body);
+  $("calnote").textContent = "Each cell is one month, on the MODIS Aqua scale. Newest year first.";
+  const lg = $("legend"); lg.replaceChildren();
+  if ($("mode").value === "anom") {
+    lg.append(el("span", {}, "Far below usual ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + DIVERGE.join(",") + ")"}), " far above usual"));
+    lg.append(el("span", {text: "Usual = median of the same month, 2003 onward"}));
+  } else {
+    lg.append(el("span", {}, "Fewer ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + CIVIDIS.join(",") + ")"}), " more (each step is a multiple, not an amount)"));
+  }
+  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8a8678;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px #14213d"}), "Provisional"));
+  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8a8678;outline:2px dashed #14213d;outline-offset:-2px"}), "Month not complete"));
+  lg.append(el("span", {}, el("span", {class: "sw", style: "background:repeating-linear-gradient(45deg,#dfe4ea 0 4px,#fff 4px 8px)"}), "Terra only, not on this scale"));
+  if (!D.calibration_accepted) {
+    const e = D.snpp_to_aqua.leave_one_year_out.monthly_k.all_years;
+    $("banner").replaceChildren(el("p", {class: "banner", text: "VIIRS is not converted in " + D.region.name + ". When tested, the conversion was wrong by " + pct(e && e.abs_error_pct_of_total) + " of the total, so only MODIS Aqua is shown here. " + (D.region.id === "hawaii" ? "Most heat detected here is volcanic, and the satellite record cannot reliably separate it from vegetation fire." : "")}));
+  }
+  $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
+}
+
+function drawDetail(x) {
+  const y = x.m.slice(0, 4), m = +x.m.slice(5), st = baseStatus(x.status), med = medians[m - 1];
+  const box = $("detail"); box.replaceChildren();
+  box.append(el("h3", {text: MONTHS[m - 1] + " " + y, style: "margin:0 0 4px;font-size:1.05rem"}));
+  let line = x.h == null ? "No value on the harmonized scale." : x.h === 0 ? "0 detections recorded by " + (SENSOR[x.src] || x.src) + ". Whether the area could be observed all month is unknown." : fmt(x.h) + " detections on the Aqua scale, from " + (SENSOR[x.src] || x.src) + ".";
+  if (x.h != null && med != null && !isPartial(x.status)) line += " The usual " + MONTHS[m - 1] + " is " + fmt(med) + (med > 0 ? " (this is " + (x.h / med).toFixed(1) + " times that)." : ".");
+  box.append(el("p", {text: line}));
+  box.append(el("p", {class: "note", text: (STATUS[st] || st) + (x.status.startsWith("partial_month_") ? ". This month is not complete, so it is not compared with a full month." : ".")}));
+  const rows = [["MODIS Terra", x.terra, null], ["MODIS Aqua", x.aqua, x.aqua], ["VIIRS Suomi NPP", x.snpp, x.snpp_eq], ["VIIRS NOAA-20", x.n20, x.n20_eq]];
+  const t = el("table", {}, el("tr", {}, el("th", {text: "Satellite"}), el("th", {class: "num", text: "Counted"}), el("th", {class: "num", text: "On the Aqua scale"})));
+  rows.forEach(r => t.append(el("tr", {}, el("td", {text: r[0]}), el("td", {class: "num", text: r[1] == null ? "not flying" : fmt(r[1])}), el("td", {class: "num", text: r[2] == null ? "not converted" : fmt(r[2])}))));
+  box.append(t);
+}
+
+function drawNow() {
+  const c = D.current_month, box = $("now"); box.replaceChildren();
+  if (!c) { box.append(el("p", {class: "note", text: "No comparison is available for the current month."})); return; }
+  const mon = MONTHS[+c.month.slice(5) - 1], yr = c.month.slice(0, 4);
+  box.append(el("p", {text: mon + " " + c.days.replace("-", " to ") + ", " + yr + ", compared with the same days in " + c.baseline_years + " earlier years. A month that is not over is never compared with a full month."}));
+  const pts = [["MODIS Aqua, near-real-time", c.aqua_nrt_same_days, "#14213d"]];
+  if (c.value_aqua_equiv != null) pts.push(["NOAA-20, converted to the Aqua scale", c.value_aqua_equiv, "#0b6e6e"]);
+  const hi = Math.max(c.baseline_max, ...pts.map(p => p[1])) * 1.08 || 1;
+  const pos = v => (100 * v / hi).toFixed(1) + "%";
+  const r = el("div", {class: "range", role: "img", "aria-label": "Earlier years ranged from " + fmt(c.baseline_min) + " to " + fmt(c.baseline_max) + ", median " + fmt(c.baseline_median)});
+  // Marks that land on the same value share one label.
+  const marks = [];
+  [["lowest", c.baseline_min], ["usual", c.baseline_median], ["highest", c.baseline_max]].forEach(([n, v]) => {
+    const same = marks.find(k => k.v === v);
+    if (same) same.n += ", " + n; else marks.push({n, v});
+  });
+  marks.forEach((k, i) => {
+    const edge = i === 0 ? "transform:none;" : i === marks.length - 1 && marks.length > 1 ? "transform:translateX(-100%);" : "";
+    r.append(el("i", {style: "left:" + pos(k.v)}), el("span", {class: "lab", style: edge + "left:" + pos(k.v), text: k.n + " " + fmt(k.v)}));
+  });
+  pts.forEach(p => r.append(el("span", {class: "pt", style: "left:" + pos(p[1]) + ";background:" + p[2]})));
+  box.append(r);
+  const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "This year"}), el("th", {class: "num", text: "Detections"}), el("th", {class: "num", text: "Higher than"})));
+  t.append(el("tr", {}, el("td", {}, el("span", {class: "sw", style: "background:#14213d;border-radius:50%;width:12px;height:12px"}), "MODIS Aqua, near-real-time"), el("td", {class: "num", text: fmt(c.aqua_nrt_same_days)}), el("td", {class: "num", text: c.years_below_current_aqua_nrt + " of " + c.baseline_years + " years"})));
+  if (c.value_aqua_equiv != null) t.append(el("tr", {}, el("td", {}, el("span", {class: "sw", style: "background:#0b6e6e;border-radius:50%;width:12px;height:12px"}), "NOAA-20, converted"), el("td", {class: "num", text: fmt(c.value_aqua_equiv)}), el("td", {class: "num", text: c.years_below_current + " of " + c.baseline_years + " years"})));
+  box.append(t);
+  box.append(el("p", {class: "note", style: "margin-top:10px", text: c.value_aqua_equiv != null ? "Two satellites, two estimates. Where they disagree, the gap is the uncertainty. Both are provisional." : "Provisional. VIIRS is not converted in this region, so only Aqua is shown."}));
+}
+
+function drawSeason() {
+  const box = $("season"); box.replaceChildren();
+  const hi = Math.max(...medians.map(v => v || 0), 1);
+  $("seasonnote").textContent = "Median detections for each month, complete years from 2003, MODIS Aqua.";
+  medians.forEach((v, i) => {
+    const row = el("div", {class: "barrow", style: "grid-template-columns:44px 1fr 70px"});
+    row.append(el("span", {text: MONTHS[i]}), el("div", {}, el("div", {class: "bar", style: "width:" + (100 * (v || 0) / hi).toFixed(1) + "%"})), el("span", {class: "num", style: "text-align:right", text: fmt(v)}));
+    box.append(row);
+  });
+}
+
+function drawTrust() {
+  const box = $("trust"); box.replaceChildren();
+  const L = D.snpp_to_aqua.leave_one_year_out, K = D.snpp_to_aqua.coefficients, a = L.monthly_k.all_years;
+  if (!a) { box.append(el("p", {class: "note", text: "Not enough overlapping months to test a conversion here."})); return; }
+  box.append(el("p", {text: "For " + a.months + " months both MODIS Aqua and VIIRS Suomi NPP watched " + D.region.name + ". Over that time VIIRS recorded about " + (K.annual_k || 0).toFixed(1) + " detections for every one from Aqua. Each year was then predicted from a conversion built without that year, and compared with what Aqua actually recorded."}));
+  const rows = [["VIIRS used as it is", L.uncalibrated.all_years, "raw"], ["One conversion for the whole year", L.annual_k.all_years, ""], ["A conversion for each calendar month" + (D.calibration_accepted ? " (used here)" : " (failed the test, not used)"), L.monthly_k.all_years, ""]];
+  const scale = v => Math.max(1.5, 100 * Math.log10(1 + v) / Math.log10(1 + rows[0][1].abs_error_pct_of_total));
+  rows.forEach(r => {
+    const row = el("div", {class: "barrow"});
+    row.append(el("span", {text: r[0]}), el("div", {}, el("div", {class: "bar " + r[2], style: "width:" + scale(r[1].abs_error_pct_of_total).toFixed(1) + "%"})), el("span", {style: "text-align:right;font-variant-numeric:tabular-nums", text: pct(r[1].abs_error_pct_of_total)}));
+    box.append(row);
+  });
+  box.append(el("p", {class: "note", text: "Error as a share of all the detections Aqua recorded. Bars are on a compressed scale so the small ones stay visible."}));
+  const b = L.monthly_k.before_2022, c = L.monthly_k["2022_onward"], t = el("table", {class: "plain", style: "margin-top:8px"});
+  t.append(el("tr", {}, el("th", {text: "Period"}), el("th", {class: "num", text: "Months"}), el("th", {class: "num", text: "Error"}), el("th", {class: "num", text: "Runs high or low by"})));
+  [["2012 to 2021", b], ["2022 onward", c]].forEach(([n, e]) => e && t.append(el("tr", {}, el("td", {text: n}), el("td", {class: "num", text: e.months}), el("td", {class: "num", text: pct(e.abs_error_pct_of_total)}), el("td", {class: "num", text: (e.bias_pct > 0 ? "+" : "") + pct(e.bias_pct)}))));
+  box.append(t);
+  if (b && c && c.abs_error_pct_of_total > b.abs_error_pct_of_total) box.append(el("p", {class: "note", style: "margin-top:8px", text: "The conversion is less accurate from 2022 onward. Aqua's orbit has been drifting toward later in the afternoon in recent years, which may be part of the reason; this record cannot confirm it."}));
+  const u = D.noaa20_to_snpp.leave_one_year_out.uncalibrated.all_years;
+  if (D.calibration_accepted && u) box.append(el("p", {style: "margin-top:12px", text: "Suomi NPP stopped sending new observations on 2 November 2026. From then on VIIRS numbers come from NOAA-20, used in its place without a further conversion: over " + u.months + " shared months the two differed by " + pct(u.abs_error_pct_of_total) + " of the total, and adding a conversion did not reduce that."}));
+  const mk = D.static_source_mask;
+  if (mk && mk.non_veg_caught_pct != null) box.append(el("p", {class: "note", text: "Near-real-time files do not say whether a detection is a fire, a volcano or an industrial source. Places that repeatedly showed non-fire heat in the standard record are left out of provisional months. Checked against that same record, this removes " + pct(mk.non_veg_caught_pct) + " of non-fire detections and wrongly removes " + pct(mk.veg_wrongly_masked_pct) + " of fire detections."}));
+}
+
+let hotIndex = null;
+async function setupDownload() {
+  const y0 = $("y0"), y1 = $("y1"); y0.replaceChildren(); y1.replaceChildren(); $("dlnote").textContent = "";
+  try {
+    const r = await fetch("data/hotspots/" + D.region.id + "/index.json");
+    if (!r.ok) throw new Error(r.status);
+    hotIndex = await r.json();
+  } catch (e) { hotIndex = null; $("dl").disabled = true; $("dlnote").textContent = "The hotspot files for this region could not be found."; return; }
+  const years = Object.keys(hotIndex.years).sort();
+  years.forEach(y => { y0.append(el("option", {text: y})); y1.append(el("option", {text: y})); });
+  y0.value = y1.value = years[years.length - 1];
+  $("dl").disabled = false; describeDownload();
+}
+function chosenYears() { const a = +$("y0").value, b = +$("y1").value; return Object.keys(hotIndex.years).filter(y => +y >= Math.min(a, b) && +y <= Math.max(a, b)).sort(); }
+function describeDownload() { if (!hotIndex) return; const ys = chosenYears(), rows = ys.reduce((s, y) => s + hotIndex.years[y].rows, 0); $("dlnote").textContent = fmt(rows) + " detections, about " + Math.max(1, Math.round(rows * 62 / 1e6)) + " MB as a CSV file."; }
+async function download() {
+  const ys = chosenYears(), btn = $("dl"); btn.disabled = true;
+  try {
+    const parts = [];
+    for (let i = 0; i < ys.length; i++) {
+      $("dlnote").textContent = "Preparing " + ys[i] + " (" + (i + 1) + " of " + ys.length + ")";
+      const r = await fetch("data/hotspots/" + D.region.id + "/" + ys[i] + ".csv.gz");
+      if (!r.ok) throw new Error(r.status);
+      let text = await new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).text();
+      if (i > 0) text = text.slice(text.indexOf("\n") + 1);
+      parts.push(text);
+    }
+    const a = el("a", {href: URL.createObjectURL(new Blob(parts, {type: "text/csv"})), download: "kahu-ahi_" + D.region.id + "_hotspots_" + ys[0] + (ys.length > 1 ? "-" + ys[ys.length - 1] : "") + ".csv"});
+    document.body.append(a); a.click(); a.remove();
+    $("dlnote").textContent = "Downloaded " + ys.length + (ys.length > 1 ? " years." : " year.");
+  } catch (e) {
+    $("dlnote").textContent = "The download could not be prepared in this browser. Try a shorter range of years, or a current version of Chrome, Edge, Firefox or Safari.";
+  }
+  btn.disabled = false;
+}
+
+$("region").addEventListener("change", e => load(e.target.value));
+$("mode").addEventListener("change", () => { if (D) drawCalendar(); });
+$("y0").addEventListener("change", describeDownload); $("y1").addEventListener("change", describeDownload);
+$("dl").addEventListener("click", download);
+load("california");
+</script>
+</body>
+</html>

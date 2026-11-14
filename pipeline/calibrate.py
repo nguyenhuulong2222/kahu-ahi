@@ -54,15 +54,39 @@ def load_monthly(path):
             if cell["quality"] != row["quality"]:
                 cell["quality"] = "mixed"
             cell["last_day"] = max(cell["last_day"], row["date"])
-    return out
+    return fill_silent_months(out)
+
+
+def fill_silent_months(monthly):
+    """A month with no detections has no rows. While the satellite was flying that is a recorded 0,
+    not a gap, so fill it in. Whether the region could actually be observed remains unknown."""
+    span = {}
+    for month, cells in monthly.items():
+        for sensor, c in cells.items():
+            s = span.setdefault(sensor, {"first": month, "last": month, "last_standard": ""})
+            s["first"], s["last"] = min(s["first"], month), max(s["last"], month)
+            if c["quality"] == "standard":
+                s["last_standard"] = max(s["last_standard"], month)
+    if not span:
+        return monthly
+    first = min(s["first"] for s in span.values())
+    last = max(s["last"] for s in span.values())
+    y, m = int(first[:4]), int(first[5:])
+    while f"{y:04d}-{m:02d}" <= last:
+        month = f"{y:04d}-{m:02d}"
+        for sensor, s in span.items():
+            if s["first"] <= month <= s["last"] and sensor not in monthly[month]:
+                monthly[month][sensor] = {"value": 0, "last_day": month + "-01",
+                                          "quality": "standard" if month <= s["last_standard"] else "nrt"}
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return monthly
 
 
 def usable(monthly, month, sensor, data_through_month):
     """A month is usable for fitting/validation if it is complete and standard quality."""
     cell = monthly.get(month, {}).get(sensor)
     if cell is None:
-        # No detections at all that month. Whether that is a true zero is unknown, so skip it.
-        return False
+        return False  # the satellite was not flying yet, or had stopped
     if cell["quality"] != "standard":
         return False
     if month == PARTIAL_START.get(sensor) or month >= data_through_month:
