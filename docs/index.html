@@ -491,7 +491,10 @@ async function load(region, wish) {
   if (wish.area && !(await setArea(wish.area, true))) wish.area = null;
   if (token !== loadToken) return;
   if (!wish.area) { fillAreaForm(); await refresh(); }
-  if (token === loadToken && wishAt(wish)) goAt(wishAt(wish));
+  if (token !== loadToken) return;
+  if (wishAt(wish)) goAt(wishAt(wish));
+  // Still on the day the page chose by itself: the first Play then starts from day 1 of that month.
+  defaultView = !wish.day && !wish.month && !wish.year && wish.view !== "all" && level() === "day";
 }
 
 function gridYear(year) {
@@ -528,7 +531,7 @@ function applySel(sel) {
 // Every change of time goes through here. Returns a promise that settles when the map has drawn it.
 function select(sel, opts) {
   if (!D) return Promise.resolve();
-  if (!(opts && opts.play)) pausePlay();
+  if (!(opts && opts.play)) { pausePlay(); defaultView = false; }
   applySel(sel);
   fitNext = !!(opts && opts.fit) && !!selDay;
   closeCard();
@@ -1303,7 +1306,7 @@ function updateTimeline() {
 // Steps at the level of the selection: years, months of the record, or days of the selected month. Never starts by itself.
 const SPEED_MS = {slow: 2000, normal: 1000, fast: 400};
 const QUIET_WHILE_PLAYING = ["tl-label", "mapsum", "mapview", "detail", "mapempty", "explain", "drill"];   // otherwise announced at every frame
-let playing = false, playToken = 0;
+let playing = false, playToken = 0, defaultView = false;
 function sleep(ms) { return new Promise(ok => setTimeout(ok, ms)); }
 function preload(sel) { if (sel && (sel.year || sel.month)) gridYear(+(sel.year || sel.month.slice(0, 4))).catch(() => {}); }
 function setPlaying(on, say) {
@@ -1321,6 +1324,9 @@ async function play() {
   const my = ++playToken, first = tlPositions();
   // From the last step, or from "all years", start at the beginning; otherwise carry on from the next step.
   let i = first.i < 0 || first.i >= first.list.length - 1 ? 0 : first.i + 1;
+  // On the page's own opening day, the first Play shows the whole month: day 1 to the last day with data.
+  if (defaultView && first.lv === "day") i = 0;
+  defaultView = false;
   setPlaying(true, "Playing by " + first.word.toLowerCase() + ".");
   for (;;) {
     const p = tlPositions();
