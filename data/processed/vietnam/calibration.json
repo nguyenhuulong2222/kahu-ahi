@@ -1,0 +1,377 @@
+{
+  "generated_at": "2026-11-14T20:48:04+00:00",
+  "metric": "n_veg_conf",
+  "data_through": "2026-11-14",
+  "snpp_to_aqua": {
+    "definition": "k(m) = sum(VIIRS_SNPP) / sum(MODIS_AQUA) per calendar month; Aqua-equivalent = SNPP / k(m)",
+    "paired_months": 174,
+    "years": [
+      2012,
+      2026
+    ],
+    "coefficients": {
+      "annual_k": 6.247,
+      "by_month": {
+        "1": {
+          "k": 6.651,
+          "uses_annual_fallback": false,
+          "years": 14,
+          "yearly_ratio_min": 5.18,
+          "yearly_ratio_max": 7.9
+        },
+        "2": {
+          "k": 7.521,
+          "uses_annual_fallback": false,
+          "years": 15,
+          "yearly_ratio_min": 6.46,
+          "yearly_ratio_max": 9.82
+        },
+        "3": {
+          "k": 5.764,
+          "uses_annual_fallback": false,
+          "years": 15,
+          "yearly_ratio_min": 4.46,
+          "yearly_ratio_max": 7.64
+        },
+        "4": {
+          "k": 5.36,
+          "uses_annual_fallback": false,
+          "years": 15,
+          "yearly_ratio_min": 4.18,
+          "yearly_ratio_max": 17.56
+        },
+        "5": {
+          "k": 6.408,
+          "uses_annual_fallback": false,
+          "years": 15,
+          "yearly_ratio_min": 4.0,
+          "yearly_ratio_max": 8.56
+        },
+        "6": {
+          "k": 5.944,
+          "uses_annual_fallback": false,
+          "years": 15,
+          "yearly_ratio_min": 5.07,
+          "yearly_ratio_max": 7.06
+        },
+        "7": {
+          "k": 6.558,
+          "uses_annual_fallback": false,
+          "years": 15,
+          "yearly_ratio_min": 2.71,
+          "yearly_ratio_max": 10.53
+        },
+        "8": {
+          "k": 7.184,
+          "uses_annual_fallback": false,
+          "years": 14,
+          "yearly_ratio_min": 5.4,
+          "yearly_ratio_max": 24.42
+        },
+        "9": {
+          "k": 5.965,
+          "uses_annual_fallback": false,
+          "years": 14,
+          "yearly_ratio_min": 3.33,
+          "yearly_ratio_max": 8.17
+        },
+        "10": {
+          "k": 6.224,
+          "uses_annual_fallback": false,
+          "years": 14,
+          "yearly_ratio_min": 3.94,
+          "yearly_ratio_max": 9.79
+        },
+        "11": {
+          "k": 6.942,
+          "uses_annual_fallback": false,
+          "years": 14,
+          "yearly_ratio_min": 4.12,
+          "yearly_ratio_max": 10.91
+        },
+        "12": {
+          "k": 6.432,
+          "uses_annual_fallback": false,
+          "years": 14,
+          "yearly_ratio_min": 5.4,
+          "yearly_ratio_max": 8.14
+        }
+      }
+    },
+    "leave_one_year_out": {
+      "monthly_k": {
+        "all_years": {
+          "months": 174,
+          "mae": 548.1,
+          "median_abs_error": 125.5,
+          "abs_error_pct_of_total": 12.0,
+          "bias_pct": 0.1
+        },
+        "before_2022": {
+          "months": 119,
+          "mae": 496.3,
+          "median_abs_error": 125.3,
+          "abs_error_pct_of_total": 10.5,
+          "bias_pct": 0.4
+        },
+        "2022_onward": {
+          "months": 55,
+          "mae": 660.1,
+          "median_abs_error": 141.8,
+          "abs_error_pct_of_total": 15.8,
+          "bias_pct": -0.7
+        }
+      },
+      "annual_k": {
+        "all_years": {
+          "months": 174,
+          "mae": 766.0,
+          "median_abs_error": 130.6,
+          "abs_error_pct_of_total": 16.8,
+          "bias_pct": 0.0
+        },
+        "before_2022": {
+          "months": 119,
+          "mae": 813.8,
+          "median_abs_error": 134.7,
+          "abs_error_pct_of_total": 17.2,
+          "bias_pct": 1.0
+        },
+        "2022_onward": {
+          "months": 55,
+          "mae": 662.6,
+          "median_abs_error": 117.1,
+          "abs_error_pct_of_total": 15.8,
+          "bias_pct": -2.4
+        }
+      },
+      "uncalibrated": {
+        "all_years": {
+          "months": 174,
+          "mae": 23892.9,
+          "median_abs_error": 5567.0,
+          "abs_error_pct_of_total": 524.7,
+          "bias_pct": 524.7
+        },
+        "before_2022": {
+          "months": 119,
+          "mae": 25060.2,
+          "median_abs_error": 5270,
+          "abs_error_pct_of_total": 530.3,
+          "bias_pct": 530.3
+        },
+        "2022_onward": {
+          "months": 55,
+          "mae": 21367.2,
+          "median_abs_error": 5892,
+          "abs_error_pct_of_total": 511.1,
+          "bias_pct": 511.1
+        }
+      }
+    },
+    "forward_test": {
+      "trained_on": "up to 2018",
+      "2019_to_2021": {
+        "months": 36,
+        "mae": 457.3,
+        "median_abs_error": 122.7,
+        "abs_error_pct_of_total": 9.4,
+        "bias_pct": -6.1
+      },
+      "2022_onward": {
+        "months": 55,
+        "mae": 755.8,
+        "median_abs_error": 204.1,
+        "abs_error_pct_of_total": 18.1,
+        "bias_pct": -1.7
+      }
+    }
+  },
+  "noaa20_to_snpp": {
+    "definition": "tested: k(m) = sum(VIIRS_NOAA20) / sum(VIIRS_SNPP) per calendar month",
+    "applied": "none - NOAA-20 is used 1:1 as S-NPP; see leave_one_year_out.uncalibrated for the error of doing so",
+    "paired_months": 100,
+    "years": [
+      2018,
+      2026
+    ],
+    "coefficients": {
+      "annual_k": 0.994,
+      "by_month": {
+        "1": {
+          "k": 0.994,
+          "uses_annual_fallback": false,
+          "years": 8,
+          "yearly_ratio_min": 0.93,
+          "yearly_ratio_max": 1.05
+        },
+        "2": {
+          "k": 0.991,
+          "uses_annual_fallback": false,
+          "years": 8,
+          "yearly_ratio_min": 0.95,
+          "yearly_ratio_max": 1.05
+        },
+        "3": {
+          "k": 0.977,
+          "uses_annual_fallback": false,
+          "years": 8,
+          "yearly_ratio_min": 0.95,
+          "yearly_ratio_max": 1.01
+        },
+        "4": {
+          "k": 0.998,
+          "uses_annual_fallback": false,
+          "years": 9,
+          "yearly_ratio_min": 0.94,
+          "yearly_ratio_max": 1.1
+        },
+        "5": {
+          "k": 1.005,
+          "uses_annual_fallback": false,
+          "years": 9,
+          "yearly_ratio_min": 0.91,
+          "yearly_ratio_max": 1.09
+        },
+        "6": {
+          "k": 1.073,
+          "uses_annual_fallback": false,
+          "years": 9,
+          "yearly_ratio_min": 0.95,
+          "yearly_ratio_max": 1.17
+        },
+        "7": {
+          "k": 1.077,
+          "uses_annual_fallback": false,
+          "years": 9,
+          "yearly_ratio_min": 0.92,
+          "yearly_ratio_max": 1.55
+        },
+        "8": {
+          "k": 1.041,
+          "uses_annual_fallback": false,
+          "years": 8,
+          "yearly_ratio_min": 0.98,
+          "yearly_ratio_max": 1.09
+        },
+        "9": {
+          "k": 1.014,
+          "uses_annual_fallback": false,
+          "years": 8,
+          "yearly_ratio_min": 0.89,
+          "yearly_ratio_max": 1.18
+        },
+        "10": {
+          "k": 1.094,
+          "uses_annual_fallback": false,
+          "years": 8,
+          "yearly_ratio_min": 0.96,
+          "yearly_ratio_max": 1.21
+        },
+        "11": {
+          "k": 1.004,
+          "uses_annual_fallback": false,
+          "years": 8,
+          "yearly_ratio_min": 0.87,
+          "yearly_ratio_max": 1.1
+        },
+        "12": {
+          "k": 1.028,
+          "uses_annual_fallback": false,
+          "years": 8,
+          "yearly_ratio_min": 0.95,
+          "yearly_ratio_max": 1.07
+        }
+      }
+    },
+    "leave_one_year_out": {
+      "monthly_k": {
+        "all_years": {
+          "months": 100,
+          "mae": 859.1,
+          "median_abs_error": 263.1,
+          "abs_error_pct_of_total": 3.3,
+          "bias_pct": -0.0
+        },
+        "before_2022": {
+          "months": 45,
+          "mae": 960.5,
+          "median_abs_error": 269.5,
+          "abs_error_pct_of_total": 3.7,
+          "bias_pct": 0.2
+        },
+        "2022_onward": {
+          "months": 55,
+          "mae": 776.1,
+          "median_abs_error": 262.0,
+          "abs_error_pct_of_total": 3.0,
+          "bias_pct": -0.2
+        }
+      },
+      "annual_k": {
+        "all_years": {
+          "months": 100,
+          "mae": 826.3,
+          "median_abs_error": 315.6,
+          "abs_error_pct_of_total": 3.2,
+          "bias_pct": 0.0
+        },
+        "before_2022": {
+          "months": 45,
+          "mae": 907.7,
+          "median_abs_error": 322.9,
+          "abs_error_pct_of_total": 3.5,
+          "bias_pct": 0.3
+        },
+        "2022_onward": {
+          "months": 55,
+          "mae": 759.8,
+          "median_abs_error": 312.5,
+          "abs_error_pct_of_total": 3.0,
+          "bias_pct": -0.3
+        }
+      },
+      "uncalibrated": {
+        "all_years": {
+          "months": 100,
+          "mae": 864.7,
+          "median_abs_error": 310.5,
+          "abs_error_pct_of_total": 3.4,
+          "bias_pct": -0.6
+        },
+        "before_2022": {
+          "months": 45,
+          "mae": 932.6,
+          "median_abs_error": 340,
+          "abs_error_pct_of_total": 3.6,
+          "bias_pct": -0.4
+        },
+        "2022_onward": {
+          "months": 55,
+          "mae": 809.1,
+          "median_abs_error": 307,
+          "abs_error_pct_of_total": 3.2,
+          "bias_pct": -0.8
+        }
+      }
+    }
+  },
+  "calibration_accepted": true,
+  "acceptance_rule": "leave-one-year-out error <= 50% of total and at least 9 calendar months with their own coefficient; this region: error 12.0%, 12 months",
+  "current_month": {
+    "month": "2026-11",
+    "days": "1-13",
+    "source": "VIIRS_NOAA20 near-real-time, on the Aqua scale",
+    "value_aqua_equiv": 98.8,
+    "raw_noaa20": 686,
+    "aqua_nrt_same_days": 180,
+    "baseline": "MODIS Aqua, same days, 2002-2025",
+    "baseline_years": 24,
+    "baseline_median": 180.5,
+    "baseline_min": 56,
+    "baseline_max": 453,
+    "years_below_current": 8,
+    "years_below_current_aqua_nrt": 12,
+    "caveat": "near-real-time files have no `type` column, so static heat sources are not removed from the current month"
+  }
+}
