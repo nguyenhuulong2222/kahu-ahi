@@ -92,8 +92,16 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #tl-speed{min-height:40px;padding:6px 8px;font-size:14px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 #biglabel{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:900;pointer-events:none;padding:4px 16px;border-radius:6px;background:rgba(20,33,61,.82);color:#fff;font-weight:700;font-size:clamp(1.6rem,5vw,3rem);font-variant-numeric:tabular-nums;white-space:nowrap}
-#mapempty{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:900;width:min(440px,calc(100% - 32px));padding:12px 14px;border-radius:6px;background:rgba(255,255,255,.96);box-shadow:0 1px 6px rgba(0,0,0,.35);border-left:4px solid var(--warn);font-size:.95rem}
-#mapempty p{margin:0 0 8px}#mapempty button{min-height:40px}
+#mapnotes{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:900;width:min(440px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.mapnote{pointer-events:auto;padding:10px 14px;border-radius:6px;background:rgba(255,255,255,.96);box-shadow:0 1px 6px rgba(0,0,0,.35);border-left:4px solid var(--warn);font-size:.95rem}
+.mapnote p{margin:0 0 8px}.mapnote button{min-height:40px}
+#sensornote{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;padding:6px 10px;font-size:.88rem}#sensornote p{margin:0;font-weight:600}
+#sensornote button{min-height:36px;padding:4px 10px;font-size:.88rem}
+.tl-levels{display:inline-flex;gap:2px}.tl-levels .tl-btn{border-radius:0}.tl-levels .tl-btn:first-child{border-radius:4px 0 0 4px}.tl-levels .tl-btn:last-child{border-radius:0 4px 4px 0}
+#monthrow{display:grid;grid-template-columns:auto repeat(12,minmax(0,1fr));gap:4px;align-items:center;margin-top:12px}
+#monthrow strong{padding-right:8px}
+#monthrow button{min-height:40px;padding:4px 2px;background:#fff;color:var(--ink);border-color:#8793a6;font-weight:600}
+#monthrow button[aria-pressed="true"]{background:var(--ink);color:#fff}
 [hidden]{display:none!important}
 #explain p{font-size:1.08rem;margin:0 0 6px}
 /* charts: years, months, days */
@@ -136,13 +144,13 @@ label.inline input{min-height:auto;width:18px;height:18px;margin:0}
 .coordbox{background:rgba(255,255,255,.9);padding:2px 6px;font:12px/1.4 var(--font);font-variant-numeric:tabular-nums;border-radius:3px;color:var(--ink)}
 .steps{display:inline-flex;flex-wrap:wrap;gap:4px 10px}
 .step{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
-.chip{display:inline-block;width:22px;height:14px;border-radius:2px;background:#24303c;overflow:hidden}
+.chip{display:inline-block;width:22px;height:14px;border-radius:2px;background:#3f5a46;overflow:hidden}
 .chip span{display:block;width:100%;height:100%}
 .legtitle{flex-basis:100%}
 button.linkish{all:unset;cursor:pointer;color:var(--action);text-decoration:underline}
 button.linkish:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
 /* A thin dark halo around the cells and detections keeps them readable on bright imagery. */
-#map .leaflet-cells-pane canvas,#map .leaflet-pts-pane canvas{filter:drop-shadow(0 0 1px rgba(0,0,0,.85)) drop-shadow(0 0 .5px rgba(0,0,0,.85))}
+#map .leaflet-cells-pane,#map .leaflet-pts-pane canvas{filter:drop-shadow(0 0 1px rgba(0,0,0,.85)) drop-shadow(0 0 .5px rgba(0,0,0,.85))}
 .celltip{font:600 .85rem/1.3 var(--font);width:max-content;max-width:min(260px,70vw);white-space:normal}
 #map.drawing{cursor:crosshair;touch-action:none}
 #map.drawing .leaflet-interactive{cursor:crosshair}
@@ -165,7 +173,9 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   #allyears{order:1}#tl-py{order:2}#tl-pm{order:3}#tl-label{order:4;flex:1 1 auto;min-width:0;text-align:center;font-size:.85rem}#tl-nm{order:5}#tl-ny{order:6}
   #legendpanel{width:240px}
   .leaflet-bottom.leaflet-left{bottom:36px}
-  #biglabel{top:58px}#mapempty{top:108px}
+  #biglabel{top:58px}#mapnotes{top:108px}
+  .mapshell{--tl-h:150px}.tl-levels{order:7;flex:1 1 100%}.tl-levels .tl-btn{flex:1 1 0}
+  #monthrow{grid-template-columns:repeat(6,minmax(0,1fr))}#monthrow strong{grid-column:1/-1}
   .leaflet-control-attribution{font-size:10px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
@@ -219,13 +229,20 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <button type="button" id="tl-nm" class="tl-btn" aria-label="Next month"><span class="tl-word">Month</span> ›</button>
     <button type="button" id="tl-ny" class="tl-btn" aria-label="Next year"><span class="tl-word">Year</span> »</button>
     <output id="tl-label" for="tl-range" aria-live="polite">All years</output>
+    <span class="tl-levels" role="group" aria-label="Step the timeline by">
+      <button type="button" id="lv-year" class="tl-btn" aria-pressed="true">Years</button><button type="button" id="lv-month" class="tl-btn" aria-pressed="false">Months</button><button type="button" id="lv-day" class="tl-btn" aria-pressed="false" disabled>Days</button>
+    </span>
     <span id="playstatus" class="sr" role="status" aria-live="polite"></span>
   </div>
   <div id="biglabel" aria-hidden="true" hidden></div>
-  <div id="mapempty" role="status" aria-live="polite" hidden><p></p><button type="button" id="toauto">Switch to the harmonized view</button></div>
+  <div id="mapnotes">
+    <div id="sensornote" class="mapnote" hidden><p></p><button type="button" id="toauto2">Back to harmonized</button></div>
+    <div id="mapempty" class="mapnote" role="status" aria-live="polite" hidden><p></p><button type="button" id="toauto">Switch to the harmonized view</button></div>
+  </div>
 </section>
 
 <div class="wrap">
+  <nav id="monthrow" aria-label="Months of the selected year" hidden></nav>
   <section aria-labelledby="h-what">
     <h2 id="h-what">What you are looking at</h2>
     <div id="explain" aria-live="polite"></div>
@@ -468,7 +485,7 @@ function refresh() {
 // ---------- selection: all years, one year, one month or one day ----------
 // `selected` (the month), selYear and selDay are one selection shared by the map, the timeline, the calendar,
 // the charts and the page address. A day implies its month, and a month its year.
-let selYear = null, selDay = null, daily = null;
+let selYear = null, selDay = null, daily = null, cellNote = null;
 function years() { return [...new Set(D.months.map(x => x.m.slice(0, 4)))]; }
 function level() { return selDay ? "day" : selected ? "month" : selYear ? "year" : "all"; }
 function curSel() { return selDay ? {day: selDay} : selected ? {month: selected} : selYear ? {year: selYear} : {}; }
@@ -491,7 +508,7 @@ function select(sel, opts) {
   markCalendar();
   const x = selected && S.months.find(v => v.m === selected);
   if (x) drawDetail(x); else $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
-  drawExplain(); drawDrill(); writeHash();
+  drawExplain(); drawDrill(); drawMonthRow(); updateLevels(); writeHash();
   return drawMap();
 }
 function selectMonth(m) { return select({month: m}); }
@@ -558,6 +575,8 @@ function drawExplain() {
   }
   s.push(lv === "day" ? "Hollow dashed squares are detections that were not counted, because the satellite was unsure or the heat was not a vegetation fire."
     : "Brighter (yellow) means more detections; dark red means few. Blank means none was recorded, which is not the same as no fire.");
+  if (cellNote && (lv === "all" || lv === "year")) s.push("A coloured square means at least one detection in " + cellNote.period + ", not that the whole square burned. In this view " + cellNote.share + "% of the " + fmt(cellNote.cells)
+    + " coloured squares are in the faintest step (" + cellNote.range.replace("–", " to ") + (cellNote.range === "1" ? " detection" : " detections") + "), and half of them have " + fmt(cellNote.half) + " or fewer. Faint squares had few detections; solid bright ones had many.");
   if (!D.calibration_accepted) s.push(D.region.id === "hawaii"
     ? "In Hawaiʻi most of the heat satellites detect comes from the volcano, and the newer VIIRS counts could not be converted reliably, so only MODIS Aqua is shown."
     : "In this region the newer VIIRS counts could not be converted reliably, so only MODIS Aqua is shown.");
@@ -963,13 +982,15 @@ const layers = {}, allYearsCache = {};
 // The map uses the upper seven steps of the calendar's fire ramp: the darkest steps vanish on the
 // dark satellite basemap. Same log scale as the calendar; the legend lists each step's range.
 const MAP_RAMP = FIRE.slice(3);
-const CELL_OPACITY = .82;
+// Opacity of each colour step, lowest to highest: a cell with one detection in the whole period is faint and lets
+// the basemap show through; the busiest cells are solid. The legend swatches use the same values.
+const STEP_OPACITY = [.3, .42, .55, .7, .82, .92, 1];
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
 // Kept short so it does not cover the map on a phone. The full GIBS acknowledgment is in the page footer.
 // The GIBS reference overlays and the street map share one OpenStreetMap string, which Leaflet shows once.
 const GIBS_ATTR = 'Imagery: <a href="https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api">NASA GIBS</a> Blue Marble';
 const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · <a href="https://www.openstreetmap.org/fixthemap">Report a map issue</a>';
-let cellRenderer = null, pointRenderer = null;
+let cellRenderers = [], pointRenderer = null;
 
 function mapStep(v, max) { return Math.min(MAP_RAMP.length - 1, Math.floor(Math.log10(v + 1) / Math.log10(Math.max(max, 10) + 1) * MAP_RAMP.length)); }
 // The legend's steps, worked out with mapStep() itself so they always match the drawn colours.
@@ -1002,9 +1023,9 @@ function setupMap() {
   map.createPane("cells").style.zIndex = 410;
   map.createPane("labels").style.zIndex = 430;
   map.getPane("labels").style.pointerEvents = "none";
-  map.getPane("cells").style.opacity = CELL_OPACITY;
   map.createPane("pts").style.zIndex = 460;
-  cellRenderer = L.canvas({pane: "cells", padding: .3});
+  // One canvas per colour step inside the cells pane, each at its step's opacity: cells of a step stay gap-free and even.
+  cellRenderers = MAP_RAMP.map((_, i) => { map.createPane("cells" + i, map.getPane("cells")).style.opacity = STEP_OPACITY[i]; return L.canvas({pane: "cells" + i, padding: .3}); });
   pointRenderer = L.canvas({pane: "pts", padding: .3});
   // Basemap layers; syncBasemap() decides which are on the map.
   base.gibs = L.tileLayer(GIBS + "BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg",
@@ -1207,7 +1228,7 @@ function updateTimeline() {
 // ---------- play through time ----------
 // Steps at the level of the selection: years, months of the record, or days of the selected month. Never starts by itself.
 const SPEED_MS = {slow: 2000, normal: 1000, fast: 400};
-const QUIET_WHILE_PLAYING = ["tl-label", "mapsum", "mapview", "detail", "mapempty"];   // otherwise announced at every frame
+const QUIET_WHILE_PLAYING = ["tl-label", "mapsum", "mapview", "detail", "mapempty", "explain", "drill"];   // otherwise announced at every frame
 let playing = false, playToken = 0;
 function sleep(ms) { return new Promise(ok => setTimeout(ok, ms)); }
 function preload(sel) { if (sel && (sel.year || sel.month)) gridYear(+(sel.year || sel.month.slice(0, 4))).catch(() => {}); }
@@ -1297,10 +1318,45 @@ function yearSensor(y) {
 }
 // Words for the map when the chosen satellite has nothing to show: not flying is different from flying and seeing nothing.
 function setEmpty(text, offerAuto) {
-  const box = $("mapempty");
+  const box = $("mapempty"), s = $("sensor").value, note = $("sensornote");
   box.hidden = !text;
   box.firstElementChild.textContent = text || "";
   $("toauto").hidden = !offerAuto;
+  // Any satellite other than the harmonized view is named on the map, with the way back (unless the box above already offers it).
+  note.hidden = s === "auto" || (!!text && !!offerAuto);
+  note.firstElementChild.textContent = s === "auto" ? "" : "Showing " + SENSOR[s].replace("VIIRS Suomi NPP", "VIIRS S-NPP") + (s === "MODIS_AQUA" ? " only" : " as recorded, not converted");
+}
+// The months of the selected year as one row of buttons under the map.
+function drawMonthRow() {
+  const box = $("monthrow");
+  box.hidden = !selYear;
+  if (!selYear) { box.replaceChildren(); return; }
+  box.replaceChildren(el("strong", {text: selYear}), ...MONTHS.map((n, i) => {
+    const m = selYear + "-" + String(i + 1).padStart(2, "0"), x = D.months.find(v => v.m === m);
+    const b = el("button", {type: "button", "aria-pressed": String(m === selected), "aria-label": MONTH_FULL[i] + " " + selYear + (x ? "" : ", outside the record"), text: n});
+    if (!x) b.disabled = true; else b.addEventListener("click", () => select({month: m}));
+    return b;
+  }));
+}
+// Years | Months | Days on the timeline.
+function setLevel(to) {
+  if (!D) return;
+  const lv = level();
+  if (to === "year") select(selYear ? {year: selYear} : {});
+  else if (to === "month") {
+    if (selected) select({month: selected});
+    else { const ms = D.months.filter(x => (!selYear || x.m.slice(0, 4) === selYear)), withData = ms.filter(x => x.h != null || x.terra != null);
+      // From a year: its first month with data. From all years: the latest month.
+      const pick = selYear ? (withData[0] || ms[0]) : (withData[withData.length - 1] || ms[ms.length - 1]);
+      if (pick) select({month: pick.m}); }
+  } else if (to === "day" && selected && lv !== "day") select({day: selected + "-01"});
+}
+function updateLevels() {
+  const lv = level();
+  $("lv-year").setAttribute("aria-pressed", String(lv === "all" || lv === "year"));
+  $("lv-month").setAttribute("aria-pressed", String(lv === "month"));
+  $("lv-day").setAttribute("aria-pressed", String(lv === "day"));
+  $("lv-day").disabled = !selected || !daily;
 }
 function niceDate(d) { return dayName(d); }
 function notFlyingText(pick) {
@@ -1316,7 +1372,7 @@ function notFlyingText(pick) {
 async function drawMap() {
   if (!map || !D) return;
   const token = ++drawToken, sum = $("mapsum"), lv = level();
-  layers.cells.clearLayers(); layers.hover.clearLayers(); shown = new Map(); shownInfo = null; setEmpty(null);
+  layers.cells.clearLayers(); layers.hover.clearLayers(); shown = new Map(); shownInfo = null; setEmpty(null); cellNote = null;
   updateAllYearsButton(); updatePointsButton();
   if (!G) { sum.textContent = "The map grid for this region could not be found."; return; }
   const x = selected && S.months.find(v => v.m === selected);
@@ -1345,7 +1401,7 @@ async function drawMap() {
     }
   } catch (e) { if (token === drawToken) sum.textContent = "The map data for " + name + " could not be loaded."; return; }
   if (token !== drawToken) return;
-  map.getPane("cells").style.opacity = pointsOn || lv === "day" ? 0 : CELL_OPACITY;
+  map.getPane("cells").style.opacity = pointsOn || lv === "day" ? 0 : 1;
   if (!pick.flying) {
     const text = notFlyingText(pick);
     sum.textContent = name + ": " + text;
@@ -1370,14 +1426,16 @@ async function drawMap() {
     }
   }
   let total = 0, cells = 0, areaTotal = 0, areaCells = 0;
+  const perStep = MAP_RAMP.map(() => 0), inView = [];
   shown.forEach((n, key) => {
-    const row = Math.floor(key / 10000), col = key % 10000, v = pick.k ? n / pick.k : n, c = MAP_RAMP[mapStep(v, pick.max)];
+    const row = Math.floor(key / 10000), col = key % 10000, v = pick.k ? n / pick.k : n, st = mapStep(v, pick.max), c = MAP_RAMP[st];
     shown.set(key, v);
     total += v; cells++;
     if (area && inArea(row, col)) { areaTotal += v; areaCells++; }
+    if (inArea(row, col)) { perStep[st]++; inView.push(v); }
     const s = row / 10 - 90, w = col / 10 - 180;
-    // Opaque cells with an outline in their own colour leave no gaps; the pane's opacity lets coastlines through.
-    L.rectangle([[s, w], [s + .1, w + .1]], {renderer: cellRenderer, interactive: false, color: c, weight: 1, opacity: 1, fillColor: c, fillOpacity: 1}).addTo(layers.cells);
+    // Opaque cells with an outline in their own colour leave no gaps; the step's pane sets how much basemap shows through.
+    L.rectangle([[s, w], [s + .1, w + .1]], {renderer: cellRenderers[st], interactive: false, color: c, weight: 1, opacity: 1, fillColor: c, fillOpacity: 1}).addTo(layers.cells);
   });
   shownInfo = {pick, name, when: lv === "month" ? name : lv === "year" ? name + " total" : "total over " + pick.span};
   const where = area ? "inside the chosen area" : "across " + D.region.name;
@@ -1389,6 +1447,11 @@ async function drawMap() {
     + (x && isPartial(x.status) ? " The month is not complete." : "") + (x && baseStatus(x.status) === "provisional_nrt" ? " Provisional data." : "")
     + " Blank cells mean no detection was recorded, not that nothing burned: when each place could be observed is unknown.";
   if (t === 0) setEmpty(nothing);
+  // For totals over a year or more, say how many of the coloured cells are in the faintest step.
+  // The faintest step is the first one the legend lists (a small scale may not reach the ramp's first colour).
+  const low = legendSteps(pick.max, !!pick.k)[0];
+  cellNote = (lv === "all" || lv === "year") && c > 0 ? {share: Math.round(100 * perStep[MAP_RAMP.indexOf(low.c)] / c), cells: c, range: low.text, half: median(inView), period: lv === "all" ? pick.span : "the whole of " + selYear} : null;
+  drawExplain();
   drawMapLegend(pick); drawTopCells(pick); viewNote();
   return drawPoints();
 }
@@ -1397,8 +1460,8 @@ function drawMapLegend(pick) {
   const lg = $("maplegend"); lg.replaceChildren();
   if (pick.flying && level() !== "day") {
     const steps = el("span", {class: "steps"});
-    legendSteps(pick.max, !!pick.k).forEach(st => steps.append(el("span", {class: "step"}, el("span", {class: "chip"}, el("span", {style: "background:" + st.c + ";opacity:" + CELL_OPACITY})), st.text)));
-    lg.append(el("span", {class: "legtitle", text: "Detections in a 0.1° cell" + (pick.span ? ", " + pick.span : "") + " (each step is a multiple, not an amount):"}), steps);
+    legendSteps(pick.max, !!pick.k).forEach(st => steps.append(el("span", {class: "step"}, el("span", {class: "chip"}, el("span", {style: "background:" + st.c + ";opacity:" + STEP_OPACITY[MAP_RAMP.indexOf(st.c)]})), st.text)));
+    lg.append(el("span", {class: "legtitle", text: "Detections in a 0.1° cell" + (pick.span ? ", " + pick.span : "") + " (each step is a multiple, not an amount; fainter means fewer):"}), steps);
   }
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:transparent;border:1px dashed #55627a"}), "Blank: no detection recorded, not \"no fire\""));
   lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px solid #fff;box-shadow:0 0 0 2px #333"}), "Supported region"));
@@ -1640,7 +1703,8 @@ $("dlmonthly").addEventListener("click", () => { if (D) downloadMonthly(); });
 $("region").addEventListener("change", e => load(e.target.value));
 $("mode").addEventListener("change", () => { if (D) { drawCalendar(); select(curSel()); } });
 $("sensor").addEventListener("change", () => { if (D) select(curSel()); });
-$("toauto").addEventListener("click", () => { $("sensor").value = "auto"; if (D) select(curSel()); $("sensor").focus(); });
+["toauto", "toauto2"].forEach(id => $(id).addEventListener("click", () => { $("sensor").value = "auto"; if (D) select(curSel()); $("map").focus(); }));
+[["lv-year", "year"], ["lv-month", "month"], ["lv-day", "day"]].forEach(([id, to]) => $(id).addEventListener("click", () => setLevel(to)));
 ["drawgrid", "drawpts"].forEach(id => $(id).addEventListener("change", () => { pausePlay(); pointsOn = $("drawpts").checked; updatePointsButton(); drawMap(); if (!pointsOn) onView(); }));
 $("basemap").addEventListener("change", () => { $("basenote").textContent = ""; syncBasemap(); });
 $("outline").addEventListener("change", e => { if (map) toggleLayer(layers.box, e.target.checked); });
