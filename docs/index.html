@@ -104,6 +104,19 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #monthrow button[aria-pressed="true"]{background:var(--ink);color:#fff}
 [hidden]{display:none!important}
 #explain p{font-size:1.08rem;margin:0 0 6px}
+/* one detection: card on the map and table under it */
+.detpop .leaflet-popup-content{margin:10px 12px;font:13px/1.4 var(--font)}
+.card h3{margin:0 0 6px;font-size:1rem}.card dl{margin:0}.card p{margin:0 0 8px}
+.card .kv{display:grid;grid-template-columns:42% 1fr;gap:2px 8px;padding:3px 0;border-top:1px solid var(--line)}
+.card dt{color:var(--muted)}.card dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.card .note{margin:6px 0 0;font-size:12px}.card button:not(.linkish){min-height:40px}
+#cardsheet{position:absolute;left:8px;right:8px;bottom:calc(var(--tl-h) + 10px);z-index:950;max-height:62%;overflow:auto;padding:10px 12px;border-radius:8px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);font:13px/1.4 var(--font)}
+#cardsheet{max-height:50%}
+#cardsheet button.secondary{float:right;min-height:36px;padding:4px 12px;margin:0 0 4px 8px}
+.dettable{max-height:460px;overflow:auto}
+#dettable td,#dettable th{white-space:nowrap;padding:4px 14px 4px 0}
+#dettable thead th{position:sticky;top:0;background:var(--panel);z-index:1}
+#dettable tbody tr{cursor:pointer}#dettable tbody tr:hover{background:var(--paper)}#dettable tr.on{background:#fff1cc}
 /* charts: years, months, days */
 .crumbs{font-size:.95rem;margin:8px 0}
 #drill h3{font-size:1.05rem;margin:10px 0 0}
@@ -235,6 +248,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <span id="playstatus" class="sr" role="status" aria-live="polite"></span>
   </div>
   <div id="biglabel" aria-hidden="true" hidden></div>
+  <div id="cardsheet" class="detpop" role="dialog" aria-label="One detection" hidden></div>
   <div id="mapnotes">
     <div id="sensornote" class="mapnote" hidden><p></p><button type="button" id="toauto2">Back to harmonized</button></div>
     <div id="mapempty" class="mapnote" role="status" aria-live="polite" hidden><p></p><button type="button" id="toauto">Switch to the harmonized view</button></div>
@@ -243,6 +257,17 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 
 <div class="wrap">
   <nav id="monthrow" aria-label="Months of the selected year" hidden></nav>
+  <section id="detsec" aria-labelledby="h-det" hidden>
+    <h2 id="h-det" tabindex="-1">Detections</h2>
+    <p id="detsum" aria-live="polite"></p>
+    <p class="note">Local time and UTC are the time of the satellite pass. Radiative power is the fire radiative power FIRMS reports for the pixel, in megawatts.</p>
+    <div class="howto">
+      <p><strong>When:</strong> the time is when the satellite passed over and saw the heat, not when the fire started. Each satellite passes about twice a day, so a fire can burn for hours unseen. Dates on this page are UTC dates, so a local evening or early morning can fall on the neighbouring date.</p>
+      <p style="margin:0"><strong>Where:</strong> the position is the centre of the satellite pixel: about 375 m across for VIIRS and about 1 km for MODIS, larger at the edge of the swath. The fire is somewhere inside it, not exactly at the point.</p>
+    </div>
+    <div class="calwrap dettable"><table class="plain" id="dettable"></table></div>
+    <div class="areabar"><button type="button" id="detmore" class="secondary" hidden>Show more</button><button type="button" id="detcsv" class="secondary">Download these rows (CSV)</button></div>
+  </section>
   <section aria-labelledby="h-what">
     <h2 id="h-what">What you are looking at</h2>
     <div id="explain" aria-live="polite"></div>
@@ -466,7 +491,8 @@ async function load(region, wish) {
   applySel(wishSel(wish));
   if (wish.area && !(await setArea(wish.area, true))) wish.area = null;
   if (token !== loadToken) return;
-  if (!wish.area) { fillAreaForm(); refresh(); }
+  if (!wish.area) { fillAreaForm(); await refresh(); }
+  if (token === loadToken && wishAt(wish)) goAt(wishAt(wish));
 }
 
 function gridYear(year) {
@@ -479,7 +505,7 @@ function gridYear(year) {
 // Redraw everything that depends on the series on show.
 function refresh() {
   drawCalendar(); drawNow(); drawSeason(); drawAreaBanner(); describeDownload();
-  select(curSel());
+  return select(curSel());
 }
 
 // ---------- selection: all years, one year, one month or one day ----------
@@ -505,6 +531,9 @@ function select(sel, opts) {
   if (!D) return Promise.resolve();
   if (!(opts && opts.play)) pausePlay();
   applySel(sel);
+  fitNext = !!(opts && opts.fit) && !!selDay;
+  closeCard();
+  if (tbl && tbl.mode === "cell") hideTable();
   markCalendar();
   const x = selected && S.months.find(v => v.m === selected);
   if (x) drawDetail(x); else $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
@@ -657,7 +686,7 @@ function drawDrill() {
         return {tick: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "", value: v, mark, sel: d === selDay, cls: after ? "none" : !fly ? "none" : daily.nrt.has(d) ? "prov" : "",
           say: dayName(d) + ": " + (after ? "after the end of the data" : !fly ? SENSOR[pick.s] + " not flying" : fmt(v) + " " + SENSOR[pick.s] + " detections" + (v === 0 ? " (none recorded, which is not the same as no fire)" : ""))
             + (mark != null ? "; " + SENSOR[viirs] + " " + fmt(c[vi]) + ", about " + fmt1(mark) + " on the Aqua scale (indicative: tested by month, not by day)" : "") + (after || !fly ? "." : ". Select to see this day on the map."),
-          go: after || !fly ? null : () => select({day: d})};
+          go: after || !fly ? null : () => select({day: d}, {fit: true})};
       })));
       unit = "Up: fire detections in a day, " + SENSOR[pick.s] + (pick.s === "MODIS_AQUA" ? "" : ", as recorded (not converted)") + ", whole region. Across: day of the month. Outlined bars are provisional days."
         + (viirs ? " Dots: " + SENSOR[viirs] + " converted to the MODIS Aqua scale. They are indicative: the conversion was tested by month, not by day." : "");
@@ -951,11 +980,12 @@ function drawAreaBanner() {
 
 // ---------- URL hash: region, month, map satellite, area ----------
 function readHash() {
-  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor")};
+  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor"), at: p.get("at")};
   const a = (p.get("area") || "").split(",").map(Number);
   if (a.length === 4 && a.every(Number.isFinite)) w.area = {w: a[0], s: a[1], e: a[2], n: a[3]};
   return w;
 }
+function wishAt(w) { const a = (w.at || "").split(",").map(Number); return a.length === 2 && a.every(Number.isFinite) ? a : null; }
 function wishSel(w) { return w.day ? {day: w.day} : w.month ? {month: w.month} : w.year ? {year: w.year} : {}; }
 function writeHash() {
   if (!D) return;
@@ -972,8 +1002,9 @@ function applyHash() {
   if (w.region && w.region !== (D && D.region.id) && [...$("region").options].some(o => o.value === w.region)) { $("region").value = w.region; load(w.region, w); return; }
   if (!D) return;
   if (w.sensor && w.sensor !== $("sensor").value && [...$("sensor").options].some(o => o.value === w.sensor)) $("sensor").value = w.sensor;
-  if (w.area) setArea(w.area, true).then(() => select(wishSel(w)));
-  else { if (area) clearArea(); select(wishSel(w)); }
+  const then = () => select(wishSel(w)).then(() => goAt(wishAt(w)));
+  if (w.area) setArea(w.area, true).then(then);
+  else { if (area) clearArea(); then(); }
 }
 
 // ---------- map ----------
@@ -1035,7 +1066,8 @@ function setupMap() {
   base.labels = L.tileLayer(GIBS + "Reference_Labels/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
     {maxNativeZoom: 9, maxZoom: 8, pane: "labels"});
   deep.osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 15, attribution: OSM_ATTR});
-  ["mask", "cells", "box", "area", "hover", "points"].forEach(k => layers[k] = L.layerGroup().addTo(map));
+  ["mask", "cells", "box", "area", "hover", "points", "pick"].forEach(k => layers[k] = L.layerGroup().addTo(map));
+  map.on("popupclose", () => layers.pick.clearLayers());
 
   // Corners. Top left: layers. Top right: expand, then zoom. Bottom left: scale and cursor position. Bottom right: legend.
   domControl($("layerspanel"), "topleft");
@@ -1052,7 +1084,7 @@ function setupMap() {
   syncBasemap();
   map.on("zoomend", syncBasemap);
   map.on("moveend", onView);
-  map.on("click", e => { if (!drawing) { pausePlay(); showCell(cellKey(e.latlng), true); } });
+  map.on("click", e => { if (drawing) return; pausePlay(); const r = nearestDetection(e); if (r) openCard(r); else showCell(cellKey(e.latlng), true); });
   let frame = 0;
   map.on("mousemove", e => {
     coordBox.textContent = latLonText(e.latlng);
@@ -1268,7 +1300,8 @@ function drawRegionOnMap() {
   if (!map) return;
   const R = regionBox();
   regionBounds = L.latLngBounds([R.s, R.w], [R.n, R.e]);
-  ["mask", "box", "points", "area", "hover"].forEach(k => layers[k].clearLayers());
+  closeCard(); drawnRows = []; if (tbl) hideTable();
+  ["mask", "box", "points", "area", "hover", "pick"].forEach(k => layers[k].clearLayers());
   // Outside the region box is dimmed slightly: nothing is shown there.
   L.polygon([[[-85, -360], [85, -360], [85, 360], [-85, 360]], [[R.s, R.w], [R.n, R.w], [R.n, R.e], [R.s, R.e]]],
     {stroke: false, fillColor: "#000", fillOpacity: .22, interactive: false}).addTo(layers.mask);
@@ -1349,7 +1382,7 @@ function setLevel(to) {
       // From a year: its first month with data. From all years: the latest month.
       const pick = selYear ? (withData[0] || ms[0]) : (withData[withData.length - 1] || ms[ms.length - 1]);
       if (pick) select({month: pick.m}); }
-  } else if (to === "day" && selected && lv !== "day") select({day: selected + "-01"});
+  } else if (to === "day" && selected && lv !== "day") select({day: busiestDay()}, {fit: true});   // the month's busiest day, and the map moves to it
 }
 function updateLevels() {
   const lv = level();
@@ -1406,7 +1439,7 @@ async function drawMap() {
     const text = notFlyingText(pick);
     sum.textContent = name + ": " + text;
     setEmpty(text, $("sensor").value !== "auto");
-    layers.points.clearLayers(); drawMapLegend(pick); drawTopCells(pick); viewNote(); return;
+    layers.points.clearLayers(); drawnRows = []; if (tbl) hideTable(); drawMapLegend(pick); drawTopCells(pick); viewNote(); return;
   }
   const nothing = SENSOR[pick.s] + " was flying but recorded no detection in " + D.region.name + (lv === "day" ? " on " : " in ") + name + ". That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
   if (lv === "day") {
@@ -1490,6 +1523,14 @@ function showCell(key, includeEmpty) {
   const row = Math.floor(key / 10000), col = key % 10000, s = row / 10 - 90, w = col / 10 - 180;
   if (!shownInfo || !regionBounds || !regionBounds.contains([s + .05, w + .05]) || (!includeEmpty && !shown.has(key))) return;
   L.rectangle([[s, w], [s + .1, w + .1]], {fill: false, color: "#000", weight: 4, opacity: .6, interactive: false}).addTo(layers.hover);
+  // A click or tap on a month's cell opens a small box that offers the detections behind it.
+  if (includeEmpty && level() === "month" && !pointsOn && shown.has(key)) {
+    L.rectangle([[s, w], [s + .1, w + .1]], {fill: false, color: "#fff", weight: 2, interactive: false}).addTo(layers.hover);
+    const go = el("button", {type: "button", text: "Show the detections in this cell"});
+    go.addEventListener("click", () => showCellDetections(key, go));
+    L.popup({maxWidth: 280, className: "detpop"}).setLatLng([s + .05, w + .05]).setContent(el("div", {class: "card"}, el("p", {text: cellText(key)}), go)).openOn(map);
+    return;
+  }
   // Open the label below a cell near the top of the map so it is not cut off.
   const below = map.latLngToContainerPoint([s + .1, w]).y < 110;
   L.rectangle([[s, w], [s + .1, w + .1]], {fill: false, color: "#fff", weight: 2, interactive: false})
@@ -1526,6 +1567,159 @@ function updatePointsButton() {
 }
 function updateAllYearsButton() { $("allyears").setAttribute("aria-pressed", String(level() === "all")); updateTimeline(); }
 
+// ---------- one detection: when, where and what the satellite recorded ----------
+// Times in the hotspot files are UTC (acq_date, acq_time). Each region also gets its own local time.
+const TIMEZONE = {california: "America/Los_Angeles", hawaii: "Pacific/Honolulu", vietnam: "Asia/Ho_Chi_Minh"};
+const PLATFORM = {MODIS_AQUA: "Aqua satellite, MODIS sensor", MODIS_TERRA: "Terra satellite, MODIS sensor", VIIRS_SNPP: "Suomi NPP satellite, VIIRS sensor", VIIRS_NOAA20: "NOAA-20 satellite, VIIRS sensor"};
+const FIRMS_TYPE = {"1": "an active volcano", "2": "another static land source", "3": "an offshore source"};
+// The fields of one row of the hotspot CSV (columns as written by pipeline/export.py).
+function det(r) {
+  const f = r[5].split(",");
+  return {date: f[0], time: f[1].padStart(4, "0"), lat: +f[2], lon: +f[3], sensor: f[4], quality: f[5], conf: f[6], frp: f[7], dn: f[8], type: f[9], counted: f[10] === "1"};
+}
+function utcDate(d) { return new Date(Date.UTC(+d.date.slice(0, 4), +d.date.slice(5, 7) - 1, +d.date.slice(8, 10), +d.time.slice(0, 2), +d.time.slice(2, 4))); }
+function utcText(d, withDate) { return (withDate ? dayName(d.date) + ", " : "") + d.time.slice(0, 2) + ":" + d.time.slice(2) + " UTC"; }
+function localText(d, zone, withYear) {
+  const p = {};
+  new Intl.DateTimeFormat("en-US", {timeZone: zone, year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZoneName: "short"})
+    .formatToParts(utcDate(d)).forEach(x => { p[x.type] = x.value; });
+  return p.day + " " + p.month + (withYear ? " " + p.year : "") + ", " + p.hour + ":" + p.minute + " " + p.timeZoneName;
+}
+// Same rule as is_low_confidence() in pipeline/ingest.py, used only to say why a detection was not counted.
+function lowConfidence(c) { c = c.trim().toLowerCase(); if (c === "l" || c === "low") return true; if (c === "" || c === "n" || c === "h" || c === "nominal" || c === "high") return false; return parseFloat(c) < 30; }
+function confidenceText(c) { const k = c.trim().toLowerCase(); return k === "l" ? "l (low)" : k === "n" ? "n (nominal)" : k === "h" ? "h (high)" : k === "" ? "not given" : c + " (on a scale of 0 to 100)"; }
+function whyNotCounted(d) {
+  if (d.type !== "" && d.type !== "0") return "not a vegetation fire: FIRMS marks it as " + (FIRMS_TYPE[d.type] || "type " + d.type) + (lowConfidence(d.conf) ? ", and its confidence is low" : "");
+  if (lowConfidence(d.conf)) return "low confidence";
+  return "it lies where the standard record repeatedly showed non-fire heat (a static heat source)";
+}
+function countedText(d) { return d.counted ? "Yes" : "No: " + whyNotCounted(d); }
+function pointText(d) { return d.lat.toFixed(4) + ", " + d.lon.toFixed(4); }
+
+function cardNode(r) {
+  const d = det(r), zone = TIMEZONE[D.region.id], row = (k, ...v) => el("div", {class: "kv"}, el("dt", {text: k}), el("dd", {}, ...v));
+  const copy = el("button", {type: "button", class: "linkish", text: "Copy"});
+  copy.addEventListener("click", () => {
+    const done = ok => { copy.textContent = ok ? "Copied" : "Copy failed: select the numbers"; };
+    try { navigator.clipboard.writeText(pointText(d)).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+  });
+  const here = el("a", {href: "#" + new URLSearchParams({region: D.region.id, day: d.date, at: d.lat.toFixed(4) + "," + d.lon.toFixed(4)}).toString(), text: "Open this point at zoom 14"});
+  return el("div", {class: "card"}, el("h3", {text: "One detection"}), el("dl", {},
+    row("Satellite pass, local time", localText(d, zone, true)),
+    row("Satellite pass, UTC", utcText(d, true)),
+    row("Latitude, longitude", el("span", {class: "pt4", text: pointText(d)}), " ", copy, el("br"), here),
+    row("Seen by", PLATFORM[d.sensor] || d.sensor),
+    row("Day or night pass", d.dn === "D" ? "Day" : d.dn === "N" ? "Night" : "not given"),
+    row("Confidence, as given by FIRMS", confidenceText(d.conf)),
+    row("Fire radiative power", d.frp === "" ? "not given" : d.frp + " MW"),
+    row("Data quality", d.quality === "nrt" ? "near-real-time (provisional)" : d.quality),
+    row("Counted on this page", countedText(d))),
+    el("p", {class: "note", text: "Time of the satellite pass, not of the fire's start. The fire is somewhere inside a pixel about " + (d.sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not exactly at this point."}));
+}
+function openCard(r, pan) {
+  if (!map) return;
+  if (pan && !map.getBounds().pad(-.15).contains([r[0], r[1]])) map.panTo([r[0], r[1]], {animate: false});
+  closeCard();
+  if (matchMedia("(max-width: 600px)").matches) {
+    // On a phone the card does not fit in a map bubble: it opens as a sheet over the bottom of the map.
+    const x = el("button", {type: "button", class: "secondary", text: "Close"});
+    x.addEventListener("click", closeCard);
+    $("cardsheet").replaceChildren(x, cardNode(r)); $("cardsheet").hidden = false;
+  } else L.popup({maxWidth: 300, minWidth: 240, className: "detpop"}).setLatLng([r[0], r[1]]).setContent(cardNode(r)).openOn(map);
+  layers.pick.clearLayers();
+  L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#111", weight: 5, fill: false, interactive: false}).addTo(layers.pick);
+  L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#f2a900", weight: 3, fill: false, interactive: false}).addTo(layers.pick);
+}
+function closeCard() { if (!map) return; map.closePopup(); $("cardsheet").hidden = true; $("cardsheet").replaceChildren(); layers.pick.clearLayers(); }
+// The drawn detection nearest to a click or tap, if one is within reach.
+let drawnRows = [], drawnSide = 0, fitNext = false;
+function nearestDetection(e) {
+  if (!drawnRows.length) return null;
+  const p = map.latLngToContainerPoint(e.latlng), mpp = 156543.03392 * Math.cos(e.latlng.lat * Math.PI / 180) / Math.pow(2, map.getZoom()), reach = Math.max(12, drawnSide / mpp / 2 + 6);
+  let best = null, bd = reach * reach;
+  for (const r of drawnRows) { const q = map.latLngToContainerPoint([r[0], r[1]]), dx = q.x - p.x, dy = q.y - p.y, dd = dx * dx + dy * dy; if (dd <= bd) { bd = dd; best = r; } }
+  return best;
+}
+
+// ---------- table of detections: one day, the current view, or one grid cell ----------
+const TABLE_STEP = 200;
+let tbl = null;
+function hideTable() { tbl = null; $("detsec").hidden = true; }
+function setTable(mode, rows, title, sum, csvName) {
+  const keep = tbl && tbl.mode === mode && tbl.title === title;
+  tbl = {mode, rows, title, sum, csvName, key: keep ? tbl.key : "time", dir: keep ? tbl.dir : 1, limit: keep ? tbl.limit : TABLE_STEP, on: keep ? tbl.on : null};
+  drawTable();
+}
+function drawTable() {
+  const sec = $("detsec"), zone = TIMEZONE[D.region.id];
+  sec.hidden = false;
+  $("h-det").textContent = tbl.title; $("detsum").textContent = tbl.sum;
+  const list = tbl.rows.map(r => ({r, d: det(r)}));
+  const frp = x => x.d.frp === "" ? -1 : +x.d.frp, when = x => x.d.date + x.d.time;
+  list.sort((a, b) => tbl.dir * (tbl.key === "frp" ? frp(a) - frp(b) : when(a) < when(b) ? -1 : when(a) > when(b) ? 1 : 0));
+  const head = (text, key) => {
+    if (!key) return el("th", {scope: "col", text});
+    const b = el("button", {type: "button", class: "linkish", text: text + (tbl.key === key ? (tbl.dir > 0 ? " ▲" : " ▼") : "")});
+    b.addEventListener("click", () => { tbl.dir = tbl.key === key ? -tbl.dir : key === "frp" ? -1 : 1; tbl.key = key; drawTable(); });
+    return el("th", {scope: "col", "aria-sort": tbl.key === key ? (tbl.dir > 0 ? "ascending" : "descending") : "none"}, b);
+  };
+  const t = $("dettable");
+  t.replaceChildren(el("thead", {}, el("tr", {}, head("Local time", "time"), head("UTC"), head("Latitude"), head("Longitude"), head("Satellite"), head("Confidence"), head("Radiative power (MW)", "frp"), head("Counted"))));
+  const body = el("tbody");
+  list.slice(0, tbl.limit).forEach(({r, d}) => {
+    const b = el("button", {type: "button", class: "linkish", text: localText(d, zone, false), "aria-label": "Show on the map: " + localText(d, zone, true)});
+    const tr = el("tr", {}, el("td", {}, b), el("td", {text: utcText(d, tbl.mode !== "day")}), el("td", {class: "num", text: d.lat.toFixed(4)}), el("td", {class: "num", text: d.lon.toFixed(4)}),
+      el("td", {text: SENSOR[d.sensor].replace("VIIRS Suomi NPP", "VIIRS S-NPP")}), el("td", {text: d.conf === "" ? "not given" : d.conf}), el("td", {class: "num", text: d.frp === "" ? "" : d.frp}), el("td", {text: d.counted ? "Yes" : "No: " + whyNotCounted(d).split(":")[0].replace(/^it lies.*/, "static heat source")}));
+    if (tbl.on === r[5]) tr.classList.add("on");
+    const show = () => { tbl.on = r[5]; body.querySelectorAll("tr.on").forEach(x => x.classList.remove("on")); tr.classList.add("on"); openCard(r, true); };
+    tr.addEventListener("click", e => { if (e.target !== b) show(); });
+    b.addEventListener("click", () => { show(); $("mapshell").scrollIntoView({block: "nearest", behavior: REDUCE ? "auto" : "smooth"}); });
+    body.append(tr);
+  });
+  t.append(body);
+  const more = $("detmore"), left = list.length - tbl.limit;
+  more.hidden = left <= 0;
+  more.textContent = "Show " + fmt(Math.min(TABLE_STEP, left)) + " more (" + fmt(Math.max(left, 0)) + " not shown)";
+  $("detcsv").textContent = "Download these " + fmt(list.length) + " rows (CSV)";
+  $("detcsv").disabled = !list.length;
+}
+function downloadTable() {
+  if (!tbl) return;
+  const zone = TIMEZONE[D.region.id], lines = ["acq_date,acq_time,latitude,longitude,sensor,quality,confidence,frp,daynight,type,counted,local_time,time_zone"];
+  [...tbl.rows].sort((a, b) => (a[5] < b[5] ? -1 : a[5] > b[5] ? 1 : 0)).forEach(r => lines.push(r[5] + ',"' + localText(det(r), zone, true) + '",' + zone));
+  const a = el("a", {href: URL.createObjectURL(new Blob([lines.join("\n") + "\n"], {type: "text/csv"})), download: tbl.csvName});
+  document.body.append(a); a.click(); a.remove();
+}
+// Month view: the detections behind one grid cell.
+async function showCellDetections(key, button) {
+  const x = S.months.find(v => v.m === selected), pick = mapSensor(x), month = selected, row = Math.floor(key / 10000), col = key % 10000;
+  if (button) { button.disabled = true; button.textContent = "Loading the detections"; }
+  let rows;
+  try { rows = await monthRows(D.region.id + "/" + month); }
+  catch (e) { if (button) button.textContent = "The detections could not be loaded"; return; }
+  if (month !== selected) return;
+  const inCell = rows.filter(r => r[3] === pick.s && cellOf(r[0] + 90) === row && cellOf(r[1] + 180) === col), counted = inCell.filter(r => r[2]).length;
+  setTable("cell", inCell, "Detections in the cell centred on " + cellName(key) + ", " + monthName(month),
+    fmt(inCell.length) + " " + SENSOR[pick.s] + (inCell.length === 1 ? " detection" : " detections") + " in this 0.1° cell in " + monthName(month) + ": " + fmt(counted) + " counted, " + fmt(inCell.length - counted) + " not counted. Select a time to see that detection on the map.",
+    "kahu-ahi_" + D.region.id + "_cell_" + (row / 10 - 90).toFixed(1) + "_" + (col / 10 - 180).toFixed(1) + "_" + month + "_" + pick.s + ".csv");
+  map.closePopup();
+  $("detsec").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-det").focus();
+}
+// The busiest day of the selected month for the satellite on the map (the first day if none has a detection).
+function busiestDay() {
+  const x = S.months.find(v => v.m === selected), pick = mapSensor(x);
+  let best = selected + "-01", top = -1;
+  if (daily && pick.s) for (let i = 1; i <= daysIn(selected); i++) { const d = selected + "-" + String(i).padStart(2, "0"); if (d > D.data_through) break; const n = dayCounts(d)[pick.i]; if (n > top) { top = n; best = d; } }
+  return best;
+}
+// Open the map on one point (the "at" part of a link), with its card if that detection is loaded.
+function goAt(at) {
+  if (!map || !at) return;
+  map.setView(at, 14, {animate: false});
+  const dd = selDay ? +selDay.slice(8) : 0, r = (pointCache.rows || []).find(x => x[0].toFixed(4) === at[0].toFixed(4) && x[1].toFixed(4) === at[1].toFixed(4) && (!dd || x[4] === dd));
+  if (r) openCard(r);
+}
+
 // Read a hotspot year file a piece at a time, handing complete lines (header included) to fn.
 // The large files (about 1 million rows a year in the Vietnam region) are never held whole as text.
 // fn returns false to stop reading early.
@@ -1543,14 +1737,14 @@ async function eachLines(url, fn) {
   }
 }
 
-// Load the selected month's hotspot rows: [lat, lon, counted, sensor, day of month]. Year files are sorted by date, so reading stops after the month.
+// Load the selected month's hotspot rows: [lat, lon, counted, sensor, day of month, the CSV line]. Year files are sorted by date, so reading stops after the month.
 async function monthRows(key) {
   if (pointCache.key === key) return pointCache.rows;
   const [region, ym] = key.split("/"), rows = [];
   await eachLines("data/hotspots/" + region + "/" + ym.slice(0, 4) + ".csv.gz", lines => {
     for (const line of lines) {
       const m = line.slice(0, 7);
-      if (m === ym) { const f = line.split(","); rows.push([+f[2], +f[3], f[10] === "1", f[4], +f[0].slice(8, 10)]); }
+      if (m === ym) { const f = line.split(","); rows.push([+f[2], +f[3], f[10] === "1", f[4], +f[0].slice(8, 10), line]); }
       else if (m > ym && m[0] !== "a") return false;   // past the month ("acq_date" is the header)
     }
   });
@@ -1568,11 +1762,12 @@ function footprint(lat, lon, side) {
 async function drawPoints() {
   if (!map) return;
   const token = ++pointToken, note = $("mapview"), day = level() === "day", when = day ? "on " + dayName(selDay) : "in " + (selected ? monthName(selected) : "");
-  layers.points.clearLayers();
-  if (!(pointsOn || day) || !selected) return;
-  if (!day && map.getZoom() < DETAIL_ZOOM) { note.textContent = "Zoom in further to see individual detections."; return; }
+  layers.points.clearLayers(); drawnRows = [];
+  const noTable = () => { if (tbl && tbl.mode !== "cell") hideTable(); };
+  if (!(pointsOn || day) || !selected) { noTable(); return; }
+  if (!day && map.getZoom() < DETAIL_ZOOM) { note.textContent = "Zoom in further to see individual detections."; noTable(); return; }
   const x = S.months.find(v => v.m === selected), pick = mapSensor(x);
-  if (!pick.s || (day ? !flyingOn(pick.s, selDay) : !pick.flying)) return;
+  if (!pick.s || (day ? !flyingOn(pick.s, selDay) : !pick.flying)) { noTable(); return; }
   let rows;
   try {
     if (pointCache.key !== D.region.id + "/" + selected) note.textContent = "Loading the detections for " + monthName(selected) + ".";
@@ -1580,7 +1775,10 @@ async function drawPoints() {
   } catch (e) { if (token === pointToken) note.textContent = "The detections for this " + (day ? "day" : "month") + " could not be loaded."; return; }
   if (token !== pointToken) return;
   layers.points.clearLayers();
-  const dd = day ? +selDay.slice(8) : 0, b = map.getBounds(), here = rows.filter(r => r[3] === pick.s && (!day || r[4] === dd) && b.contains([r[0], r[1]]));
+  const dd = day ? +selDay.slice(8) : 0, all = rows.filter(r => r[3] === pick.s && (!day || r[4] === dd));
+  // Coming from a daily bar or the Days button: move the map to where that day's detections are.
+  if (day && fitNext) { fitNext = false; if (all.length) { map.fitBounds(L.latLngBounds(all.map(r => [r[0], r[1]])).pad(.3), {maxZoom: 11, animate: false}); if (token !== pointToken) return; } }
+  const b = map.getBounds(), here = all.filter(r => b.contains([r[0], r[1]]));
   const n = Math.min(here.length, MAX_POINTS), step = here.length / n;
   // Square side in metres: the sensor's nadir footprint, but never under 5 pixels at this zoom.
   const mpp = 156543.03392 * Math.cos(b.getCenter().lat * Math.PI / 180) / Math.pow(2, map.getZoom());
@@ -1591,8 +1789,16 @@ async function drawPoints() {
     L.rectangle(footprint(r[0], r[1], side), r[2]
       ? {renderer: pointRenderer, color: "#111", weight: 1, fillColor: DETECTION_RED, fillOpacity: 1, interactive: false}
       : {renderer: pointRenderer, color: "#fff", weight: 2, dashArray: "3 2", fill: false, interactive: false}).addTo(layers.points);
-    drawn++; if (r[2]) counted++;
+    drawn++; if (r[2]) counted++; drawnRows.push(r);
   }
+  drawnSide = side;
+  // The table under the map lists every one of them, whatever the cap on drawn squares.
+  const cap = step > 1 ? " The map draws at most " + fmt(MAX_POINTS) + " squares in a view (" + fmt(drawn) + " of the " + fmt(here.length) + " in view now); this table and the download contain every one." : "";
+  const list = day ? all : here, nc = list.filter(r => r[2]).length, sat = SENSOR[pick.s];
+  setTable(day ? "day" : "view", list, day ? "Detections on " + dayName(selDay) : "Detections in this view, " + monthName(selected),
+    (list.length ? fmt(list.length) + " " + sat + (list.length === 1 ? " detection" : " detections") + (day ? " on " + dayName(selDay) + " (UTC date) across " + D.region.name : " in the part of the map now in view") + ": " + fmt(nc) + " counted, " + fmt(list.length - nc) + " not counted."
+      : "No " + sat + " detection was recorded " + when + (day ? " across " + D.region.name : " in this view") + ". That is not the same as no fire.") + cap + (list.length ? " Select a time to see that detection on the map. The table lists the satellite shown on the map; change it in Layers." : ""),
+    "kahu-ahi_" + D.region.id + "_" + (day ? selDay : selected + "_view") + "_" + pick.s + ".csv");
   note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view " + when + ". Zoom in to see them all. "
       : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view " + when + ". ") + fmt(counted) + " counted (red squares), " + fmt(drawn - counted) + " not counted (hollow dashed squares: low confidence or a non-fire heat source)."
     : "No " + SENSOR[pick.s] + " detection was recorded in this view " + when + ". That does not mean nothing burned.")
@@ -1711,6 +1917,8 @@ $("outline").addEventListener("change", e => { if (map) toggleLayer(layers.box, 
 $("layersbtn").addEventListener("click", () => setLayersOpen($("layersbtn").getAttribute("aria-expanded") !== "true"));
 $("whole").addEventListener("click", () => { clearArea(); });
 $("allyears").addEventListener("click", () => showAllYears());
+$("detmore").addEventListener("click", () => { if (tbl) { tbl.limit += TABLE_STEP; drawTable(); } });
+$("detcsv").addEventListener("click", downloadTable);
 $("areaform").addEventListener("submit", e => {
   e.preventDefault();
   const v = ["aw", "as", "ae", "an"].map(id => parseFloat($(id).value));
