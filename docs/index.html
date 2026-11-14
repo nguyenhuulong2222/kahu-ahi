@@ -75,6 +75,8 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .legtitle{flex-basis:100%}
 button.linkish{all:unset;cursor:pointer;color:var(--action);text-decoration:underline}
 button.linkish:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+/* A thin dark halo around the cells and detections keeps them readable on bright imagery. */
+#map .leaflet-cells-pane canvas,#map .leaflet-pts-pane canvas{filter:drop-shadow(0 0 1px rgba(0,0,0,.85)) drop-shadow(0 0 .5px rgba(0,0,0,.85))}
 .celltip{font:600 .85rem/1.3 var(--font);width:max-content;max-width:min(260px,70vw);white-space:normal}
 #map.drawing{cursor:crosshair;touch-action:none}
 #map.drawing .leaflet-interactive{cursor:crosshair}
@@ -133,6 +135,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     </div>
     <p id="mapsum" aria-live="polite">Loading the map.</p>
     <p class="note" id="mapview" aria-live="polite"></p>
+    <p class="note" id="basenote" aria-live="polite"></p>
     <div id="map" aria-label="Map of the selected month's fire detections. The text above the map describes what it shows." aria-describedby="mapsum"></div>
     <div class="legend" id="maplegend"></div>
     <details id="topcells"><summary>Cells with the most detections in this view</summary><div></div></details>
@@ -203,6 +206,10 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 
 <script>
 "use strict";
+// Public, referrer-restricted basemap key (ArcGIS Location Platform, basemap privileges only, allowed
+// referrers https://nguyenhuulong2222.github.io and http://localhost). Safe to ship in a static page; not a secret.
+// Leave it empty and the map uses OpenStreetMap at close zoom instead.
+const ESRI_API_KEY = "AAPTaxdkSlG7DTxMFLwpQRDJ8Qw..a6Lg3CVz1js8C9AJ5Awj6dDhGnlk2WZzFV2S0M8RBlCVb9yvAquZsvrdCRSyPdqMBm7MMc-zHUdnQrrD8JDehH-bALR4MPw2WsFw9JWZ2zVswIiXmFd_7-VrvB1ooa_rQ_nsBSuMJ4q6ZzEEEQLS6AaFX2EvGyQjlHDhteJlBfA14AJ6mFS-MPqTB8GhG_ZGTsOb-ZccMD36-vg84GishtSCS_I6JaFUqazfSPRIdO7UBtUhx4GPukeB1JpOAT1_VRtL7vqc";
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const SENSOR = {MODIS_AQUA:"MODIS Aqua", MODIS_TERRA:"MODIS Terra", VIIRS_SNPP:"VIIRS Suomi NPP", VIIRS_NOAA20:"VIIRS NOAA-20", VIIRS:"VIIRS"};
 const STATUS = {
@@ -657,7 +664,7 @@ function setupMap() {
     $("mapsum").textContent = "The map could not be loaded in this browser. The calendar, the comparisons and the download still work, and an area can be typed below.";
     return;
   }
-  map = L.map("map", {zoomSnap: .5, zoomAnimation: !REDUCE, fadeAnimation: !REDUCE, markerZoomAnimation: !REDUCE, inertia: !REDUCE, maxZoom: 13, minZoom: 3});
+  map = L.map("map", {zoomSnap: .5, zoomAnimation: !REDUCE, fadeAnimation: !REDUCE, markerZoomAnimation: !REDUCE, inertia: !REDUCE, maxZoom: 15, minZoom: 3});
   // Panes, bottom to top: basemap, coastlines and borders, grid cells, place labels, outlines, detections.
   map.createPane("refs").style.zIndex = 250;
   map.createPane("cells").style.zIndex = 410;
@@ -674,7 +681,12 @@ function setupMap() {
     {maxNativeZoom: 9, maxZoom: 8, pane: "refs", attribution: OSM_ATTR}).addTo(map);
   L.tileLayer(GIBS + "Reference_Labels/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
     {maxNativeZoom: 9, maxZoom: 8, pane: "labels"}).addTo(map);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {minZoom: 9, maxZoom: 13, attribution: OSM_ATTR}).addTo(map);
+  // Zoom 9 and closer: Esri World Imagery with Esri's reference labels when it works, colour OpenStreetMap otherwise.
+  // OpenStreetMap stays underneath until the imagery has drawn, so the map is never blank.
+  deep.osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {minZoom: 9, maxZoom: 15, attribution: OSM_ATTR}).addTo(map);
+  map.createPane("esri").style.zIndex = 210;
+  map.getPane("esri").style.pointerEvents = "none";
+  map.on("zoomend", syncDeepZoom);
   ["mask", "cells", "box", "area", "hover", "points"].forEach(k => layers[k] = L.layerGroup().addTo(map));
   map.on("moveend", onView);
   map.on("click", e => { if (!drawing) showCell(cellKey(e.latlng), true); });
@@ -685,6 +697,77 @@ function setupMap() {
   });
   map.on("mouseout", () => layers.hover.clearLayers());
   setupDrawing();
+}
+
+// ---------- close-zoom basemap: Esri World Imagery, with OpenStreetMap as the fallback ----------
+// The Esri libraries (maplibre is bundled in esri-leaflet-vector) load only the first time the map reaches zoom 9.
+const ESRI_LIBS = [
+  ["https://cdn.jsdelivr.net/npm/esri-leaflet@3.0.19/dist/esri-leaflet.js", "sha384-2EpnechKmjshAhcJgZr0/dexkJdbcRJm+qsQtCjFsfBP/u5HZmrSa9lpmD7u2t5T"],
+  ["https://cdn.jsdelivr.net/npm/esri-leaflet-vector@4.3.2/dist/esri-leaflet-vector.js", "sha384-mHZ6EpQireK/7bmjGMfM/OwDdnR9QSQY0o6HKLzCjiekUEgSuaEr03W+1G7FFn31"],
+];
+const ESRI_TIMEOUT_MS = 15000;
+const deep = {osm: null, esri: null, state: "idle", timer: 0, errors: 0, gl: null};   // state: idle, loading, on, failed
+
+function deepZoom() { return !!map && Math.round(map.getZoom()) >= 9; }
+function loadScript([src, integrity]) {
+  return new Promise((ok, fail) => {
+    const s = el("script", {src, integrity, crossorigin: "anonymous"});
+    s.onload = ok; s.onerror = fail;
+    document.head.append(s);
+  });
+}
+function syncDeepZoom() {
+  if (!deepZoom()) { if (deep.esri && map.hasLayer(deep.esri)) map.removeLayer(deep.esri); return; }
+  if (!ESRI_API_KEY || deep.state === "failed") return;   // OpenStreetMap only
+  if (deep.state === "idle") startEsri();
+  else if (deep.esri && !map.hasLayer(deep.esri)) addEsri();
+}
+function startEsri() {
+  deep.state = "loading";
+  deep.timer = setTimeout(() => esriFailed("did not load in time"), ESRI_TIMEOUT_MS);
+  loadScript(ESRI_LIBS[0]).then(() => loadScript(ESRI_LIBS[1])).then(() => {
+    if (deep.state !== "loading") return;
+    deep.esri = L.esri.Vector.vectorBasemapLayer("arcgis/imagery", {token: ESRI_API_KEY, pane: "esri"});
+    addEsri();
+  }).catch(() => esriFailed("could not be loaded"));
+}
+function addEsri() {
+  if (!deepZoom() || deep.state === "failed") return;
+  if (!map.hasLayer(deep.osm)) deep.osm.addTo(map);
+  try { deep.esri.addTo(map); } catch (e) { esriFailed("cannot be drawn in this browser"); return; }
+  whenGl(gl => gl.once("idle", () => {
+    if (deep.state === "loading") { deep.state = "on"; clearTimeout(deep.timer); }
+    if (deep.state === "on" && map.hasLayer(deep.esri)) {
+      map.removeLayer(deep.osm);
+      // Esri fills in "Powered by Esri" and the imagery credits on the next moveend; give it one now.
+      map.fire("moveend");
+    }
+  }));
+}
+// The maplibre map inside the Esri layer exists only after the layer is added; wait for it, then watch its errors.
+function whenGl(fn) {
+  const t0 = Date.now();
+  (function poll() {
+    if (deep.state === "failed") return;
+    const gl = deep.esri && deep.esri._maplibreGL && deep.esri._maplibreGL._glMap;
+    if (!gl) { if (Date.now() - t0 < ESRI_TIMEOUT_MS) setTimeout(poll, 100); return; }
+    if (deep.gl !== gl) {
+      deep.gl = gl;
+      gl.on("error", e => {
+        const st = e && e.error && e.error.status;
+        if (st === 401 || st === 403) esriFailed("was refused (HTTP " + st + ")");
+        else if (++deep.errors >= 8) esriFailed("returned errors");
+      });
+    }
+    fn(gl);
+  })();
+}
+function esriFailed(reason) {
+  if (deep.state === "failed") return;
+  deep.state = "failed"; clearTimeout(deep.timer);
+  if (deep.esri && map.hasLayer(deep.esri)) map.removeLayer(deep.esri);
+  if (!map.hasLayer(deep.osm)) deep.osm.addTo(map);
+  $("basenote").textContent = "Satellite imagery for close zoom " + reason + ", so OpenStreetMap is shown instead.";
 }
 
 function drawRegionOnMap() {

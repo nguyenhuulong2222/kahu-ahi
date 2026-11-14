@@ -192,7 +192,9 @@ python3 pipeline/grid.py      --id california --bbox -124.5 32.5 -114.0 42.0
 
 Hawaiʻi uses `--bbox -160.6 18.7 -154.5 22.5`; the Vietnam region `--bbox 102.1 8.4 109.5 23.4`.
 
-The web app is the static folder `docs/`: `python3 -m http.server -d docs 8000`, then open http://localhost:8000. It requests only its own files, Leaflet from cdnjs, and basemap tiles: NASA GIBS (Blue Marble with coastline, border and label overlays) up to zoom 8 and OpenStreetMap above it. No API keys, and no FIRMS or other data API is called from the page.
+The web app is the static folder `docs/`: `python3 -m http.server -d docs 8000`, then open http://localhost:8000. It requests only its own files, Leaflet from cdnjs, and basemap tiles: NASA GIBS (Blue Marble with coastline, border and label overlays) up to zoom 8, and from zoom 9 Esri World Imagery with Esri's reference labels (its two libraries load from jsDelivr only then), falling back to OpenStreetMap if Esri is unavailable. No FIRMS or other data API is called from the page.
+
+The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location Platform, basemap privileges only, restricted to the referrers https://nguyenhuulong2222.github.io and http://localhost. It is meant to be shipped in a web page and is not a secret. Leave it empty and the page uses OpenStreetMap at close zoom.
 
 ### Map display
 

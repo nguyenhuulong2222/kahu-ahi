@@ -64,6 +64,11 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Pages read when choosing t
 
 - NASA GIBS API documentation, including the acknowledgment text — https://nasa-gibs.github.io/gibs-api-docs/ and https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api
 - NASA GIBS WMTS capabilities (EPSG:3857), for layer names, titles and tile matrix sets — https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/1.0.0/WMTSCapabilities.xml
+- Esri ArcGIS static basemap tiles service (checked; imagery not offered there) — https://developers.arcgis.com/rest/static-basemap-tiles/
+- Esri ArcGIS basemap styles service, used for World Imagery (style `arcgis/imagery`) — https://developers.arcgis.com/rest/basemap-styles/
+- Esri attribution guidance — https://developers.arcgis.com/documentation/esri-and-data-attribution/
+- Esri terms: Master Agreement — https://www.esri.com/en-us/legal/terms/full-master-agreement; Product-Specific Terms — https://www.esri.com/en-us/legal/terms/product-specific-scope-of-use
+- esri-leaflet and esri-leaflet-vector source and licences — https://github.com/Esri/esri-leaflet and https://github.com/Esri/esri-leaflet-vector
 - OpenStreetMap copyright and licence — https://www.openstreetmap.org/copyright
 - OSMF Tile Usage Policy — https://operations.osmfoundation.org/policies/tiles/
 - CARTO basemap terms (not used: free use requires a CARTO API key) — https://carto.com/legal/basemap-terms/ and https://github.com/CartoDB/basemap-styles
