@@ -202,6 +202,10 @@ The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location
 - Cells use the upper seven steps of the calendar's cividis ramp on the same log scale: the two darkest steps disappear on the dark satellite imagery. The legend lists the count range of each step, worked out with the same function that colours the cells.
 - Cells are drawn without gaps at 82% opacity so coastlines show through. Pointing at a cell, tapping it, or focusing a row of the "cells with the most detections" table outlines the cell and shows its count, so no value is given by colour alone.
 - Outside the region box the map is dimmed slightly; nothing is drawn there.
+- Layout: the map sits at the top of the page, full width, with the timeline along its bottom edge (about 70% of the window together). "Expand map" fills the window with the browser's Fullscreen API, or with a fixed-position fallback where that API is missing (iPhone Safari); Esc or "Close full screen" returns.
+- The timeline steps by month and by year and has an "All years" position. It and the calendar drive the same selection, so either one moves the other.
+- The Layers panel (top left) holds the basemap choice, the satellite switch, grid cells or individual detections, and the region outline. The legend (bottom right) gives the colour steps and units; a scale bar and the latitude and longitude under the pointer (or of the map centre) are at bottom left.
+- Individual detections are drawn as squares of the sensor's nadir footprint, about 1 km for MODIS and 375 m for VIIRS, never smaller than 5 pixels.
 
 ## License
 

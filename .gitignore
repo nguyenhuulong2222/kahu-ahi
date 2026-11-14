@@ -6,3 +6,5 @@ __pycache__/
 node_modules/
 # raw FIRMS downloads stay local (large); processed outputs are committed
 data/raw/
+# Playwright test artifacts
+.playwright-mcp/

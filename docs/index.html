@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
 <title>Kahu Ahi: one fire record across MODIS and VIIRS</title>
 <meta name="description" content="A burning-activity calendar that puts VIIRS fire detections on the MODIS Aqua scale and shows how far that can be trusted.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -15,7 +16,8 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--font)}
-main{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
+main{padding:24px 0 64px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
 h1{font-size:clamp(1.7rem,4.6vw,2.6rem);line-height:1.12;margin:0 0 8px;font-weight:700;letter-spacing:-.01em}
 h2{font-size:1.25rem;margin:0 0 4px;font-weight:700}
 p{margin:0 0 12px;max-width:68ch}
@@ -67,7 +69,40 @@ button.secondary{background:#fff;color:var(--action)}
 button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
 .banner strong{font-weight:700}
 /* map */
-#map{height:520px;margin-top:12px;border:1px solid var(--line);border-radius:4px;isolation:isolate;background:#0d1b2a}
+/* map shell: full width, about 70% of the window, timeline along its bottom edge */
+.mapshell{position:relative;margin-top:16px;padding:0;border-radius:0;border:0;background:#0d1b2a}
+/* header: title beside the controls on wide screens, so the map starts high on the page */
+.pagehead h1{font-size:clamp(1.45rem,3.2vw,2.1rem)}
+.pagehead .lede{font-size:1rem;margin-bottom:0}
+.pagehead .controls{margin-top:12px}
+@media(min-width:960px){.pagehead .lede{max-width:none}.pagehead #through{max-width:40ch}}
+/* The map and the timeline together take about 70% of the window height. */
+.mapshell{--tl-h:56px}
+#map{height:calc(70vh - var(--tl-h));min-height:380px;isolation:isolate;background:#0d1b2a}
+.mapshell:fullscreen,.mapshell.is-full{display:flex;flex-direction:column;width:100%;height:100%;margin:0;border:0}
+.mapshell.is-full{position:fixed;inset:0;z-index:2000;height:100dvh}
+.mapshell:fullscreen #map,.mapshell.is-full #map{flex:1;height:auto;min-height:0}
+.timeline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;background:#14213d;color:#fff}
+.tl-btn{min-height:40px;padding:6px 10px;background:#fff;color:var(--ink);border-color:#fff;font-weight:600}
+.tl-btn[aria-pressed="true"]{background:#f2a900;color:#14213d;border-color:#f2a900}
+.tl-btn:disabled{opacity:.45}
+#tl-range{flex:1 1 240px;min-width:140px;min-height:32px;padding:0;border:0;background:transparent;accent-color:#f2a900}
+#tl-label{min-width:6.5em;font-weight:700;font-variant-numeric:tabular-nums}
+.mpanel{background:rgba(255,255,255,.96);color:var(--ink);border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.35);font:14px/1.4 var(--font);width:280px;max-width:calc(100vw - 96px)}
+.mpanel-head{all:unset;display:block;box-sizing:border-box;width:100%;padding:8px 12px;font-weight:700;cursor:pointer}
+.mpanel-head:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+#layersbody{padding:0 12px 10px}
+#layersbody select{width:100%;min-height:40px;padding:6px 8px;font-size:14px}
+#layersbody label{color:var(--ink);font-size:13px;margin-top:6px}
+label.inline{display:flex;align-items:center;gap:6px;font-size:14px;min-height:32px;cursor:pointer}
+label.inline input{min-height:auto;width:18px;height:18px;margin:0}
+.drawset{border:0;padding:0;margin:8px 0 0}
+.drawset legend{padding:0;font-size:13px;color:var(--ink)}
+#drawnote,#basehint{font-size:12px;margin:2px 0 6px}
+#legendpanel{width:340px}
+#legendpanel .legend{padding:0 12px 10px;margin:0;font-size:12.5px;color:var(--ink)}
+.mbtn{min-height:36px;padding:6px 12px;background:#fff;color:var(--ink);border:1px solid #8793a6;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.coordbox{background:rgba(255,255,255,.9);padding:2px 6px;font:12px/1.4 var(--font);font-variant-numeric:tabular-nums;border-radius:3px;color:var(--ink)}
 .steps{display:inline-flex;flex-wrap:wrap;gap:4px 10px}
 .step{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
 .chip{display:inline-block;width:22px;height:14px;border-radius:2px;background:#24303c;overflow:hidden}
@@ -91,14 +126,24 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 .coords input{width:100%}
 .areabar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:14px}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:4px}
-@media(max-width:600px){#map{height:380px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#layerspanel.collapsed,#legendpanel.collapsed{width:auto}
+@media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:340px}
+  .timeline{gap:6px}#tl-range{order:-1;flex-basis:100%}.tl-word{display:none}
+  .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
+  #allyears{order:1}#tl-py{order:2}#tl-pm{order:3}#tl-label{order:4;flex:1 1 auto;min-width:0;text-align:center}#tl-nm{order:5}#tl-ny{order:6}
+  #legendpanel{width:240px}
+  .leaflet-bottom.leaflet-left{bottom:36px}
+  .leaflet-control-attribution{font-size:10px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
 <main>
+<div class="wrap pagehead">
+  <div>
   <h1>Kahu Ahi: one fire record across two generations of satellites</h1>
   <p class="lede">MODIS has counted fires since 2000 and is near the end of its life. VIIRS took over in 2012 and sees several times more. This calendar puts both on one scale, and shows how far that scale can be trusted.</p>
+  </div>
 
   <div class="controls">
     <div><label for="region">Region</label>
@@ -107,37 +152,57 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
       <select id="mode"><option value="count">Fire detections</option><option value="anom">Compared with the usual for that month</option></select></div>
     <p class="note" id="through" style="margin:0"></p>
   </div>
+</div>
 
-  <section aria-labelledby="h-cal">
-    <h2 id="h-cal">Burning calendar</h2>
-    <p class="note" id="calnote"></p>
-    <div id="banner"></div>
-    <div id="areabanner"></div>
-    <div class="calwrap"><table class="cal" id="cal"></table></div>
-    <div class="legend" id="legend"></div>
-    <div id="detail" aria-live="polite"><p class="note">Select a month to see what each satellite recorded.</p></div>
-  </section>
+<section class="mapshell" id="mapshell" aria-label="Map of fire detections">
+  <div id="map" aria-label="Map of fire detections. The text below the map describes what it shows." aria-describedby="mapsum"></div>
+  <!-- Moved into the map's corners by setupMap(); kept here so the page still makes sense without the map. -->
+  <div class="mpanel" id="layerspanel">
+    <button type="button" id="layersbtn" class="mpanel-head" aria-expanded="true" aria-controls="layersbody">Layers</button>
+    <div id="layersbody">
+      <label for="basemap">Basemap</label>
+      <select id="basemap">
+        <option value="auto">Automatic</option>
+        <option value="imagery">Satellite imagery</option>
+        <option value="street">Street map</option>
+      </select>
+      <p class="note" id="basehint">Automatic: NASA Blue Marble, then Esri satellite imagery from zoom 9.</p>
+      <label for="sensor">Satellite</label>
+      <select id="sensor">
+        <option value="auto">Harmonized (as the calendar)</option>
+        <option value="MODIS_AQUA">MODIS Aqua</option>
+        <option value="MODIS_TERRA">MODIS Terra, as recorded</option>
+        <option value="VIIRS_SNPP">VIIRS S-NPP, as recorded</option>
+        <option value="VIIRS_NOAA20">VIIRS NOAA-20, as recorded</option>
+      </select>
+      <fieldset class="drawset"><legend>Draw</legend>
+        <label class="inline"><input type="radio" name="draw" id="drawgrid" value="grid" checked> Grid cells (0.1°)</label>
+        <label class="inline"><input type="radio" name="draw" id="drawpts" value="pts" disabled> Individual detections</label>
+      </fieldset>
+      <p class="note" id="drawnote"></p>
+      <label class="inline"><input type="checkbox" id="outline" checked> Region outline</label>
+    </div>
+  </div>
+  <button type="button" id="expand" class="mbtn" aria-pressed="false">Expand map</button>
+  <details class="mpanel" id="legendpanel" open><summary class="mpanel-head">Legend</summary><div class="legend" id="maplegend"></div></details>
+  <div class="timeline" role="group" aria-label="Time shown on the map">
+    <button type="button" id="allyears" class="tl-btn" aria-pressed="true">All years</button>
+    <button type="button" id="tl-py" class="tl-btn" aria-label="Previous year">« <span class="tl-word">Year</span></button>
+    <button type="button" id="tl-pm" class="tl-btn" aria-label="Previous month">‹ <span class="tl-word">Month</span></button>
+    <input type="range" id="tl-range" min="0" max="0" value="0" step="1" aria-label="Month shown on the map; the first position is all years">
+    <button type="button" id="tl-nm" class="tl-btn" aria-label="Next month"><span class="tl-word">Month</span> ›</button>
+    <button type="button" id="tl-ny" class="tl-btn" aria-label="Next year"><span class="tl-word">Year</span> »</button>
+    <output id="tl-label" for="tl-range" aria-live="polite">All years</output>
+  </div>
+</section>
 
+<div class="wrap">
   <section aria-labelledby="h-map">
     <h2 id="h-map">Where it burned</h2>
-    <p class="note">All complete years, or the month selected in the calendar, on a grid of 0.1° cells (about 10 km). Point at a cell, or select one in the table below the map, to see its count. Only the region inside the outlined box is supported.</p>
-    <div class="controls" style="margin-top:8px">
-      <div><label for="sensor">Satellite on the map</label>
-        <select id="sensor">
-          <option value="auto">Same as the calendar (harmonized)</option>
-          <option value="MODIS_AQUA">MODIS Aqua</option>
-          <option value="MODIS_TERRA">MODIS Terra, as recorded</option>
-          <option value="VIIRS_SNPP">VIIRS Suomi NPP, as recorded</option>
-          <option value="VIIRS_NOAA20">VIIRS NOAA-20, as recorded</option>
-        </select></div>
-      <button id="allyears" type="button" class="secondary" aria-pressed="true">All years</button>
-      <button id="pts" type="button" class="secondary" aria-pressed="false" disabled>Show individual detections</button>
-    </div>
+    <p class="note">All complete years, or one month chosen in the calendar or on the timeline, on a grid of 0.1° cells (about 10 km). Point at a cell, or select one in the table below, to see its count. Only the region inside the outlined box is supported.</p>
     <p id="mapsum" aria-live="polite">Loading the map.</p>
     <p class="note" id="mapview" aria-live="polite"></p>
     <p class="note" id="basenote" aria-live="polite"></p>
-    <div id="map" aria-label="Map of the selected month's fire detections. The text above the map describes what it shows." aria-describedby="mapsum"></div>
-    <div class="legend" id="maplegend"></div>
     <details id="topcells"><summary>Cells with the most detections in this view</summary><div></div></details>
 
     <h3 style="font-size:1.05rem;margin:22px 0 4px">Choose an area</h3>
@@ -158,6 +223,16 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
       </fieldset>
     </form>
     <p class="note" id="areanote" aria-live="polite" style="margin-top:10px"></p>
+  </section>
+
+  <section aria-labelledby="h-cal">
+    <h2 id="h-cal">Burning calendar</h2>
+    <p class="note" id="calnote"></p>
+    <div id="banner"></div>
+    <div id="areabanner"></div>
+    <div class="calwrap"><table class="cal" id="cal"></table></div>
+    <div class="legend" id="legend"></div>
+    <div id="detail" aria-live="polite"><p class="note">Select a month to see what each satellite recorded.</p></div>
   </section>
 
   <div class="two">
@@ -202,6 +277,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <footer>
     <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; street map above zoom 8 and the GIBS overlays © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS). Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p>
   </footer>
+</div>
 </main>
 
 <script>
@@ -664,8 +740,10 @@ function setupMap() {
     $("mapsum").textContent = "The map could not be loaded in this browser. The calendar, the comparisons and the download still work, and an area can be typed below.";
     return;
   }
-  map = L.map("map", {zoomSnap: .5, zoomAnimation: !REDUCE, fadeAnimation: !REDUCE, markerZoomAnimation: !REDUCE, inertia: !REDUCE, maxZoom: 15, minZoom: 3});
-  // Panes, bottom to top: basemap, coastlines and borders, grid cells, place labels, outlines, detections.
+  map = L.map("map", {zoomSnap: .5, zoomControl: false, zoomAnimation: !REDUCE, fadeAnimation: !REDUCE, markerZoomAnimation: !REDUCE, inertia: !REDUCE, maxZoom: 15, minZoom: 3});
+  // Panes, bottom to top: basemap, Esri imagery, coastlines and borders, grid cells, place labels, outlines, detections.
+  map.createPane("esri").style.zIndex = 210;
+  map.getPane("esri").style.pointerEvents = "none";
   map.createPane("refs").style.zIndex = 250;
   map.createPane("cells").style.zIndex = 410;
   map.createPane("labels").style.zIndex = 430;
@@ -674,41 +752,78 @@ function setupMap() {
   map.createPane("pts").style.zIndex = 460;
   cellRenderer = L.canvas({pane: "cells", padding: .3});
   pointRenderer = L.canvas({pane: "pts", padding: .3});
-  // NASA GIBS up to its native zoom 8; colour OpenStreetMap from zoom 9 for street-level context.
-  L.tileLayer(GIBS + "BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg",
-    {maxNativeZoom: 8, maxZoom: 8, attribution: GIBS_ATTR}).addTo(map);
-  L.tileLayer(GIBS + "Reference_Features/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
-    {maxNativeZoom: 9, maxZoom: 8, pane: "refs", attribution: OSM_ATTR}).addTo(map);
-  L.tileLayer(GIBS + "Reference_Labels/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
-    {maxNativeZoom: 9, maxZoom: 8, pane: "labels"}).addTo(map);
-  // Zoom 9 and closer: Esri World Imagery with Esri's reference labels when it works, colour OpenStreetMap otherwise.
-  // OpenStreetMap stays underneath until the imagery has drawn, so the map is never blank.
-  deep.osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {minZoom: 9, maxZoom: 15, attribution: OSM_ATTR}).addTo(map);
-  map.createPane("esri").style.zIndex = 210;
-  map.getPane("esri").style.pointerEvents = "none";
-  map.on("zoomend", syncDeepZoom);
+  // Basemap layers; syncBasemap() decides which are on the map.
+  base.gibs = L.tileLayer(GIBS + "BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg",
+    {maxNativeZoom: 8, maxZoom: 8, attribution: GIBS_ATTR});
+  base.refs = L.tileLayer(GIBS + "Reference_Features/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
+    {maxNativeZoom: 9, maxZoom: 8, pane: "refs", attribution: OSM_ATTR});
+  base.labels = L.tileLayer(GIBS + "Reference_Labels/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
+    {maxNativeZoom: 9, maxZoom: 8, pane: "labels"});
+  deep.osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 15, attribution: OSM_ATTR});
   ["mask", "cells", "box", "area", "hover", "points"].forEach(k => layers[k] = L.layerGroup().addTo(map));
+
+  // Corners. Top left: layers. Top right: expand, then zoom. Bottom left: scale and cursor position. Bottom right: legend.
+  domControl($("layerspanel"), "topleft");
+  domControl($("expand"), "topright");
+  L.control.zoom({position: "topright"}).addTo(map);
+  L.control.scale({position: "bottomleft", maxWidth: 140}).addTo(map);
+  coordBox = el("div", {class: "coordbox", "aria-hidden": "true"});
+  domControl(coordBox, "bottomleft");
+  domControl($("legendpanel"), "bottomright");
+  const lp = $("legendpanel");
+  lp.addEventListener("toggle", () => lp.classList.toggle("collapsed", !lp.open));
+  if (matchMedia("(max-width: 600px)").matches) { setLayersOpen(false); lp.open = false; lp.classList.add("collapsed"); }
+
+  syncBasemap();
+  map.on("zoomend", syncBasemap);
   map.on("moveend", onView);
   map.on("click", e => { if (!drawing) showCell(cellKey(e.latlng), true); });
   let frame = 0;
   map.on("mousemove", e => {
+    coordBox.textContent = latLonText(e.latlng);
     if (drawing || frame) return;
     frame = requestAnimationFrame(() => { frame = 0; const k = cellKey(e.latlng); if (shown.has(k)) showCell(k, false); else layers.hover.clearLayers(); });
   });
-  map.on("mouseout", () => layers.hover.clearLayers());
-  setupDrawing();
+  map.on("mouseout", () => { layers.hover.clearLayers(); coordBox.textContent = "Centre " + latLonText(map.getCenter()); });
+  map.on("moveend", () => { if (!coordBox.matches(":hover")) coordBox.textContent = "Centre " + latLonText(map.getCenter()); });
+  setupDrawing(); setupExpand(); setupTimeline();
 }
 
-// ---------- close-zoom basemap: Esri World Imagery, with OpenStreetMap as the fallback ----------
-// The Esri libraries (maplibre is bundled in esri-leaflet-vector) load only the first time the map reaches zoom 9.
+// Put an element from the page into a map corner, without the map panning or zooming when it is used.
+function domControl(node, position) {
+  const C = L.Control.extend({onAdd() { L.DomEvent.disableClickPropagation(node); L.DomEvent.disableScrollPropagation(node); return node; }});
+  return new C({position}).addTo(map);
+}
+let coordBox = null;
+function latLonText(ll) { return Math.abs(ll.lat).toFixed(3) + "° " + (ll.lat >= 0 ? "N" : "S") + ", " + Math.abs(ll.lng).toFixed(3) + "° " + (ll.lng >= 0 ? "E" : "W"); }
+function setLayersOpen(open) { $("layersbtn").setAttribute("aria-expanded", String(open)); $("layersbody").hidden = !open; $("layerspanel").classList.toggle("collapsed", !open); }
+
+// ---------- basemap: NASA GIBS, Esri World Imagery, OpenStreetMap ----------
+// Automatic: GIBS Blue Marble at zoom 8 and below, Esri World Imagery (with Esri's reference labels) at 9 and closer.
+// OpenStreetMap is used whenever Esri is unavailable, and underneath Esri until the imagery has drawn, so the map is never blank.
+// The Esri libraries (maplibre is bundled in esri-leaflet-vector) load only the first time imagery is needed.
 const ESRI_LIBS = [
   ["https://cdn.jsdelivr.net/npm/esri-leaflet@3.0.19/dist/esri-leaflet.js", "sha384-2EpnechKmjshAhcJgZr0/dexkJdbcRJm+qsQtCjFsfBP/u5HZmrSa9lpmD7u2t5T"],
   ["https://cdn.jsdelivr.net/npm/esri-leaflet-vector@4.3.2/dist/esri-leaflet-vector.js", "sha384-mHZ6EpQireK/7bmjGMfM/OwDdnR9QSQY0o6HKLzCjiekUEgSuaEr03W+1G7FFn31"],
 ];
 const ESRI_TIMEOUT_MS = 15000;
-const deep = {osm: null, esri: null, state: "idle", timer: 0, errors: 0, gl: null};   // state: idle, loading, on, failed
+const base = {gibs: null, refs: null, labels: null};
+const deep = {osm: null, esri: null, state: "idle", timer: 0, errors: 0, gl: null, drawn: false};   // state: idle, loading, on, failed
 
-function deepZoom() { return !!map && Math.round(map.getZoom()) >= 9; }
+function toggleLayer(layer, on) { if (on && !map.hasLayer(layer)) layer.addTo(map); else if (!on && map.hasLayer(layer)) map.removeLayer(layer); }
+function syncBasemap() {
+  if (!map || !map._loaded) return;   // no view yet: drawRegionOnMap() calls this once the region is fitted
+  const mode = $("basemap").value, z = Math.round(map.getZoom());
+  const gibs = mode === "auto" && z <= 8;
+  [base.gibs, base.refs, base.labels].forEach(l => toggleLayer(l, gibs));
+  const esri = !!ESRI_API_KEY && deep.state !== "failed" && (mode === "imagery" || (mode === "auto" && z >= 9));
+  if (esri) {
+    if (deep.state === "idle") startEsri();
+    else if (deep.esri && !map.hasLayer(deep.esri)) addEsri();
+  } else if (deep.esri && map.hasLayer(deep.esri)) { map.removeLayer(deep.esri); deep.drawn = false; }
+  toggleLayer(deep.osm, mode === "street" || (!gibs && (!esri || !deep.drawn)));
+  if (mode === "imagery" && !ESRI_API_KEY) $("basenote").textContent = "Satellite imagery needs the Esri basemap key, which this copy of the page does not have, so OpenStreetMap is shown instead.";
+}
 function loadScript([src, integrity]) {
   return new Promise((ok, fail) => {
     const s = el("script", {src, integrity, crossorigin: "anonymous"});
@@ -716,29 +831,23 @@ function loadScript([src, integrity]) {
     document.head.append(s);
   });
 }
-function syncDeepZoom() {
-  if (!deepZoom()) { if (deep.esri && map.hasLayer(deep.esri)) map.removeLayer(deep.esri); return; }
-  if (!ESRI_API_KEY || deep.state === "failed") return;   // OpenStreetMap only
-  if (deep.state === "idle") startEsri();
-  else if (deep.esri && !map.hasLayer(deep.esri)) addEsri();
-}
 function startEsri() {
   deep.state = "loading";
   deep.timer = setTimeout(() => esriFailed("did not load in time"), ESRI_TIMEOUT_MS);
   loadScript(ESRI_LIBS[0]).then(() => loadScript(ESRI_LIBS[1])).then(() => {
     if (deep.state !== "loading") return;
     deep.esri = L.esri.Vector.vectorBasemapLayer("arcgis/imagery", {token: ESRI_API_KEY, pane: "esri"});
-    addEsri();
+    syncBasemap();
   }).catch(() => esriFailed("could not be loaded"));
 }
 function addEsri() {
-  if (!deepZoom() || deep.state === "failed") return;
-  if (!map.hasLayer(deep.osm)) deep.osm.addTo(map);
+  deep.drawn = false;
   try { deep.esri.addTo(map); } catch (e) { esriFailed("cannot be drawn in this browser"); return; }
   whenGl(gl => gl.once("idle", () => {
     if (deep.state === "loading") { deep.state = "on"; clearTimeout(deep.timer); }
     if (deep.state === "on" && map.hasLayer(deep.esri)) {
-      map.removeLayer(deep.osm);
+      deep.drawn = true;
+      syncBasemap();
       // Esri fills in "Powered by Esri" and the imagery credits on the next moveend; give it one now.
       map.fire("moveend");
     }
@@ -764,10 +873,61 @@ function whenGl(fn) {
 }
 function esriFailed(reason) {
   if (deep.state === "failed") return;
-  deep.state = "failed"; clearTimeout(deep.timer);
+  deep.state = "failed"; deep.drawn = false; clearTimeout(deep.timer);
   if (deep.esri && map.hasLayer(deep.esri)) map.removeLayer(deep.esri);
-  if (!map.hasLayer(deep.osm)) deep.osm.addTo(map);
-  $("basenote").textContent = "Satellite imagery for close zoom " + reason + ", so OpenStreetMap is shown instead.";
+  syncBasemap();
+  $("basenote").textContent = "Satellite imagery " + reason + ", so OpenStreetMap is shown instead.";
+}
+
+// ---------- expand to the whole window ----------
+// The Fullscreen API where the browser has it; elsewhere (iPhone Safari) the map is fixed over the page.
+function setupExpand() {
+  const shell = $("mapshell"), btn = $("expand");
+  const native = () => document.fullscreenElement === shell || document.webkitFullscreenElement === shell;
+  const isOpen = () => native() || shell.classList.contains("is-full");
+  const update = () => {
+    const open = isOpen();
+    btn.textContent = open ? "Close full screen" : "Expand map";
+    btn.setAttribute("aria-pressed", String(open));
+    setTimeout(() => map.invalidateSize(), 50);
+  };
+  const enterFallback = () => { shell.classList.add("is-full"); document.documentElement.style.overflow = "hidden"; update(); btn.focus(); };
+  const exitFallback = () => { shell.classList.remove("is-full"); document.documentElement.style.overflow = ""; update(); };
+  btn.addEventListener("click", () => {
+    if (native()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    if (shell.classList.contains("is-full")) { exitFallback(); return; }
+    const req = shell.requestFullscreen || shell.webkitRequestFullscreen;
+    if (!req) { enterFallback(); return; }
+    try { const p = req.call(shell); if (p && p.catch) p.catch(enterFallback); } catch (e) { enterFallback(); }
+  });
+  document.addEventListener("fullscreenchange", update);
+  document.addEventListener("webkitfullscreenchange", update);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !drawing && shell.classList.contains("is-full")) exitFallback(); });
+}
+
+// ---------- timeline: all years, then every month of the record ----------
+// It moves the same state as the calendar: selectMonth() and showAllYears(). drawMap() keeps it in step.
+function setupTimeline() {
+  const r = $("tl-range");
+  let wait = 0;
+  const go = i => { i = Math.max(0, Math.min(D.months.length, i)); if (i === 0) { if (selected) showAllYears(); } else if (D.months[i - 1].m !== selected) selectMonth(D.months[i - 1].m); };
+  const here = () => selected ? D.months.findIndex(x => x.m === selected) + 1 : 0;
+  // From "all years", stepping back goes to the newest month and stepping forward to the oldest.
+  const step = n => { if (!D) return; const i = here(); go(i === 0 ? (n < 0 ? D.months.length : 1) : i + n); };
+  r.addEventListener("input", () => { $("tl-label").textContent = timelineText(+r.value); clearTimeout(wait); wait = setTimeout(() => go(+r.value), 250); });
+  r.addEventListener("change", () => { clearTimeout(wait); go(+r.value); });
+  $("tl-pm").addEventListener("click", () => step(-1)); $("tl-nm").addEventListener("click", () => step(1));
+  $("tl-py").addEventListener("click", () => step(-12)); $("tl-ny").addEventListener("click", () => step(12));
+}
+function timelineText(i) { return i === 0 || !D ? "All years" : monthName(D.months[i - 1].m); }
+function updateTimeline() {
+  if (!D) return;
+  const r = $("tl-range"), n = D.months.length, i = selected ? D.months.findIndex(x => x.m === selected) + 1 : 0;
+  r.max = String(n); r.value = String(i);
+  r.setAttribute("aria-valuetext", timelineText(i));
+  $("tl-label").textContent = timelineText(i);
+  $("tl-pm").disabled = i === 1; $("tl-py").disabled = i === 1;
+  $("tl-nm").disabled = i === n; $("tl-ny").disabled = i === n;
 }
 
 function drawRegionOnMap() {
@@ -782,6 +942,7 @@ function drawRegionOnMap() {
   L.rectangle(regionBounds, {fill: false, color: "#000", opacity: .55, weight: 5, interactive: false}).addTo(layers.box);
   L.rectangle(regionBounds, {fill: false, color: "#fff", weight: 2, interactive: false}).addTo(layers.box);
   map.fitBounds(regionBounds, {animate: false, paddingTopLeft: [8, 8], paddingBottomRight: [8, 34]});
+  syncBasemap();
   updatePointsButton();
 }
 function drawAreaOnMap() {
@@ -858,7 +1019,8 @@ async function drawMap() {
     // Opaque cells with an outline in their own colour leave no gaps; the pane's opacity lets coastlines through.
     L.rectangle([[s, w], [s + .1, w + .1]], {renderer: cellRenderer, interactive: false, color: c, weight: 1, opacity: 1, fillColor: c, fillOpacity: 1}).addTo(layers.cells);
   });
-  map.getPane("cells").style.opacity = pointsOn ? .45 : CELL_OPACITY;
+  // With individual detections on, the grid is hidden so it does not cover the footprints.
+  map.getPane("cells").style.opacity = pointsOn ? 0 : CELL_OPACITY;
   shownInfo = {pick, name, when: x ? monthName(selected) : "total over " + pick.span};
   const where = area ? "inside the chosen area" : "across " + D.region.name;
   const [t, c] = area ? [areaTotal, areaCells] : [total, cells];
@@ -883,8 +1045,9 @@ function drawMapLegend(pick) {
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8d9097"}), "Dimmed: outside the region, not supported"));
   if (area) lg.append(el("span", {}, el("span", {class: "sw", style: "border:3px dashed #f2a900"}), "Chosen area"));
   if (pointsOn) {
-    lg.append(el("span", {}, el("span", {class: "dot", style: "background:#fff;border:2px solid #14213d"}), "Counted detection (filled dot)"));
-    lg.append(el("span", {}, el("span", {class: "dot", style: "border:2px dashed #b2182b"}), "Not counted (hollow dashed ring): low confidence or a non-fire heat source"));
+    lg.append(el("span", {}, el("span", {class: "sw", style: "background:#fff;border:1.5px solid #14213d;width:12px;height:12px"}), "Counted detection (filled square)"));
+    lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px dashed #b2182b;width:12px;height:12px"}), "Not counted (dashed outline): low confidence or a non-fire heat source"));
+    lg.append(el("span", {text: "Squares show the sensor's footprint at nadir: about 1 km for MODIS, 375 m for VIIRS (drawn at least 5 pixels wide)."}));
   }
 }
 
@@ -931,13 +1094,14 @@ function onView() {
   if (pointsOn) drawPoints();
 }
 
+// "Draw" in the layers panel: grid cells or individual detections (one state, pointsOn).
 function updatePointsButton() {
-  const btn = $("pts"), ok = map && selected && map.getZoom() >= DETAIL_ZOOM;
-  btn.disabled = !ok && !pointsOn;
-  btn.textContent = pointsOn ? "Hide individual detections" : !selected ? "Choose a month to show individual detections" : ok ? "Show individual detections" : "Zoom in to show individual detections";
-  btn.setAttribute("aria-pressed", String(pointsOn));
+  const ok = !!map && !!selected && map.getZoom() >= DETAIL_ZOOM;
+  $("drawpts").disabled = !ok && !pointsOn;
+  $("drawpts").checked = pointsOn; $("drawgrid").checked = !pointsOn;
+  $("drawnote").textContent = !selected ? "Individual detections: choose a month first." : !ok && !pointsOn ? "Individual detections: zoom in to level " + DETAIL_ZOOM + " or closer." : "";
 }
-function updateAllYearsButton() { $("allyears").setAttribute("aria-pressed", String(!selected)); }
+function updateAllYearsButton() { $("allyears").setAttribute("aria-pressed", String(!selected)); updateTimeline(); }
 function showAllYears() {
   selected = null; pointsOn = false;
   document.querySelectorAll(".cal td.sel").forEach(e => { e.classList.remove("sel"); e.firstChild.setAttribute("aria-pressed", "false"); });
@@ -977,6 +1141,13 @@ async function monthRows(key) {
   return rows;
 }
 
+// Nadir pixel size of each sensor, for drawing a detection as a square of roughly the area it stands for.
+const FOOTPRINT_M = {MODIS_AQUA: 1000, MODIS_TERRA: 1000, VIIRS_SNPP: 375, VIIRS_NOAA20: 375};
+function footprint(lat, lon, side) {
+  const dLat = side / 2 / 111320, dLon = side / 2 / (111320 * Math.cos(lat * Math.PI / 180));
+  return [[lat - dLat, lon - dLon], [lat + dLat, lon + dLon]];
+}
+
 async function drawPoints() {
   if (!map) return;
   const token = ++pointToken, note = $("mapview");
@@ -993,16 +1164,19 @@ async function drawPoints() {
   if (token !== pointToken) return;
   const b = map.getBounds(), here = rows.filter(r => r[3] === pick.s && b.contains([r[0], r[1]]));
   const n = Math.min(here.length, MAX_POINTS), step = here.length / n;
+  // Square side in metres: the sensor's nadir footprint, but never under 5 pixels at this zoom.
+  const mpp = 156543.03392 * Math.cos(b.getCenter().lat * Math.PI / 180) / Math.pow(2, map.getZoom());
+  const side = Math.max(FOOTPRINT_M[pick.s] || 1000, 5 * mpp);
   let drawn = 0, counted = 0;
   for (let k = 0; k < n; k++) {
     const r = here[Math.floor(k * step)];
-    L.circleMarker([r[0], r[1]], r[2]
-      ? {renderer: pointRenderer, radius: 4, color: "#14213d", weight: 2, fillColor: "#ffffff", fillOpacity: 1, interactive: false}
-      : {renderer: pointRenderer, radius: 5, color: "#b2182b", weight: 2, dashArray: "2 2", fill: false, interactive: false}).addTo(layers.points);
+    L.rectangle(footprint(r[0], r[1], side), r[2]
+      ? {renderer: pointRenderer, color: "#14213d", weight: 1.5, fillColor: "#ffffff", fillOpacity: .95, interactive: false}
+      : {renderer: pointRenderer, color: "#b2182b", weight: 2, dashArray: "3 2", fill: false, interactive: false}).addTo(layers.points);
     drawn++; if (r[2]) counted++;
   }
   note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view. Zoom in to see them all. "
-      : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view. ") + fmt(counted) + " counted (filled dots), " + fmt(drawn - counted) + " not counted (hollow dashed rings: low confidence or a non-fire heat source)."
+      : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view. ") + fmt(counted) + " counted (filled squares), " + fmt(drawn - counted) + " not counted (dashed outlines: low confidence or a non-fire heat source)."
     : "No " + SENSOR[pick.s] + " detection was recorded in this view in " + monthName(selected) + ". That does not mean nothing burned.")
     + (regionBounds.contains(b) ? "" : " Nothing is shown outside the region box.");
 }
@@ -1111,7 +1285,10 @@ $("dlmonthly").addEventListener("click", () => { if (D) downloadMonthly(); });
 $("region").addEventListener("change", e => load(e.target.value));
 $("mode").addEventListener("change", () => { if (D) { drawCalendar(); if (selected) selectMonth(selected); } });
 $("sensor").addEventListener("change", () => { drawMap(); writeHash(); });
-$("pts").addEventListener("click", () => { pointsOn = !pointsOn; updatePointsButton(); drawMap(); if (!pointsOn) onView(); });
+["drawgrid", "drawpts"].forEach(id => $(id).addEventListener("change", () => { pointsOn = $("drawpts").checked; updatePointsButton(); drawMap(); if (!pointsOn) onView(); }));
+$("basemap").addEventListener("change", () => { $("basenote").textContent = ""; syncBasemap(); });
+$("outline").addEventListener("change", e => { if (map) toggleLayer(layers.box, e.target.checked); });
+$("layersbtn").addEventListener("click", () => setLayersOpen($("layersbtn").getAttribute("aria-expanded") !== "true"));
 $("whole").addEventListener("click", () => { clearArea(); });
 $("allyears").addEventListener("click", showAllYears);
 $("areaform").addEventListener("submit", e => {
