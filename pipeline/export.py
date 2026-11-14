@@ -62,15 +62,16 @@ def export_summary(region_id, name, bbox, processed, out_dir):
     return summary
 
 
-def export_hotspots(region_id, bbox, raw_dir, out_dir):
-    """Write every detection inside the region, with the flag that says whether it was counted."""
+def detections(bbox, raw_dir):
+    """Yield (row, lat, lon, sensor, quality, has_type, counted) for every detection inside the region.
+
+    This is the one place that decides which detections are inside a region and which are counted
+    (type 0, or outside the static-source mask when there is no `type`; low confidence removed).
+    The hotspot CSVs and the map grid (grid.py) both read it, so they cannot disagree.
+    """
     west, south, east, north = bbox
     paths = sorted(p for p in raw_dir.iterdir() if p.suffix.lower() in (".csv", ".zip"))
     mask = build_static_mask(paths)
-    target = out_dir / "hotspots" / region_id
-    target.mkdir(parents=True, exist_ok=True)
-    buffers = {}
-    rows_by_year = {}
     for path in paths:
         for name, stream in iter_csv_members(path):
             reader = csv.DictReader(stream)
@@ -92,16 +93,26 @@ def export_hotspots(region_id, bbox, raw_dir, out_dir):
                 else:
                     veg = mask_cell(lat, lon) not in mask
                 counted = int(veg and not is_low_confidence(row.get("confidence", "")))
-                year = row["acq_date"][:4]
-                if year not in buffers:
-                    buffers[year] = io.StringIO()
-                    csv.writer(buffers[year]).writerow(HOTSPOT_COLUMNS)
-                    rows_by_year[year] = 0
-                csv.writer(buffers[year]).writerow([
-                    row["acq_date"], row.get("acq_time", ""), row["latitude"], row["longitude"], sensor, quality,
-                    row.get("confidence", ""), row.get("frp", ""), row.get("daynight", ""),
-                    row["type"] if has_type else "", counted])
-                rows_by_year[year] += 1
+                yield row, lat, lon, sensor, quality, has_type, counted
+
+
+def export_hotspots(region_id, bbox, raw_dir, out_dir):
+    """Write every detection inside the region, with the flag that says whether it was counted."""
+    target = out_dir / "hotspots" / region_id
+    target.mkdir(parents=True, exist_ok=True)
+    buffers = {}
+    rows_by_year = {}
+    for row, _, _, sensor, quality, has_type, counted in detections(bbox, raw_dir):
+        year = row["acq_date"][:4]
+        if year not in buffers:
+            buffers[year] = io.StringIO()
+            csv.writer(buffers[year]).writerow(HOTSPOT_COLUMNS)
+            rows_by_year[year] = 0
+        csv.writer(buffers[year]).writerow([
+            row["acq_date"], row.get("acq_time", ""), row["latitude"], row["longitude"], sensor, quality,
+            row.get("confidence", ""), row.get("frp", ""), row.get("daynight", ""),
+            row["type"] if has_type else "", counted])
+        rows_by_year[year] += 1
     index = {}
     for year, buf in sorted(buffers.items()):
         # Sort by date so a year file reads in order; header stays first.
