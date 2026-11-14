@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
-<title>Kahu Ahi: one fire record across MODIS and VIIRS</title>
+<title>Kahu Ahi: where and when satellites saw fire</title>
 <meta name="description" content="A burning-activity calendar that puts VIIRS fire detections on the MODIS Aqua scale and shows how far that can be trusted.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -18,6 +18,9 @@
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--font)}
 main{padding:24px 0 64px}
 .wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+h3{font-size:1.05rem;margin:14px 0 4px}
+.howto{margin-top:14px;padding:12px 14px;background:var(--paper);border-radius:6px}
+.howto h3{margin-top:0}.howto ul{margin:0;padding-left:1.2em;max-width:72ch}.howto li{margin:4px 0}
 h1{font-size:clamp(1.7rem,4.6vw,2.6rem);line-height:1.12;margin:0 0 8px;font-weight:700;letter-spacing:-.01em}
 h2{font-size:1.25rem;margin:0 0 4px;font-weight:700}
 p{margin:0 0 12px;max-width:68ch}
@@ -72,10 +75,8 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 /* map shell: full width, about 70% of the window, timeline along its bottom edge */
 .mapshell{position:relative;margin-top:16px;padding:0;border-radius:0;border:0;background:#0d1b2a}
 /* header: title beside the controls on wide screens, so the map starts high on the page */
-.pagehead h1{font-size:clamp(1.45rem,3.2vw,2.1rem)}
-.pagehead .lede{font-size:1rem;margin-bottom:0}
-.pagehead .controls{margin-top:12px}
-@media(min-width:960px){.pagehead .lede{max-width:none}.pagehead #through{max-width:40ch}}
+.pagehead{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:end;justify-content:space-between}
+.pagehead h1{font-size:clamp(1.35rem,3.2vw,2rem);margin:0}
 /* The map and the timeline together take about 70% of the window height. */
 .mapshell{--tl-h:56px}
 #map{height:calc(70vh - var(--tl-h));min-height:380px;isolation:isolate;background:#0d1b2a}
@@ -160,10 +161,11 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 @media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:340px}
   .timeline{gap:6px}#tl-range{order:-1;flex-basis:100%}.tl-word{display:none}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
-  #tl-range{order:-2;flex:1 1 55%}#tl-speed{order:-1}
-  #allyears{order:1}#tl-play{order:1}#tl-py{order:2}#tl-pm{order:3}#tl-label{order:4;flex:1 1 auto;min-width:0;text-align:center;font-size:.9rem}#tl-nm{order:5}#tl-ny{order:6}
+  #tl-play{order:-3}#tl-range{order:-2;flex:1 1 40%}#tl-speed{order:-1}
+  #allyears{order:1}#tl-py{order:2}#tl-pm{order:3}#tl-label{order:4;flex:1 1 auto;min-width:0;text-align:center;font-size:.85rem}#tl-nm{order:5}#tl-ny{order:6}
   #legendpanel{width:240px}
   .leaflet-bottom.leaflet-left{bottom:36px}
+  #biglabel{top:58px}#mapempty{top:108px}
   .leaflet-control-attribution{font-size:10px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
@@ -171,18 +173,9 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 <body>
 <main>
 <div class="wrap pagehead">
-  <div>
-  <h1>Kahu Ahi: one fire record across two generations of satellites</h1>
-  <p class="lede">MODIS has counted fires since 2000 and is near the end of its life. VIIRS took over in 2012 and sees several times more. This calendar puts both on one scale, and shows how far that scale can be trusted.</p>
-  </div>
-
-  <div class="controls">
-    <div><label for="region">Region</label>
-      <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select></div>
-    <div><label for="mode">Colour shows</label>
-      <select id="mode"><option value="count">Fire detections</option><option value="anom">Compared with the usual for that month</option></select></div>
-    <p class="note" id="through" style="margin:0"></p>
-  </div>
+  <h1>Kahu Ahi: where and when satellites saw fire</h1>
+  <div><label for="region">Region</label>
+    <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select></div>
 </div>
 
 <section class="mapshell" id="mapshell" aria-label="Map of fire detections">
@@ -217,8 +210,8 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <button type="button" id="expand" class="mbtn" aria-pressed="false">Expand map</button>
   <details class="mpanel" id="legendpanel" open><summary class="mpanel-head">Legend</summary><div class="legend" id="maplegend"></div></details>
   <div class="timeline" role="group" aria-label="Time shown on the map">
-    <button type="button" id="allyears" class="tl-btn" aria-pressed="true">All years</button>
-    <button type="button" id="tl-play" class="tl-btn" aria-pressed="false" aria-label="Play through time">▶ Play</button>
+    <button type="button" id="allyears" class="tl-btn" aria-pressed="true" aria-label="All years">All<span class="tl-word"> years</span></button>
+    <button type="button" id="tl-play" class="tl-btn" aria-pressed="false" aria-label="Play through time">▶ <span class="tl-word">Play</span></button>
     <select id="tl-speed" aria-label="Playback speed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select>
     <button type="button" id="tl-py" class="tl-btn" aria-label="Previous year">« <span class="tl-word">Year</span></button>
     <button type="button" id="tl-pm" class="tl-btn" aria-label="Previous month">‹ <span class="tl-word">Month</span></button>
@@ -233,33 +226,27 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 </section>
 
 <div class="wrap">
-  <section aria-labelledby="h-map">
-    <h2 id="h-map">Where it burned</h2>
-    <p class="note">All complete years, or one month chosen in the calendar or on the timeline, on a grid of 0.1° cells (about 10 km). Point at a cell, or select one in the table below, to see its count. Only the region inside the outlined box is supported.</p>
+  <section aria-labelledby="h-what">
+    <h2 id="h-what">What you are looking at</h2>
     <div id="explain" aria-live="polite"></div>
+    <p class="note" id="through"></p>
     <p id="mapsum" class="note" aria-live="polite">Loading the map.</p>
     <p class="note" id="mapview" aria-live="polite"></p>
     <p class="note" id="basenote" aria-live="polite"></p>
-    <details id="topcells"><summary>Cells with the most detections in this view</summary><div></div></details>
-
-    <h3 style="font-size:1.05rem;margin:22px 0 4px">Choose an area</h3>
-    <p class="note" style="margin:0">Draw a rectangle on the map, or type its edges in decimal degrees (longitudes west of Greenwich are negative, as in California and Hawaiʻi; in the Vietnam region all four edges are positive). The area is widened to whole 0.1° cells and kept inside the region box. The calendar, the comparisons and the download then cover only that area.</p>
-    <div class="areabar">
-      <button id="drawbtn" type="button" class="secondary" aria-pressed="false">Draw an area on the map</button>
-      <button id="whole" type="button" class="secondary" disabled>Whole region</button>
+    <details id="topcells"><summary>Places with the most detections in this view</summary><div></div></details>
+    <div class="howto">
+      <h3>How to read this</h3>
+      <ul>
+        <li><strong>A detection</strong> is one satellite pixel where the satellite saw heat from a fire at the moment it passed over. A pixel is about 1 km across for the older MODIS instrument and 375 m for the newer VIIRS.</li>
+        <li>A detection is <strong>not a count of fires and not burned area</strong>. One large fire gives many detections; a small or short fire may give none.</li>
+        <li><strong>No detection is not "no fire".</strong> Clouds, smoke and the time of day the satellite passes all hide fires.</li>
+        <li><strong>Why two satellites disagree:</strong> VIIRS (flying since 2012) has smaller pixels than MODIS (since 2000), so it records several times more detections of the same fires.</li>
+        <li><strong>MODIS Aqua scale</strong> means counts as the MODIS instrument on the Aqua satellite records them. VIIRS counts are divided by a factor measured in each region, for each calendar month, so the new record can be compared with the old one.</li>
+        <li><strong>Counted</strong> detections are those the satellite marked as a likely vegetation fire with normal or high confidence. Volcanoes, gas flares and other steady heat sources are left out.</li>
+        <li><strong>Provisional</strong> means near-real-time data: it arrives within hours, has not yet been reprocessed by NASA, and can still change.</li>
+        <li>This is a history of what satellites saw. It is not an alert or a forecast.</li>
+      </ul>
     </div>
-    <form id="areaform" style="margin-top:12px" novalidate>
-      <fieldset><legend>Area edges, in decimal degrees</legend>
-        <div class="coords">
-          <div><label for="aw">West (longitude)</label><input id="aw" type="number" step="0.1" inputmode="decimal" required></div>
-          <div><label for="as">South (latitude)</label><input id="as" type="number" step="0.1" inputmode="decimal" required></div>
-          <div><label for="ae">East (longitude)</label><input id="ae" type="number" step="0.1" inputmode="decimal" required></div>
-          <div><label for="an">North (latitude)</label><input id="an" type="number" step="0.1" inputmode="decimal" required></div>
-        </div>
-        <button type="submit" style="margin-top:10px">Use this area</button>
-      </fieldset>
-    </form>
-    <p class="note" id="areanote" aria-live="polite" style="margin-top:10px"></p>
   </section>
 
   <section aria-labelledby="h-drill">
@@ -269,7 +256,10 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </section>
 
   <section aria-labelledby="h-cal">
-    <h2 id="h-cal">Burning calendar</h2>
+    <h2 id="h-cal">The full record, month by month</h2>
+    <p>How to read it: each row is a year and each box is a month. The number in a box is that month's fire detections on the MODIS Aqua scale; a brighter box means more. Select a box to see that month on the map, or a year to see the whole year.</p>
+    <div class="controls" style="margin-top:8px"><div><label for="mode">Colour shows</label>
+      <select id="mode"><option value="count">Fire detections</option><option value="anom">Compared with the usual for that month</option></select></div></div>
     <p class="note" id="calnote"></p>
     <div id="banner"></div>
     <div id="areabanner"></div>
@@ -289,6 +279,27 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
       <div id="season"></div>
     </section>
   </div>
+
+  <section aria-labelledby="h-area">
+    <h2 id="h-area">Choose an area</h2>
+    <p class="note" style="margin:0">Draw a rectangle on the map, or type its edges in decimal degrees (longitudes west of Greenwich are negative, as in California and Hawaiʻi; in the Vietnam region all four edges are positive). The area is widened to whole 0.1° cells and kept inside the region box. The calendar, the comparisons and the download then cover only that area.</p>
+    <div class="areabar">
+      <button id="drawbtn" type="button" class="secondary" aria-pressed="false">Draw an area on the map</button>
+      <button id="whole" type="button" class="secondary" disabled>Whole region</button>
+    </div>
+    <form id="areaform" style="margin-top:12px" novalidate>
+      <fieldset><legend>Area edges, in decimal degrees</legend>
+        <div class="coords">
+          <div><label for="aw">West (longitude)</label><input id="aw" type="number" step="0.1" inputmode="decimal" required></div>
+          <div><label for="as">South (latitude)</label><input id="as" type="number" step="0.1" inputmode="decimal" required></div>
+          <div><label for="ae">East (longitude)</label><input id="ae" type="number" step="0.1" inputmode="decimal" required></div>
+          <div><label for="an">North (latitude)</label><input id="an" type="number" step="0.1" inputmode="decimal" required></div>
+        </div>
+        <button type="submit" style="margin-top:10px">Use this area</button>
+      </fieldset>
+    </form>
+    <p class="note" id="areanote" aria-live="polite" style="margin-top:10px"></p>
+  </section>
 
   <section aria-labelledby="h-trust">
     <h2 id="h-trust">How far to trust the harmonized numbers</h2>
@@ -310,11 +321,13 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </section>
 
   <section aria-labelledby="h-limits">
-    <h2 id="h-limits">What this does not tell you</h2>
+    <h2 id="h-limits">Method, limits and sources</h2>
+    <p>Method in one paragraph: every detection comes from NASA FIRMS. For each region, the months when MODIS Aqua and VIIRS Suomi NPP both observed (2012 to 2026) give a factor for each calendar month: VIIRS detections divided by Aqua detections. Dividing a VIIRS count by that factor puts it on the MODIS Aqua scale. Each year is then predicted from factors built without it, and the error is reported above. Where that error is too large, the region is not converted.</p>
     <p>No detection is not the same as no fire. Clouds, smoke, short-lived fires and the time of the satellite pass all hide burning, and this tool has no record of when a place could not be observed.</p>
     <p>This is a history of satellite detections. It is not an alert, a forecast or a count of fires, and it does not replace official emergency information.</p>
     <p>Only the regions listed here are supported. Each region is checked on its own data before its VIIRS numbers are converted; where the check fails, they are not converted. An area you choose inside a region uses that region's conversion, which was never tested on the smaller area.</p>
     <p>A blank map cell means no detection was recorded there, not that nothing burned or that the place is safe.</p>
+    <p>Full method, validation numbers, sources and the use of AI: <a href="https://github.com/nguyenhuulong2222/kahu-ahi#readme">README</a>, <a href="https://github.com/nguyenhuulong2222/kahu-ahi/blob/main/SOURCES.md">SOURCES</a>, <a href="https://github.com/nguyenhuulong2222/kahu-ahi/blob/main/THIRD_PARTY_NOTICES.md">third-party notices</a>, <a href="https://github.com/nguyenhuulong2222/kahu-ahi/blob/main/AI_USE.md">AI use</a>.</p>
   </section>
 
   <footer>
@@ -330,6 +343,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 // Leave it empty and the map uses OpenStreetMap at close zoom instead.
 const ESRI_API_KEY = "AAPTaxdkSlG7DTxMFLwpQRDJ8Qw..a6Lg3CVz1js8C9AJ5Awj6dDhGnlk2WZzFV2S0M8RBlCVb9yvAquZsvrdCRSyPdqMBm7MMc-zHUdnQrrD8JDehH-bALR4MPw2WsFw9JWZ2zVswIiXmFd_7-VrvB1ooa_rQ_nsBSuMJ4q6ZzEEEQLS6AaFX2EvGyQjlHDhteJlBfA14AJ6mFS-MPqTB8GhG_ZGTsOb-ZccMD36-vg84GishtSCS_I6JaFUqazfSPRIdO7UBtUhx4GPukeB1JpOAT1_VRtL7vqc";
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const SENSOR = {MODIS_AQUA:"MODIS Aqua", MODIS_TERRA:"MODIS Terra", VIIRS_SNPP:"VIIRS Suomi NPP", VIIRS_NOAA20:"VIIRS NOAA-20", VIIRS:"VIIRS"};
 const STATUS = {
   standard:"Standard-quality data, measured by MODIS Aqua",
@@ -386,6 +400,7 @@ function areaText(a) { return deg(a.w, "E", "W") + " to " + deg(a.e, "E", "W") +
 function baseStatus(s) { return s.replace(/^partial_month_/, ""); }
 function isPartial(s) { return s.startsWith("partial_month_") || s === "partial_first_month"; }
 function monthName(m) { return MONTHS[+m.slice(5) - 1] + " " + m.slice(0, 4); }
+function fullMonth(m) { return MONTH_FULL[+m.slice(5) - 1] + " " + m.slice(0, 4); }
 
 // The usual for each calendar month: median of complete, standard Aqua months.
 function mediansOf(months) { return MONTHS.map((_, i) => median(months.filter(x => x.status === "standard" && +x.m.slice(5) === i + 1 && x.m.slice(0, 4) >= "2003").map(x => x.h))); }
@@ -530,15 +545,15 @@ function drawExplain() {
     else if (!y.complete) s.push(selYear + " has " + fmt(y.total) + " detections in " + place + ", but it is not a full year of final data, so it is not compared with the usual year.");
     else s.push(selYear + " had " + fmt(y.total) + " detections in " + place + (usual > 0 ? ", " + times(y.total, usual) + " the usual year (the median of " + cs.text + ", " + fmt(usual) + " detections)." : "."));
   } else {
-    const m = +selected.slice(5), med = S.medians[m - 1], st = baseStatus(x.status), mn = MONTHS[m - 1];
+    const m = +selected.slice(5), med = S.medians[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
     if (lv === "day") {
       const pick = mapSensor(x);
       s.push(pick.s && flyingOn(pick.s, selDay) ? "On " + dayName(selDay) + " " + SENSOR[pick.s] + " recorded " + fmt(dayCounts(selDay)[pick.i]) + " detections in " + D.region.name
           + (x.h != null ? "; the whole month had " + fmt(x.h) + " on the MODIS Aqua scale" + (area ? " in the chosen area" : "") : "") + "." + (area ? " Daily counts cover the whole region, not the chosen area." : "")
         : (pick.s ? SENSOR[pick.s] : "The chosen satellite") + " has no record for " + dayName(selDay) + ".");
-    } else if (x.h == null) s.push(st === "terra_only_not_harmonized" ? "In " + monthName(selected) + " only the MODIS Terra satellite was flying (" + fmt(x.terra) + " detections). Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + monthName(selected) + ".");
-    else if (isPartial(x.status)) s.push(monthName(selected) + " has " + fmt(x.h) + " detections so far in " + place + ". The month is not complete, so it is not compared with a full " + mn + ".");
-    else s.push(monthName(selected) + " had " + fmt(x.h) + " detections in " + place + (med > 0 ? ", " + times(x.h, med) + " the usual " + mn + " (" + fmt(med) + " detections)." : med === 0 ? "; the usual " + mn + " has none." : "."));
+    } else if (x.h == null) s.push(st === "terra_only_not_harmonized" ? "In " + fullMonth(selected) + " only the MODIS Terra satellite was flying (" + fmt(x.terra) + " detections). Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + fullMonth(selected) + ".");
+    else if (isPartial(x.status)) s.push(fullMonth(selected) + " has " + fmt(x.h) + " detections so far in " + place + ". The month is not complete, so it is not compared with a full " + mn + ".");
+    else s.push(fullMonth(selected) + " had " + fmt(x.h) + " detections in " + place + (med > 0 ? ", " + times(x.h, med) + " the usual " + mn + " (" + fmt(med) + " detections)." : med === 0 ? "; the usual " + mn + " has none." : "."));
     if (st === "provisional_nrt") s.push("This period is provisional: the numbers come from near-real-time data and can still change.");
   }
   s.push(lv === "day" ? "Hollow dashed squares are detections that were not counted, because the satellite was unsure or the heat was not a vegetation fire."
@@ -628,7 +643,7 @@ function drawDrill() {
       unit = "Up: fire detections in a day, " + SENSOR[pick.s] + (pick.s === "MODIS_AQUA" ? "" : ", as recorded (not converted)") + ", whole region. Across: day of the month. Outlined bars are provisional days."
         + (viirs ? " Dots: " + SENSOR[viirs] + " converted to the MODIS Aqua scale. They are indicative: the conversion was tested by month, not by day." : "");
       const best = tot.length ? tot.reduce((a, b) => b[1] > a[1] ? b : a) : null;
-      sum = monthName(selected) + ": " + (best ? fmt(tot.reduce((t, r) => t + r[1], 0)) + " " + SENSOR[pick.s] + " detections over " + tot.length + " days. The most: " + dayName(best[0]) + ", with " + fmt(best[1]) + ". " + tot.filter(r => r[1] === 0).length + " days had none recorded, which is not the same as no fire." : SENSOR[pick.s] + " has no record in this month.")
+      sum = monthName(selected) + ": " + (best ? fmt(tot.reduce((t, r) => t + r[1], 0)) + " " + SENSOR[pick.s] + " detections over " + tot.length + " days. The most: " + dayName(best[0]) + ", with " + fmt(best[1]) + ". " + (z => z ? z + (z === 1 ? " day" : " days") + " had none recorded, which is not the same as no fire." : "Every day had at least one.")(tot.filter(r => r[1] === 0).length) : SENSOR[pick.s] + " has no record in this month.")
         + (area ? " Daily counts are for the whole region; they are not available for a chosen area." : "") + " Select a day to see it on the map.";
       // The same days as a table: what each satellite recorded.
       const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Day"}), ...GRID_SENSORS.map(s => el("th", {class: "num", text: SENSOR[s].replace("VIIRS Suomi NPP", "VIIRS S-NPP") + " (detections)"})), ...(viirs ? [el("th", {class: "num", text: SENSOR[viirs].replace("VIIRS Suomi NPP", "VIIRS S-NPP") + " on the Aqua scale (indicative)"})] : [])));
@@ -1199,7 +1214,7 @@ function preload(sel) { if (sel && (sel.year || sel.month)) gridYear(+(sel.year 
 function setPlaying(on, say) {
   playing = on;
   const b = $("tl-play");
-  b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "❚❚ Pause" : "▶ Play"; b.setAttribute("aria-label", on ? "Pause" : "Play through time");
+  b.setAttribute("aria-pressed", String(on)); b.replaceChildren(on ? "❚❚ " : "▶ ", el("span", {class: "tl-word", text: on ? "Pause" : "Play"})); b.setAttribute("aria-label", on ? "Pause" : "Play through time");
   $("biglabel").hidden = !on;
   QUIET_WHILE_PLAYING.forEach(id => $(id).setAttribute("aria-live", on ? "off" : "polite"));
   $("playstatus").textContent = say;
