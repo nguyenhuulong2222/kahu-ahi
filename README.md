@@ -190,11 +190,24 @@ python3 pipeline/export.py    --id california --name "California" --bbox -124.5 
 python3 pipeline/grid.py      --id california --bbox -124.5 32.5 -114.0 42.0
 ```
 
+`export.py` also writes `docs/data/<region>_daily.json` (counted detections per day, per satellite and data quality; 42 to 149 kB). It stops and writes nothing if the days do not add up, per satellite and per month, to `monthly_series.csv`. `--skip-hotspots` rewrites only the two summary files without reading `data/raw/` again.
+
 Hawaiʻi uses `--bbox -160.6 18.7 -154.5 22.5`; the Vietnam region `--bbox 102.1 8.4 109.5 23.4`.
 
 The web app is the static folder `docs/`: `python3 -m http.server -d docs 8000`, then open http://localhost:8000. It requests only its own files, Leaflet from cdnjs, and basemap tiles: NASA GIBS (Blue Marble with coastline, border and label overlays) up to zoom 8, and from zoom 9 Esri World Imagery with Esri's reference labels (its two libraries load from jsDelivr only then), falling back to OpenStreetMap if Esri is unavailable. No FIRMS or other data API is called from the page.
 
 The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location Platform, basemap privileges only, restricted to the referrers https://nguyenhuulong2222.github.io and http://localhost. It is meant to be shipped in a web page and is not a secret. Leave it empty and the page uses OpenStreetMap at close zoom.
+
+### Reading the page
+
+- Page order: title, map, "What you are looking at", "Fire activity over time", the full record (the month-by-year calendar), how far to trust it, downloads, method and sources.
+- **One selection.** All years, one year, one month or one day. The map, the timeline, the charts, the calendar and the page address (`#region=…&year=…`, `&month=…` or `&day=…`) all read and write it through one function, `select()`.
+- **What you are looking at** is generated for the selection from the same series as the calendar: what a square is, the count with its unit and how it compares with the usual, and what the colours mean. A refused region (Hawaiʻi), provisional months and incomplete periods get their own sentences. A "How to read this" box defines each term once.
+- **Fire activity over time** drills down: a bar per year (hatched when the year lacks twelve months of final data), then twelve monthly bars over the lowest-to-highest band and median of final data since 2003 (the same "usual" as the calendar), then daily bars from `<region>_daily.json`. Daily bars show one satellite as recorded; where VIIRS is converted it appears as dots labelled "indicative: tested by month, not by day", because the conversion was validated on monthly totals only. Daily counts are for the whole region, also when an area is chosen. Every bar is a button with its value in words; a table gives each satellite's daily counts.
+- **A day on the map** is drawn as individual detections from that year's hotspot file, loaded on demand, with the 4,000-square cap.
+- **A year on the map** adds up the year's months on a scale fixed across years (`max_cell_year` in the grid index).
+- **Play** steps at the level of the selection (years, months or days) at slow, normal or fast speed. It never starts by itself, waits for each frame to be drawn instead of skipping, preloads the next grid file, keeps the colour scale fixed, stops at the last step, and is paused by any choice on the timeline, calendar, charts or map. Screen readers hear "Playing" and "Paused", not every frame. Space toggles it while the slider has focus.
+- **Empty states** are in words on the map: "not flying yet" or "no longer sending data", with the satellite's first or last date and a button back to the harmonized view, is kept apart from "was flying but recorded no detection", which is never called no fire.
 
 ### Map display
 
@@ -205,7 +218,7 @@ The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location
 - Cells are drawn without gaps at 82% opacity so coastlines show through. Pointing at a cell, tapping it, or focusing a row of the "cells with the most detections" table outlines the cell and shows its count, so no value is given by colour alone.
 - Outside the region box the map is dimmed slightly; nothing is drawn there.
 - Layout: the map sits at the top of the page, full width, with the timeline along its bottom edge (about 70% of the window together). "Expand map" fills the window with the browser's Fullscreen API, or with a fixed-position fallback where that API is missing (iPhone Safari); Esc or "Close full screen" returns.
-- The timeline steps by month and by year and has an "All years" position. It and the calendar drive the same selection, so either one moves the other.
+- The timeline steps at the level of the selection: years (with an "All years" position), the months of the record, or the days of a month, with Play, a speed choice, and buttons for the next coarser step. It and the calendar and charts drive the same selection, so each moves the others.
 - The Layers panel (top left) holds the basemap choice, the satellite switch, grid cells or individual detections, and the region outline. The legend (bottom right) gives the colour steps and units; a scale bar and the latitude and longitude under the pointer (or of the map centre) are at bottom left.
 - Individual detections are drawn as squares of the sensor's nadir footprint, about 1 km for MODIS and 375 m for VIIRS, never smaller than 5 pixels.
 

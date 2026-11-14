@@ -21,6 +21,8 @@ AI tools were used in this project. This file records which tools and how.
 - `pipeline/grid.py`: monthly 0.1° grid of counted detections per sensor and quality, and an all-years total per cell, both checked against `monthly_series.csv`.
 - `pipeline/export.py`: the in-region and counted rule moved into one generator, `detections()`, shared with the grid step (hotspot CSV content unchanged).
 - `docs/index.html`: the map (Leaflet; NASA GIBS Blue Marble, Esri World Imagery at close zoom with an OpenStreetMap fallback; an all-years default view), sensor switch, individual detections at high zoom, area of interest with URL sharing, area CSV download, the month detail's validation line, the monthly table download, and the explanation of the November gap.
+- `pipeline/export.py` daily export with its check against the monthly series; `max_cell_year` in the grid index.
+- `docs/index.html`, later the same day: the fire colour ramp (checked numerically for lightness order, simulated colour-vision deficiency and text contrast), the year, month and day charts, the shared selection, play through time, the generated "What you are looking at" sentences, the "How to read this" box and the empty states.
 - Documentation: README method, validation, limits and run instructions; THIRD_PARTY_NOTICES; SOURCES; `data/manifest.json`.
 
 The team set the requirements, the rules the code must keep (one metric, no zero shown as "no fire", no change to calibration), and reviewed the results.
