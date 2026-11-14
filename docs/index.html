@@ -88,6 +88,36 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .tl-btn:disabled{opacity:.45}
 #tl-range{flex:1 1 240px;min-width:140px;min-height:32px;padding:0;border:0;background:transparent;accent-color:#f2a900}
 #tl-label{min-width:6.5em;font-weight:700;font-variant-numeric:tabular-nums}
+#tl-speed{min-height:40px;padding:6px 8px;font-size:14px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#biglabel{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:900;pointer-events:none;padding:4px 16px;border-radius:6px;background:rgba(20,33,61,.82);color:#fff;font-weight:700;font-size:clamp(1.6rem,5vw,3rem);font-variant-numeric:tabular-nums;white-space:nowrap}
+#mapempty{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:900;width:min(440px,calc(100% - 32px));padding:12px 14px;border-radius:6px;background:rgba(255,255,255,.96);box-shadow:0 1px 6px rgba(0,0,0,.35);border-left:4px solid var(--warn);font-size:.95rem}
+#mapempty p{margin:0 0 8px}#mapempty button{min-height:40px}
+[hidden]{display:none!important}
+#explain p{font-size:1.08rem;margin:0 0 6px}
+/* charts: years, months, days */
+.crumbs{font-size:.95rem;margin:8px 0}
+#drill h3{font-size:1.05rem;margin:10px 0 0}
+.chart{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;margin-top:10px}
+.yaxis{display:flex;flex-direction:column;justify-content:space-between;text-align:right;font-size:.75rem;color:var(--muted);height:190px;font-variant-numeric:tabular-nums}
+.plot{display:flex;align-items:stretch;gap:2px;height:190px;border-left:1px solid var(--muted);border-bottom:1px solid var(--muted);background:linear-gradient(var(--line),var(--line)) 0 0/100% 1px no-repeat,linear-gradient(var(--line),var(--line)) 0 50%/100% 1px no-repeat}
+.col{all:unset;box-sizing:border-box;flex:1 1 0;min-width:0;position:relative;cursor:pointer}
+.col[aria-disabled="true"]{cursor:default}
+.col:hover{background:var(--paper)}
+.col:focus-visible{outline:3px solid #f2a900;outline-offset:1px;z-index:1}
+.col.sel{background:#fff1cc;box-shadow:inset 0 -4px 0 #f2a900}
+.col .barv{position:absolute;left:14%;right:14%;bottom:0;min-height:1px;background:var(--ink);border-radius:2px 2px 0 0}
+.col.inc .barv{background:repeating-linear-gradient(45deg,var(--ink) 0 3px,#9aa6b8 3px 6px)}
+.col.prov .barv{background:#fff;border:2px solid var(--ink);border-bottom:0}
+.col.partial .barv{background:#fff;border:2px dashed var(--ink);border-bottom:0}
+.col.terra::after{content:"T";position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:.7rem;color:var(--muted)}
+.col .band{position:absolute;left:0;right:0;background:#f3dcb4;min-height:1px}
+.col .med{position:absolute;left:0;right:0;height:2px;margin-bottom:-1px;background:var(--warn)}
+.col .mk{position:absolute;left:50%;width:9px;height:9px;margin:0 0 -4px -4.5px;border-radius:50%;background:var(--action);border:1.5px solid #fff}
+.xaxis{grid-column:2;display:flex;gap:2px;font-size:.72rem;color:var(--muted)}
+.xaxis span{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;overflow:visible}
+.cal th.yr button{color:var(--muted);text-decoration:none;font-weight:600}
+.cal tr.selyear th.yr button{color:var(--ink);box-shadow:0 2px 0 #f2a900}
 .mpanel{background:rgba(255,255,255,.96);color:var(--ink);border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.35);font:14px/1.4 var(--font);width:280px;max-width:calc(100vw - 96px)}
 .mpanel-head{all:unset;display:block;box-sizing:border-box;width:100%;padding:8px 12px;font-weight:700;cursor:pointer}
 .mpanel-head:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
@@ -130,7 +160,8 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 @media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:340px}
   .timeline{gap:6px}#tl-range{order:-1;flex-basis:100%}.tl-word{display:none}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
-  #allyears{order:1}#tl-py{order:2}#tl-pm{order:3}#tl-label{order:4;flex:1 1 auto;min-width:0;text-align:center}#tl-nm{order:5}#tl-ny{order:6}
+  #tl-range{order:-2;flex:1 1 55%}#tl-speed{order:-1}
+  #allyears{order:1}#tl-play{order:1}#tl-py{order:2}#tl-pm{order:3}#tl-label{order:4;flex:1 1 auto;min-width:0;text-align:center;font-size:.9rem}#tl-nm{order:5}#tl-ny{order:6}
   #legendpanel{width:240px}
   .leaflet-bottom.leaflet-left{bottom:36px}
   .leaflet-control-attribution{font-size:10px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -187,20 +218,26 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <details class="mpanel" id="legendpanel" open><summary class="mpanel-head">Legend</summary><div class="legend" id="maplegend"></div></details>
   <div class="timeline" role="group" aria-label="Time shown on the map">
     <button type="button" id="allyears" class="tl-btn" aria-pressed="true">All years</button>
+    <button type="button" id="tl-play" class="tl-btn" aria-pressed="false" aria-label="Play through time">▶ Play</button>
+    <select id="tl-speed" aria-label="Playback speed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select>
     <button type="button" id="tl-py" class="tl-btn" aria-label="Previous year">« <span class="tl-word">Year</span></button>
     <button type="button" id="tl-pm" class="tl-btn" aria-label="Previous month">‹ <span class="tl-word">Month</span></button>
     <input type="range" id="tl-range" min="0" max="0" value="0" step="1" aria-label="Month shown on the map; the first position is all years">
     <button type="button" id="tl-nm" class="tl-btn" aria-label="Next month"><span class="tl-word">Month</span> ›</button>
     <button type="button" id="tl-ny" class="tl-btn" aria-label="Next year"><span class="tl-word">Year</span> »</button>
     <output id="tl-label" for="tl-range" aria-live="polite">All years</output>
+    <span id="playstatus" class="sr" role="status" aria-live="polite"></span>
   </div>
+  <div id="biglabel" aria-hidden="true" hidden></div>
+  <div id="mapempty" role="status" aria-live="polite" hidden><p></p><button type="button" id="toauto">Switch to the harmonized view</button></div>
 </section>
 
 <div class="wrap">
   <section aria-labelledby="h-map">
     <h2 id="h-map">Where it burned</h2>
     <p class="note">All complete years, or one month chosen in the calendar or on the timeline, on a grid of 0.1° cells (about 10 km). Point at a cell, or select one in the table below, to see its count. Only the region inside the outlined box is supported.</p>
-    <p id="mapsum" aria-live="polite">Loading the map.</p>
+    <div id="explain" aria-live="polite"></div>
+    <p id="mapsum" class="note" aria-live="polite">Loading the map.</p>
     <p class="note" id="mapview" aria-live="polite"></p>
     <p class="note" id="basenote" aria-live="polite"></p>
     <details id="topcells"><summary>Cells with the most detections in this view</summary><div></div></details>
@@ -223,6 +260,12 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
       </fieldset>
     </form>
     <p class="note" id="areanote" aria-live="polite" style="margin-top:10px"></p>
+  </section>
+
+  <section aria-labelledby="h-drill">
+    <h2 id="h-drill">Fire activity over time</h2>
+    <p class="note">Start with the years, select a year to see its months, then a month to see its days. The map, the timeline and the calendar follow.</p>
+    <div id="drill" aria-live="polite"></div>
   </section>
 
   <section aria-labelledby="h-cal">
@@ -359,6 +402,7 @@ function regionSeries() { return {months: D.months, medians: mediansOf(D.months)
 let loadToken = 0;
 async function load(region, wish) {
   wish = wish || {};
+  pausePlay();
   const token = ++loadToken;
   $("banner").replaceChildren(); $("areabanner").replaceChildren(); $("cal").replaceChildren(el("caption", {text: "Loading the record"}));
   try {
@@ -379,13 +423,15 @@ async function load(region, wish) {
     G = await r.json();
   } catch (e) { G = null; }
   if (token !== loadToken) return;
-  area = null; S = regionSeries(); selected = null; pointsOn = false;
+  try { daily = await loadDaily(region); } catch (e) { daily = null; }
+  if (token !== loadToken) return;
+  area = null; S = regionSeries(); pointsOn = false; applySel({});
   $("through").textContent = "Data through " + D.data_through + ". Detections of presumed vegetation fire, low-confidence ones removed.";
   if (wish.sensor && [...$("sensor").options].some(o => o.value === wish.sensor)) $("sensor").value = wish.sensor;
   drawTrust(); drawRegionOnMap(); await setupDownload();
   if (token !== loadToken) return;
-  // With no month in the link the map opens on all years, so it is never empty on load.
-  selected = D.months.some(x => x.m === wish.month) ? wish.month : null;
+  // With no time in the link the map opens on all years, so it is never empty on load.
+  applySel(wishSel(wish));
   if (wish.area && !(await setArea(wish.area, true))) wish.area = null;
   if (token !== loadToken) return;
   if (!wish.area) { fillAreaForm(); refresh(); }
@@ -401,7 +447,198 @@ function gridYear(year) {
 // Redraw everything that depends on the series on show.
 function refresh() {
   drawCalendar(); drawNow(); drawSeason(); drawAreaBanner(); describeDownload();
-  if (selected) selectMonth(selected); else { drawMap(); writeHash(); }
+  select(curSel());
+}
+
+// ---------- selection: all years, one year, one month or one day ----------
+// `selected` (the month), selYear and selDay are one selection shared by the map, the timeline, the calendar,
+// the charts and the page address. A day implies its month, and a month its year.
+let selYear = null, selDay = null, daily = null;
+function years() { return [...new Set(D.months.map(x => x.m.slice(0, 4)))]; }
+function level() { return selDay ? "day" : selected ? "month" : selYear ? "year" : "all"; }
+function curSel() { return selDay ? {day: selDay} : selected ? {month: selected} : selYear ? {year: selYear} : {}; }
+function daysIn(m) { return new Date(Date.UTC(+m.slice(0, 4), +m.slice(5), 0)).getUTCDate(); }
+function dayName(d) { return +d.slice(8) + " " + MONTHS[+d.slice(5, 7) - 1] + " " + d.slice(0, 4); }
+function selLabel() { return selDay ? dayName(selDay) : selected ? monthName(selected) : selYear || "All years"; }
+function validDay(d) { return !!daily && /^\d{4}-\d\d-\d\d$/.test(d) && D.months.some(x => x.m === d.slice(0, 7)) && +d.slice(8) >= 1 && +d.slice(8) <= daysIn(d.slice(0, 7)) && d <= D.data_through; }
+function applySel(sel) {
+  const day = sel.day && validDay(sel.day) ? sel.day : null;
+  const month = day ? day.slice(0, 7) : sel.month && D.months.some(x => x.m === sel.month) ? sel.month : null;
+  selDay = day; selected = month;
+  selYear = month ? month.slice(0, 4) : sel.year && years().includes(String(sel.year)) ? String(sel.year) : null;
+  if (!selected || selDay) pointsOn = false;
+}
+// Every change of time goes through here. Returns a promise that settles when the map has drawn it.
+function select(sel, opts) {
+  if (!D) return Promise.resolve();
+  if (!(opts && opts.play)) pausePlay();
+  applySel(sel);
+  markCalendar();
+  const x = selected && S.months.find(v => v.m === selected);
+  if (x) drawDetail(x); else $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
+  drawExplain(); drawDrill(); writeHash();
+  return drawMap();
+}
+function selectMonth(m) { return select({month: m}); }
+function showAllYears() { return select({}); }
+function markCalendar() {
+  document.querySelectorAll(".cal td.sel").forEach(e => { e.classList.remove("sel"); e.firstChild.setAttribute("aria-pressed", "false"); });
+  document.querySelectorAll(".cal tr.selyear").forEach(e => e.classList.remove("selyear"));
+  const td = selected && document.querySelector('.cal td[data-m="' + selected + '"]');
+  if (td) { td.classList.add("sel"); td.firstChild.setAttribute("aria-pressed", "true"); }
+  const tr = selYear && document.querySelector('.cal tr[data-y="' + selYear + '"]');
+  if (tr) tr.classList.add("selyear");
+}
+
+// ---------- daily counts (docs/data/<region>_daily.json, written by pipeline/export.py) ----------
+async function loadDaily(region) {
+  const r = await fetch("data/" + region + "_daily.json");
+  if (!r.ok) throw new Error(r.status);
+  const d = await r.json(), t0 = Date.parse(d.start + "T00:00:00Z"), out = {standard: new Map(), nrt: new Map()};
+  ["standard", "nrt"].forEach(q => { const f = d[q] || []; for (let i = 0; i < f.length; i += 5) out[q].set(new Date(t0 + f[i] * 864e5).toISOString().slice(0, 10), f.slice(i + 1, i + 5)); });
+  return out;
+}
+// Counted detections on one day, whole region: [aqua, terra, snpp, n20], standard and near-real-time together.
+function dayCounts(d) { const a = daily.standard.get(d) || [0, 0, 0, 0], b = daily.nrt.get(d) || [0, 0, 0, 0]; return a.map((v, i) => v + b[i]); }
+// First and last date a satellite has any record for this region.
+function sensorSpan(s) {
+  const a = D.sensors[s + "/standard"], b = D.sensors[s + "/nrt"];
+  if (!a && !b) return null;
+  return {first: [a, b].filter(Boolean).map(v => v.first).sort()[0], last: [a, b].filter(Boolean).map(v => v.last).sort().pop()};
+}
+function flyingOn(s, d) { const sp = sensorSpan(s); return !!sp && d >= sp.first && d <= sp.last; }
+
+// ---------- what you are looking at: a few plain sentences for the current selection ----------
+function yearStats() {
+  const by = {};
+  S.months.forEach(x => { const y = by[x.m.slice(0, 4)] = by[x.m.slice(0, 4)] || {total: 0, n: 0, std: 0, any: false}; if (x.h != null) { y.total += x.h; y.any = true; } y.n++; if (x.status === "standard") y.std++; });
+  for (const y in by) by[y].complete = by[y].std === 12;
+  return by;
+}
+function completeSpan(ys) { const c = Object.keys(ys).filter(y => ys[y].complete).sort(); return c.length ? {years: c, text: c[0] + " to " + c[c.length - 1]} : null; }
+function times(v, usual) { const r = v / usual; return "about " + (r >= 10 ? Math.round(r) : r.toFixed(1)) + " times"; }
+function drawExplain() {
+  const box = $("explain"), lv = level(), ys = yearStats(), cs = completeSpan(ys), s = [];
+  const place = D.region.name + (area ? " (chosen area)" : ""), x = selected && S.months.find(v => v.m === selected);
+  s.push(lv === "day" ? "Each red square on the map is one place where a satellite saw heat from a fire as it passed over."
+    : "Each coloured square on the map is an area about 10 km across where a satellite saw heat from fires.");
+  if (lv === "all") {
+    s.push(cs ? "From " + cs.text + ", the MODIS Aqua satellite recorded " + fmt(cs.years.reduce((t, y) => t + ys[y].total, 0)) + " fire detections in " + place + "." : "There is no complete year of standard data for " + place + ".");
+  } else if (lv === "year") {
+    const y = ys[selYear], usual = cs ? median(cs.years.map(k => ys[k].total)) : null;
+    if (!y.any) s.push("In " + selYear + " only the MODIS Terra satellite was flying. Its counts are not on the same scale as the rest of the record, so there is no total for the year.");
+    else if (!y.complete) s.push(selYear + " has " + fmt(y.total) + " detections in " + place + ", but it is not a full year of final data, so it is not compared with the usual year.");
+    else s.push(selYear + " had " + fmt(y.total) + " detections in " + place + (usual > 0 ? ", " + times(y.total, usual) + " the usual year (the median of " + cs.text + ", " + fmt(usual) + " detections)." : "."));
+  } else {
+    const m = +selected.slice(5), med = S.medians[m - 1], st = baseStatus(x.status), mn = MONTHS[m - 1];
+    if (lv === "day") {
+      const pick = mapSensor(x);
+      s.push(pick.s && flyingOn(pick.s, selDay) ? "On " + dayName(selDay) + " " + SENSOR[pick.s] + " recorded " + fmt(dayCounts(selDay)[pick.i]) + " detections in " + D.region.name
+          + (x.h != null ? "; the whole month had " + fmt(x.h) + " on the MODIS Aqua scale" + (area ? " in the chosen area" : "") : "") + "." + (area ? " Daily counts cover the whole region, not the chosen area." : "")
+        : (pick.s ? SENSOR[pick.s] : "The chosen satellite") + " has no record for " + dayName(selDay) + ".");
+    } else if (x.h == null) s.push(st === "terra_only_not_harmonized" ? "In " + monthName(selected) + " only the MODIS Terra satellite was flying (" + fmt(x.terra) + " detections). Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + monthName(selected) + ".");
+    else if (isPartial(x.status)) s.push(monthName(selected) + " has " + fmt(x.h) + " detections so far in " + place + ". The month is not complete, so it is not compared with a full " + mn + ".");
+    else s.push(monthName(selected) + " had " + fmt(x.h) + " detections in " + place + (med > 0 ? ", " + times(x.h, med) + " the usual " + mn + " (" + fmt(med) + " detections)." : med === 0 ? "; the usual " + mn + " has none." : "."));
+    if (st === "provisional_nrt") s.push("This period is provisional: the numbers come from near-real-time data and can still change.");
+  }
+  s.push(lv === "day" ? "Hollow dashed squares are detections that were not counted, because the satellite was unsure or the heat was not a vegetation fire."
+    : "Brighter (yellow) means more detections; dark red means few. Blank means none was recorded, which is not the same as no fire.");
+  if (!D.calibration_accepted) s.push(D.region.id === "hawaii"
+    ? "In Hawaiʻi most of the heat satellites detect comes from the volcano, and the newer VIIRS counts could not be converted reliably, so only MODIS Aqua is shown."
+    : "In this region the newer VIIRS counts could not be converted reliably, so only MODIS Aqua is shown.");
+  box.replaceChildren(...s.map(t => el("p", {text: t})));
+}
+
+// ---------- fire activity over time: years, then months, then days ----------
+function niceMax(v) { if (!(v > 0)) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); return [1, 2, 5, 10].map(k => k * p).find(k => k >= v); }
+// bars: [{label, tick, value, cls, sel, band: [lo, hi], med, mark, say, go}]
+function barChart(title, bars) {
+  const top = niceMax(Math.max(...bars.map(b => Math.max(b.value || 0, b.mark || 0, b.band ? b.band[1] : 0)))), pc = v => (100 * v / top).toFixed(2) + "%";
+  const plot = el("div", {class: "plot"}), xaxis = el("div", {class: "xaxis", "aria-hidden": "true"});
+  bars.forEach(b => {
+    const c = el("button", {type: "button", class: "col " + (b.cls || "") + (b.sel ? " sel" : ""), "aria-label": b.say, title: b.say});
+    if (b.sel) c.setAttribute("aria-current", "true");
+    if (!b.go) c.setAttribute("aria-disabled", "true");
+    if (b.band) c.append(el("span", {class: "band", style: "bottom:" + pc(b.band[0]) + ";height:" + pc(b.band[1] - b.band[0])}));
+    if (b.med != null) c.append(el("span", {class: "med", style: "bottom:" + pc(b.med)}));
+    if (b.value != null) c.append(el("span", {class: "barv", style: "height:" + pc(b.value)}));
+    if (b.mark != null) c.append(el("span", {class: "mk", style: "bottom:" + pc(b.mark)}));
+    const show = () => { $("drillvalue").textContent = b.say; };
+    c.addEventListener("mouseenter", show); c.addEventListener("focus", show);
+    c.addEventListener("click", () => { show(); if (b.go) b.go(); });
+    plot.append(c); xaxis.append(el("span", {text: b.tick || ""}));
+  });
+  const yaxis = el("div", {class: "yaxis", "aria-hidden": "true"}, el("span", {text: fmt(top)}), el("span", {text: fmt(top / 2)}), el("span", {text: "0"}));
+  return el("div", {class: "chart", role: "group", "aria-label": title}, yaxis, plot, xaxis);
+}
+function drawDrill() {
+  const box = $("drill"), lv = level(), ys = yearStats(), cs = completeSpan(ys);
+  // breadcrumb
+  const crumbs = el("nav", {class: "crumbs", "aria-label": "Time level"}), link = (text, sel, here) => {
+    if (crumbs.childNodes.length) crumbs.append(el("span", {"aria-hidden": "true", text: " › "}));
+    if (here) crumbs.append(el("strong", {"aria-current": "true", text: text}));
+    else { const b = el("button", {type: "button", class: "linkish", text: text}); b.addEventListener("click", () => select(sel)); crumbs.append(b); }
+  };
+  link("All years", {}, lv === "all");
+  if (selYear) link(selYear, {year: selYear}, lv === "year");
+  if (selected) link(MONTHS[+selected.slice(5) - 1], {month: selected}, lv === "month");
+  if (selDay) link(+selDay.slice(8) + " " + MONTHS[+selDay.slice(5, 7) - 1], {day: selDay}, true);
+  const kids = [crumbs], where = D.region.name + (area ? ", chosen area" : "");
+  let sum = "", unit = "";
+  if (lv === "all") {
+    const list = Object.keys(ys).sort();
+    kids.push(el("h3", {text: "Detections each year, " + where}));
+    kids.push(barChart("Detections each year", list.map(y => ({label: y, tick: +y % 5 === 0 ? y : "", value: ys[y].any ? ys[y].total : null, cls: ys[y].complete ? "" : ys[y].any ? "inc" : "terra",
+      say: y + ": " + (ys[y].any ? fmt(ys[y].total) + " detections on the MODIS Aqua scale" + (ys[y].complete ? "" : ", not a full year of final data") : "MODIS Terra only, not on the same scale, no total") + ". Select to see its months.", go: () => select({year: y})}))));
+    unit = "Up: fire detections in a year, on the MODIS Aqua scale. Across: years. Hatched bars are years without twelve months of final data; T marks years with MODIS Terra only.";
+    const best = cs && cs.years.reduce((a, b) => ys[b].total > ys[a].total ? b : a);
+    sum = list.length + " years, " + list[0] + " to " + list[list.length - 1] + "." + (best ? " The most detections in a complete year: " + best + ", with " + fmt(ys[best].total) + ". The usual complete year has " + fmt(median(cs.years.map(k => ys[k].total))) + "." : "") + " Select a year to see its months.";
+  } else if (lv === "year") {
+    const usual = MONTHS.map((_, i) => S.months.filter(v => v.status === "standard" && +v.m.slice(5) === i + 1 && v.m.slice(0, 4) >= "2003").map(v => v.h));
+    const ms = MONTHS.map((_, i) => S.months.find(v => v.m === selYear + "-" + String(i + 1).padStart(2, "0")));
+    kids.push(el("h3", {text: "Detections each month of " + selYear + ", " + where}));
+    kids.push(barChart("Detections each month of " + selYear, ms.map((x, i) => {
+      const u = usual[i], band = u.length ? [Math.min(...u), Math.max(...u)] : null, med = u.length ? median(u) : null;
+      if (!x) return {tick: MONTHS[i], value: null, band, med, cls: "none", say: MONTHS[i] + " " + selYear + ": outside the record."};
+      const st = baseStatus(x.status);
+      return {tick: MONTHS[i], value: x.h, band, med, cls: st === "terra_only_not_harmonized" ? "terra" : isPartial(x.status) ? "partial" : st === "provisional_nrt" ? "prov" : "",
+        say: monthName(x.m) + ": " + (x.h == null ? "no value on the MODIS Aqua scale" : fmt(x.h) + " detections") + ". " + (STATUS[st] || st).split(".")[0].split(":")[0] + (isPartial(x.status) ? ", month not complete" : "")
+          + (med != null ? ". Usual " + MONTHS[i] + ": " + fmt(med) + " (lowest " + fmt(band[0]) + ", highest " + fmt(band[1]) + ")" : "") + ". Select to see its days.", go: () => select({month: x.m})};
+    })));
+    unit = "Up: fire detections in a month, on the MODIS Aqua scale. Across: months. Behind each bar, the pale band is the lowest to the highest that month has been since 2003 (final data only), and the line is the usual (median). Outlined bars are provisional, dashed bars are months not complete, T is MODIS Terra only.";
+    const have = ms.filter(x => x && x.h != null), top = have.length ? have.reduce((a, b) => b.h > a.h ? b : a) : null;
+    sum = selYear + ": " + (have.length ? fmt(have.reduce((t, x) => t + x.h, 0)) + " detections in " + have.length + " months with a value. The most: " + monthName(top.m) + ", with " + fmt(top.h) + "." : "no month has a value on the MODIS Aqua scale.") + " Select a month to see its days.";
+  } else {
+    const x = S.months.find(v => v.m === selected), pick = mapSensor(x), m = +selected.slice(5), n = daysIn(selected), k = $("sensor").value === "auto" ? coeff(m) : null;
+    const viirs = k ? (x.n20 != null ? "VIIRS_NOAA20" : x.snpp != null ? "VIIRS_SNPP" : null) : null, vi = GRID_SENSORS.indexOf(viirs);
+    kids.push(el("h3", {text: "Detections each day of " + monthName(selected) + ", " + D.region.name + (area ? " (whole region)" : "")}));
+    if (!daily) kids.push(el("p", {class: "note", text: "The daily counts for this region could not be loaded."}));
+    else if (!pick.s) kids.push(el("p", {class: "note", text: "No satellite in this record was observing in " + monthName(selected) + "."}));
+    else {
+      const days = Array.from({length: n}, (_, i) => selected + "-" + String(i + 1).padStart(2, "0")), tot = [];
+      kids.push(barChart("Detections each day of " + monthName(selected), days.map((d, i) => {
+        const after = d > D.data_through, fly = flyingOn(pick.s, d), c = daily ? dayCounts(d) : [0, 0, 0, 0], v = after || !fly ? null : c[pick.i];
+        const mark = viirs && !after && flyingOn(viirs, d) ? c[vi] / k : null;
+        if (v != null) tot.push([d, v]);
+        return {tick: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "", value: v, mark, sel: d === selDay, cls: after ? "none" : !fly ? "none" : daily.nrt.has(d) ? "prov" : "",
+          say: dayName(d) + ": " + (after ? "after the end of the data" : !fly ? SENSOR[pick.s] + " not flying" : fmt(v) + " " + SENSOR[pick.s] + " detections" + (v === 0 ? " (none recorded, which is not the same as no fire)" : ""))
+            + (mark != null ? "; " + SENSOR[viirs] + " " + fmt(c[vi]) + ", about " + fmt1(mark) + " on the Aqua scale (indicative: tested by month, not by day)" : "") + (after || !fly ? "." : ". Select to see this day on the map."),
+          go: after || !fly ? null : () => select({day: d})};
+      })));
+      unit = "Up: fire detections in a day, " + SENSOR[pick.s] + (pick.s === "MODIS_AQUA" ? "" : ", as recorded (not converted)") + ", whole region. Across: day of the month. Outlined bars are provisional days."
+        + (viirs ? " Dots: " + SENSOR[viirs] + " converted to the MODIS Aqua scale. They are indicative: the conversion was tested by month, not by day." : "");
+      const best = tot.length ? tot.reduce((a, b) => b[1] > a[1] ? b : a) : null;
+      sum = monthName(selected) + ": " + (best ? fmt(tot.reduce((t, r) => t + r[1], 0)) + " " + SENSOR[pick.s] + " detections over " + tot.length + " days. The most: " + dayName(best[0]) + ", with " + fmt(best[1]) + ". " + tot.filter(r => r[1] === 0).length + " days had none recorded, which is not the same as no fire." : SENSOR[pick.s] + " has no record in this month.")
+        + (area ? " Daily counts are for the whole region; they are not available for a chosen area." : "") + " Select a day to see it on the map.";
+      // The same days as a table: what each satellite recorded.
+      const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Day"}), ...GRID_SENSORS.map(s => el("th", {class: "num", text: SENSOR[s].replace("VIIRS Suomi NPP", "VIIRS S-NPP") + " (detections)"})), ...(viirs ? [el("th", {class: "num", text: SENSOR[viirs].replace("VIIRS Suomi NPP", "VIIRS S-NPP") + " on the Aqua scale (indicative)"})] : [])));
+      days.filter(d => d <= D.data_through).forEach(d => { const c = dayCounts(d); t.append(el("tr", {}, el("td", {text: dayName(d)}), ...GRID_SENSORS.map((s, i) => el("td", {class: "num", text: flyingOn(s, d) ? fmt(c[i]) : "not flying"})), ...(viirs ? [el("td", {class: "num", text: flyingOn(viirs, d) ? fmt1(c[vi] / k) : "n/a"})] : []))); });
+      kids.push(el("details", {}, el("summary", {text: "Table: what each satellite recorded each day"}), el("div", {class: "calwrap"}, t)));
+    }
+  }
+  kids.splice(lv === "month" || lv === "day" ? kids.length - (kids[kids.length - 1].tagName === "DETAILS" ? 1 : 0) : kids.length, 0,
+    el("p", {class: "note", id: "drillvalue", text: "Point at a bar, or move to it with the Tab key, to read its value."}), el("p", {class: "note", text: unit}), el("p", {id: "drillsum", text: sum}));
+  box.replaceChildren(...kids);
 }
 
 // ---------- calendar ----------
@@ -425,11 +662,13 @@ function drawCalendar() {
   t.append(el("caption", {text: "Fire detections by month and year, " + D.region.name + (area ? ", chosen area only" : ""), style: "caption-side:top;text-align:left;font-size:.85rem;color:#55627a;padding-bottom:4px"}));
   const head = el("tr", {}, el("th", {scope: "col", text: "Year", class: "yr"}));
   MONTHS.forEach(m => head.append(el("th", {scope: "col", text: m})));
-  head.append(el("th", {scope: "col", text: "Year total"}));
+  head.append(el("th", {scope: "col", text: "Year total (detections)"}));
   t.append(el("thead", {}, head));
   const body = el("tbody");
   Object.keys(byYear).sort().reverse().forEach(y => {
-    const tr = el("tr", {}, el("th", {scope: "row", text: y, class: "yr"}));
+    const yb = el("button", {type: "button", class: "linkish", text: y, "aria-label": y + ": show the whole year"});
+    yb.addEventListener("click", () => select({year: y}));
+    const tr = el("tr", {"data-y": y}, el("th", {scope: "row", class: "yr"}, yb));
     let total = 0, n = 0;
     for (let m = 1; m <= 12; m++) {
       const x = byYear[y][m], td = el("td");
@@ -470,16 +709,6 @@ function drawCalendar() {
   $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
 }
 
-function selectMonth(m) {
-  const x = S.months.find(v => v.m === m);
-  if (!x) return;
-  selected = m;
-  document.querySelectorAll(".cal td.sel").forEach(e => { e.classList.remove("sel"); e.firstChild.setAttribute("aria-pressed", "false"); });
-  const td = document.querySelector('.cal td[data-m="' + m + '"]');
-  if (td) { td.classList.add("sel"); td.firstChild.setAttribute("aria-pressed", "true"); }
-  drawDetail(x); drawMap(); writeHash();
-}
-
 function drawDetail(x) {
   const y = x.m.slice(0, 4), m = +x.m.slice(5), st = baseStatus(x.status), med = S.medians[m - 1];
   const box = $("detail"); box.replaceChildren();
@@ -491,7 +720,7 @@ function drawDetail(x) {
   const v = validationFor(x);
   if (v) box.append(el("p", {class: "note", text: v.text}));
   const rows = [["MODIS Terra", x.terra, null], ["MODIS Aqua", x.aqua, x.aqua], ["VIIRS Suomi NPP", x.snpp, x.snpp_eq], ["VIIRS NOAA-20", x.n20, x.n20_eq]];
-  const t = el("table", {}, el("tr", {}, el("th", {text: "Satellite"}), el("th", {class: "num", text: "Counted"}), el("th", {class: "num", text: "On the Aqua scale"})));
+  const t = el("table", {}, el("tr", {}, el("th", {text: "Satellite"}), el("th", {class: "num", text: "Detections counted"}), el("th", {class: "num", text: "Detections on the Aqua scale"})));
   rows.forEach(r => t.append(el("tr", {}, el("td", {text: r[0]}), el("td", {class: "num", text: r[1] == null ? "not flying" : fmt(r[1])}), el("td", {class: "num", text: r[2] == null ? "not converted" : fmt(r[2])}))));
   box.append(t);
 }
@@ -688,15 +917,18 @@ function drawAreaBanner() {
 
 // ---------- URL hash: region, month, map satellite, area ----------
 function readHash() {
-  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), month: p.get("month"), sensor: p.get("sensor")};
+  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor")};
   const a = (p.get("area") || "").split(",").map(Number);
   if (a.length === 4 && a.every(Number.isFinite)) w.area = {w: a[0], s: a[1], e: a[2], n: a[3]};
   return w;
 }
+function wishSel(w) { return w.day ? {day: w.day} : w.month ? {month: w.month} : w.year ? {year: w.year} : {}; }
 function writeHash() {
   if (!D) return;
-  const p = new URLSearchParams({region: D.region.id});
-  if (selected) p.set("month", selected);
+  const p = new URLSearchParams({region: D.region.id}), lv = level();
+  if (lv === "year") p.set("year", selYear);
+  if (lv === "month") p.set("month", selected);
+  if (lv === "day") p.set("day", selDay);
   if ($("sensor").value !== "auto") p.set("sensor", $("sensor").value);
   if (area) p.set("area", [area.w, area.s, area.e, area.n].map(v => v.toFixed(1)).join(","));
   history.replaceState(null, "", "#" + p.toString());
@@ -706,8 +938,8 @@ function applyHash() {
   if (w.region && w.region !== (D && D.region.id) && [...$("region").options].some(o => o.value === w.region)) { $("region").value = w.region; load(w.region, w); return; }
   if (!D) return;
   if (w.sensor && w.sensor !== $("sensor").value && [...$("sensor").options].some(o => o.value === w.sensor)) $("sensor").value = w.sensor;
-  if (w.area) setArea(w.area, true).then(() => w.month && selectMonth(w.month));
-  else { if (area) clearArea(); if (w.month) selectMonth(w.month); else if (selected) showAllYears(); }
+  if (w.area) setArea(w.area, true).then(() => select(wishSel(w)));
+  else { if (area) clearArea(); select(wishSel(w)); }
 }
 
 // ---------- map ----------
@@ -784,7 +1016,7 @@ function setupMap() {
   syncBasemap();
   map.on("zoomend", syncBasemap);
   map.on("moveend", onView);
-  map.on("click", e => { if (!drawing) showCell(cellKey(e.latlng), true); });
+  map.on("click", e => { if (!drawing) { pausePlay(); showCell(cellKey(e.latlng), true); } });
   let frame = 0;
   map.on("mousemove", e => {
     coordBox.textContent = latLonText(e.latlng);
@@ -912,29 +1144,88 @@ function setupExpand() {
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !drawing && shell.classList.contains("is-full")) exitFallback(); });
 }
 
-// ---------- timeline: all years, then every month of the record ----------
-// It moves the same state as the calendar: selectMonth() and showAllYears(). drawMap() keeps it in step.
+// ---------- timeline: steps at the level of the selection (years, months or days) ----------
+// It moves the same selection as the calendar and the charts, through select(). drawMap() keeps it in step.
+function tlPositions() {
+  const lv = level();
+  if (lv === "day") { const n = Math.min(daysIn(selected), selected === D.data_through.slice(0, 7) ? +D.data_through.slice(8) : 31);
+    return {lv: "day", word: "Day", coarse: "Month", zero: false, i: +selDay.slice(8) - 1, list: Array.from({length: n}, (_, i) => ({day: selected + "-" + String(i + 1).padStart(2, "0")}))}; }
+  if (lv === "month") return {lv: "month", word: "Month", coarse: "Year", zero: false, i: D.months.findIndex(x => x.m === selected), list: D.months.map(x => ({month: x.m}))};
+  const ys = years();
+  return {lv: "year", word: "Year", coarse: null, zero: true, i: selYear ? ys.indexOf(selYear) : -1, list: ys.map(y => ({year: y}))};
+}
+function posLabel(p, v) { if (v === 0) return "All years"; const s = p.list[v - 1]; return s.day ? dayName(s.day) : s.month ? monthName(s.month) : s.year; }
 function setupTimeline() {
   const r = $("tl-range");
   let wait = 0;
-  const go = i => { i = Math.max(0, Math.min(D.months.length, i)); if (i === 0) { if (selected) showAllYears(); } else if (D.months[i - 1].m !== selected) selectMonth(D.months[i - 1].m); };
-  const here = () => selected ? D.months.findIndex(x => x.m === selected) + 1 : 0;
-  // From "all years", stepping back goes to the newest month and stepping forward to the oldest.
-  const step = n => { if (!D) return; const i = here(); go(i === 0 ? (n < 0 ? D.months.length : 1) : i + n); };
-  r.addEventListener("input", () => { $("tl-label").textContent = timelineText(+r.value); clearTimeout(wait); wait = setTimeout(() => go(+r.value), 250); });
+  const go = v => { const p = tlPositions(); v = Math.max(p.zero ? 0 : 1, Math.min(p.list.length, v)); if (v !== p.i + 1) select(v === 0 ? {} : p.list[v - 1]); };
+  // From "all years", stepping back goes to the newest year and stepping forward to the oldest.
+  const step = n => { if (!D) return; const p = tlPositions(); go(p.i < 0 ? (n < 0 ? p.list.length : 1) : p.i + 1 + n); };
+  const coarse = n => {
+    if (!D) return; const p = tlPositions();
+    if (p.lv === "month") go(p.i + 1 + 12 * n);
+    else if (p.lv === "day") { const j = D.months.findIndex(x => x.m === selected) + n, m = D.months[j] && D.months[j].m; if (m) { const d = m + "-" + String(Math.min(+selDay.slice(8), daysIn(m))).padStart(2, "0"); select(validDay(d) ? {day: d} : {month: m}); } }
+  };
+  r.addEventListener("input", () => { pausePlay(); $("tl-label").textContent = posLabel(tlPositions(), +r.value); clearTimeout(wait); wait = setTimeout(() => go(+r.value), 250); });
   r.addEventListener("change", () => { clearTimeout(wait); go(+r.value); });
+  // Space plays or pauses while the slider has focus.
+  r.addEventListener("keydown", e => { if (e.key === " ") { e.preventDefault(); togglePlay(); } });
   $("tl-pm").addEventListener("click", () => step(-1)); $("tl-nm").addEventListener("click", () => step(1));
-  $("tl-py").addEventListener("click", () => step(-12)); $("tl-ny").addEventListener("click", () => step(12));
+  $("tl-py").addEventListener("click", () => coarse(-1)); $("tl-ny").addEventListener("click", () => coarse(1));
+  $("tl-play").addEventListener("click", togglePlay);
 }
-function timelineText(i) { return i === 0 || !D ? "All years" : monthName(D.months[i - 1].m); }
 function updateTimeline() {
   if (!D) return;
-  const r = $("tl-range"), n = D.months.length, i = selected ? D.months.findIndex(x => x.m === selected) + 1 : 0;
-  r.max = String(n); r.value = String(i);
-  r.setAttribute("aria-valuetext", timelineText(i));
-  $("tl-label").textContent = timelineText(i);
-  $("tl-pm").disabled = i === 1; $("tl-py").disabled = i === 1;
-  $("tl-nm").disabled = i === n; $("tl-ny").disabled = i === n;
+  const r = $("tl-range"), p = tlPositions(), n = p.list.length, v = p.i + 1;
+  r.min = p.zero ? "0" : "1"; r.max = String(n); r.value = String(v);
+  r.setAttribute("aria-label", p.word + " shown on the map" + (p.zero ? "; the first position is all years" : ""));
+  r.setAttribute("aria-valuetext", posLabel(p, v));
+  $("tl-label").textContent = posLabel(p, v);
+  [["tl-pm", "Previous ", p.word], ["tl-nm", "Next ", p.word], ["tl-py", "Previous ", p.coarse], ["tl-ny", "Next ", p.coarse]].forEach(([id, a, w]) => {
+    const b = $(id); b.hidden = !w; if (!w) return;
+    b.querySelector(".tl-word").textContent = w; b.setAttribute("aria-label", a + w.toLowerCase());
+  });
+  $("tl-pm").disabled = v === 1; $("tl-nm").disabled = v === n;
+  $("tl-py").disabled = v === 1; $("tl-ny").disabled = v === n;
+}
+
+// ---------- play through time ----------
+// Steps at the level of the selection: years, months of the record, or days of the selected month. Never starts by itself.
+const SPEED_MS = {slow: 2000, normal: 1000, fast: 400};
+const QUIET_WHILE_PLAYING = ["tl-label", "mapsum", "mapview", "detail", "mapempty"];   // otherwise announced at every frame
+let playing = false, playToken = 0;
+function sleep(ms) { return new Promise(ok => setTimeout(ok, ms)); }
+function preload(sel) { if (sel && (sel.year || sel.month)) gridYear(+(sel.year || sel.month.slice(0, 4))).catch(() => {}); }
+function setPlaying(on, say) {
+  playing = on;
+  const b = $("tl-play");
+  b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "❚❚ Pause" : "▶ Play"; b.setAttribute("aria-label", on ? "Pause" : "Play through time");
+  $("biglabel").hidden = !on;
+  QUIET_WHILE_PLAYING.forEach(id => $(id).setAttribute("aria-live", on ? "off" : "polite"));
+  $("playstatus").textContent = say;
+}
+function pausePlay() { if (!playing) return; playToken++; setPlaying(false, "Paused at " + selLabel() + "."); }
+function togglePlay() { if (playing) pausePlay(); else play(); }
+async function play() {
+  if (!D || playing) return;
+  const my = ++playToken, first = tlPositions();
+  // From the last step, or from "all years", start at the beginning; otherwise carry on from the next step.
+  let i = first.i < 0 || first.i >= first.list.length - 1 ? 0 : first.i + 1;
+  setPlaying(true, "Playing by " + first.word.toLowerCase() + ".");
+  for (;;) {
+    const p = tlPositions();
+    if (i >= p.list.length) break;
+    const t0 = performance.now();
+    preload(p.list[i + 1]);
+    $("biglabel").textContent = posLabel(p, i + 1);
+    // Wait for the frame to be drawn before timing the next one: a slow frame is shown late, never skipped.
+    await select(p.list[i], {play: true});
+    if (my !== playToken) return;
+    await sleep(Math.max(150, SPEED_MS[$("tl-speed").value] - (performance.now() - t0)));
+    if (my !== playToken) return;
+    i++;
+  }
+  playToken++; setPlaying(false, "Reached the end, " + selLabel() + ". Play starts again from the beginning.");
 }
 
 function drawRegionOnMap() {
@@ -982,31 +1273,78 @@ function allYears() {
   return allYearsCache[id];
 }
 
+// The same for one year: the year's twelve months added up, on a scale fixed across years (pipeline/grid.py).
+function yearSensor(y) {
+  const ms = S.months.filter(x => x.m.slice(0, 4) === y), auto = $("sensor").value === "auto", has = s => ms.some(x => x[FIELD[s]] != null);
+  const s = auto ? (has("MODIS_AQUA") ? "MODIS_AQUA" : "MODIS_TERRA") : $("sensor").value;
+  return {s, i: GRID_SENSORS.indexOf(s), k: null, flying: has(s), span: y + " total",
+    label: SENSOR[s] + (s === "MODIS_AQUA" ? "" : auto ? " (before Aqua; not on the Aqua scale)" : ", as recorded (not converted)")};
+}
+// Words for the map when the chosen satellite has nothing to show: not flying is different from flying and seeing nothing.
+function setEmpty(text, offerAuto) {
+  const box = $("mapempty");
+  box.hidden = !text;
+  box.firstElementChild.textContent = text || "";
+  $("toauto").hidden = !offerAuto;
+}
+function niceDate(d) { return dayName(d); }
+function notFlyingText(pick) {
+  const lv = level(), sp = pick.s && sensorSpan(pick.s), when = lv === "all" ? "the complete years" : selLabel();
+  if (!pick.s) return "No satellite in this record was observing in " + when + ".";
+  if (!sp) return SENSOR[pick.s] + " has no record for this region.";
+  if (lv === "all") return SENSOR[pick.s] + " has no complete year of final data in this record. Its record here runs from " + niceDate(sp.first) + " to " + niceDate(sp.last) + ".";
+  const end = lv === "day" ? selDay : lv === "month" ? selected + "-31" : selYear + "-12-31";
+  return end < sp.first ? SENSOR[pick.s] + " was not flying yet in " + when + ". Its record here starts on " + niceDate(sp.first) + "."
+    : SENSOR[pick.s] + " was no longer sending data in " + when + ". Its record here ends on " + niceDate(sp.last) + ".";
+}
+
 async function drawMap() {
   if (!map || !D) return;
-  const token = ++drawToken, sum = $("mapsum");
-  layers.cells.clearLayers(); layers.hover.clearLayers(); shown = new Map(); shownInfo = null;
+  const token = ++drawToken, sum = $("mapsum"), lv = level();
+  layers.cells.clearLayers(); layers.hover.clearLayers(); shown = new Map(); shownInfo = null; setEmpty(null);
   updateAllYearsButton(); updatePointsButton();
   if (!G) { sum.textContent = "The map grid for this region could not be found."; return; }
   const x = selected && S.months.find(v => v.m === selected);
-  let pick, name, lists, origin;
+  let pick, name = selLabel(), lists = [], origin = [0, 0];
   try {
-    if (x) {
-      pick = mapSensor(x); name = monthName(selected);
+    if (lv === "day") {
+      pick = mapSensor(x); pick.k = null;
+      if (pick.s) { pick.label = SENSOR[pick.s] + (pick.s === "MODIS_AQUA" ? "" : ", as recorded (not converted)"); pick.flying = flyingOn(pick.s, selDay); }
+    } else if (lv === "month") {
+      pick = mapSensor(x);
       if (pick.flying) {
         const g = await gridYear(+selected.slice(0, 4));
         origin = g.origin; lists = Object.values(g.months[String(+selected.slice(5))] || {});
         pick.max = pick.k || pick.s === "MODIS_AQUA" ? G.max_cell.MODIS_AQUA : G.max_cell[pick.s];
       }
+    } else if (lv === "year") {
+      pick = yearSensor(selYear);
+      if (pick.flying) {
+        const g = await gridYear(+selYear);
+        origin = g.origin; lists = Object.values(g.months).flatMap(m => Object.values(m));
+        pick.max = (G.max_cell_year || G.max_cell)[pick.s];
+      }
     } else {
       const A = await allYears();
-      pick = allYearsSensor(A); name = "All years"; origin = A.origin; lists = [A.cells]; pick.max = A.max_cell[pick.s];
+      pick = allYearsSensor(A); origin = A.origin; lists = [A.cells]; pick.max = A.max_cell[pick.s];
     }
-  } catch (e) { if (token === drawToken) sum.textContent = "The map data for " + (selected ? monthName(selected) : "all years") + " could not be loaded."; return; }
+  } catch (e) { if (token === drawToken) sum.textContent = "The map data for " + name + " could not be loaded."; return; }
   if (token !== drawToken) return;
+  map.getPane("cells").style.opacity = pointsOn || lv === "day" ? 0 : CELL_OPACITY;
   if (!pick.flying) {
-    sum.textContent = name + ": " + (pick.s ? SENSOR[pick.s] + (x ? " has no record for this month (the satellite was not flying)." : " has no complete standard year in this record.") : "no satellite in this record was observing yet.");
-    drawMapLegend(pick); drawTopCells(pick); drawPoints(); return;
+    const text = notFlyingText(pick);
+    sum.textContent = name + ": " + text;
+    setEmpty(text, $("sensor").value !== "auto");
+    layers.points.clearLayers(); drawMapLegend(pick); drawTopCells(pick); viewNote(); return;
+  }
+  const nothing = SENSOR[pick.s] + " was flying but recorded no detection in " + D.region.name + (lv === "day" ? " on " : " in ") + name + ". That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
+  if (lv === "day") {
+    const n = daily ? dayCounts(selDay)[pick.i] : null;
+    sum.textContent = name + ", " + pick.label + ": " + (n == null ? "the daily counts could not be loaded." : fmt(n) + (n === 1 ? " detection" : " detections") + " counted across " + D.region.name + ".")
+      + " Each detection is drawn as a square. Places with no square had no detection recorded, which is not the same as no fire.";
+    if (n === 0) setEmpty(nothing);
+    drawMapLegend(pick); drawTopCells(pick); viewNote();
+    return drawPoints();
   }
   for (const f of lists) {
     for (let i = 0; i < f.length; i += 6) {
@@ -1026,34 +1364,34 @@ async function drawMap() {
     // Opaque cells with an outline in their own colour leave no gaps; the pane's opacity lets coastlines through.
     L.rectangle([[s, w], [s + .1, w + .1]], {renderer: cellRenderer, interactive: false, color: c, weight: 1, opacity: 1, fillColor: c, fillOpacity: 1}).addTo(layers.cells);
   });
-  // With individual detections on, the grid is hidden so it does not cover the footprints.
-  map.getPane("cells").style.opacity = pointsOn ? 0 : CELL_OPACITY;
-  shownInfo = {pick, name, when: x ? monthName(selected) : "total over " + pick.span};
+  shownInfo = {pick, name, when: lv === "month" ? name : lv === "year" ? name + " total" : "total over " + pick.span};
   const where = area ? "inside the chosen area" : "across " + D.region.name;
   const [t, c] = area ? [areaTotal, areaCells] : [total, cells];
   const f = v => pick.k ? fmt1(v) : fmt(v);
   sum.textContent = name + ", " + pick.label + ": " + f(t) + (t === 1 ? " detection in " : " detections in ") + fmt(c) + (c === 1 ? " cell " : " cells ") + where
     + (area ? " (" + f(total) + " in the whole region)" : "")
-    + (x ? "." : ", summed over " + pick.span + ". Select a month in the calendar to see one month.")
+    + (lv === "all" ? ", summed over " + pick.span + "." : ".")
     + (x && isPartial(x.status) ? " The month is not complete." : "") + (x && baseStatus(x.status) === "provisional_nrt" ? " Provisional data." : "")
     + " Blank cells mean no detection was recorded, not that nothing burned: when each place could be observed is unknown.";
-  drawMapLegend(pick); drawTopCells(pick); onView(); drawPoints();
+  if (t === 0) setEmpty(nothing);
+  drawMapLegend(pick); drawTopCells(pick); viewNote();
+  return drawPoints();
 }
 
 function drawMapLegend(pick) {
   const lg = $("maplegend"); lg.replaceChildren();
-  if (pick.flying) {
+  if (pick.flying && level() !== "day") {
     const steps = el("span", {class: "steps"});
     legendSteps(pick.max, !!pick.k).forEach(st => steps.append(el("span", {class: "step"}, el("span", {class: "chip"}, el("span", {style: "background:" + st.c + ";opacity:" + CELL_OPACITY})), st.text)));
-    lg.append(el("span", {class: "legtitle", text: "Detections in a 0.1° cell" + (selected ? "" : ", " + pick.span) + " (each step is a multiple, not an amount):"}), steps);
+    lg.append(el("span", {class: "legtitle", text: "Detections in a 0.1° cell" + (pick.span ? ", " + pick.span : "") + " (each step is a multiple, not an amount):"}), steps);
   }
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:transparent;border:1px dashed #55627a"}), "Blank: no detection recorded, not \"no fire\""));
   lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px solid #fff;box-shadow:0 0 0 2px #333"}), "Supported region"));
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8d9097"}), "Dimmed: outside the region, not supported"));
   if (area) lg.append(el("span", {}, el("span", {class: "sw", style: "border:3px dashed #f2a900"}), "Chosen area"));
-  if (pointsOn) {
+  if (pointsOn || level() === "day") {
     lg.append(el("span", {}, el("span", {class: "sw", style: "background:" + DETECTION_RED + ";border:1.5px solid #111;width:12px;height:12px"}), "Counted detection (filled red square)"));
-    lg.append(el("span", {}, el("span", {class: "sw", style: "background:#55627a;border:2px dashed #fff;width:12px;height:12px"}), "Not counted (hollow dashed square): low confidence or a non-fire heat source"));
+    lg.append(el("span", {}, el("span", {class: "sw", style: "background:#3b4a5f;border:2px dashed #fff;width:16px;height:16px"}), "Not counted (hollow dashed square): low confidence or a non-fire heat source"));
     lg.append(el("span", {text: "Squares show the sensor's footprint at nadir: about 1 km for MODIS, 375 m for VIIRS (drawn at least 5 pixels wide)."}));
   }
 }
@@ -1081,6 +1419,7 @@ function showCell(key, includeEmpty) {
 }
 function drawTopCells(pick) {
   const box = $("topcells").lastElementChild; box.replaceChildren();
+  if (level() === "day") { box.append(el("p", {class: "note", text: "A single day is drawn as individual detections, not as cells. Choose the month to see its cells."})); return; }
   const list = [...shown].filter(([k]) => inArea(Math.floor(k / 10000), k % 10000)).sort((a, b) => b[1] - a[1]).slice(0, 10);
   if (!list.length) { box.append(el("p", {class: "note", text: "No cell has a recorded detection" + (area ? " inside the chosen area" : "") + " for this view and satellite. That does not mean nothing burned."})); return; }
   const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Cell centre (0.1° cell); focus or select to outline it on the map"}), el("th", {class: "num", text: "Detections"})));
@@ -1092,29 +1431,22 @@ function drawTopCells(pick) {
   box.append(t);
 }
 
-function onView() {
+function viewNote() {
   if (!map || !regionBounds) return;
-  const b = map.getBounds();
-  $("mapview").textContent = !b.intersects(regionBounds)
+  $("mapview").textContent = !map.getBounds().intersects(regionBounds)
     ? "This view is outside the supported region, " + D.region.name + ". Nothing is shown here; this area is not supported." : "";
   updatePointsButton();
-  if (pointsOn) drawPoints();
 }
+function onView() { viewNote(); if (pointsOn || level() === "day") drawPoints(); }
 
-// "Draw" in the layers panel: grid cells or individual detections (one state, pointsOn).
+// "Draw" in the layers panel: grid cells or individual detections (one state, pointsOn). A single day is always detections.
 function updatePointsButton() {
-  const ok = !!map && !!selected && map.getZoom() >= DETAIL_ZOOM;
-  $("drawpts").disabled = !ok && !pointsOn;
-  $("drawpts").checked = pointsOn; $("drawgrid").checked = !pointsOn;
-  $("drawnote").textContent = !selected ? "Individual detections: choose a month first." : !ok && !pointsOn ? "Individual detections: zoom in to level " + DETAIL_ZOOM + " or closer." : "";
+  const day = level() === "day", ok = !!map && !!selected && map.getZoom() >= DETAIL_ZOOM;
+  $("drawpts").disabled = day || (!ok && !pointsOn); $("drawgrid").disabled = day;
+  $("drawpts").checked = pointsOn || day; $("drawgrid").checked = !(pointsOn || day);
+  $("drawnote").textContent = day ? "A single day is always drawn as individual detections." : !selected ? "Individual detections: choose a month first." : !ok && !pointsOn ? "Individual detections: zoom in to level " + DETAIL_ZOOM + " or closer." : "";
 }
-function updateAllYearsButton() { $("allyears").setAttribute("aria-pressed", String(!selected)); updateTimeline(); }
-function showAllYears() {
-  selected = null; pointsOn = false;
-  document.querySelectorAll(".cal td.sel").forEach(e => { e.classList.remove("sel"); e.firstChild.setAttribute("aria-pressed", "false"); });
-  $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
-  drawMap(); writeHash();
-}
+function updateAllYearsButton() { $("allyears").setAttribute("aria-pressed", String(level() === "all")); updateTimeline(); }
 
 // Read a hotspot year file a piece at a time, handing complete lines (header included) to fn.
 // The large files (about 1 million rows a year in the Vietnam region) are never held whole as text.
@@ -1133,14 +1465,14 @@ async function eachLines(url, fn) {
   }
 }
 
-// Load the selected month's hotspot rows. Year files are sorted by date, so reading stops after the month.
+// Load the selected month's hotspot rows: [lat, lon, counted, sensor, day of month]. Year files are sorted by date, so reading stops after the month.
 async function monthRows(key) {
   if (pointCache.key === key) return pointCache.rows;
   const [region, ym] = key.split("/"), rows = [];
   await eachLines("data/hotspots/" + region + "/" + ym.slice(0, 4) + ".csv.gz", lines => {
     for (const line of lines) {
       const m = line.slice(0, 7);
-      if (m === ym) { const f = line.split(","); rows.push([+f[2], +f[3], f[10] === "1", f[4]]); }
+      if (m === ym) { const f = line.split(","); rows.push([+f[2], +f[3], f[10] === "1", f[4], +f[0].slice(8, 10)]); }
       else if (m > ym && m[0] !== "a") return false;   // past the month ("acq_date" is the header)
     }
   });
@@ -1157,19 +1489,20 @@ function footprint(lat, lon, side) {
 
 async function drawPoints() {
   if (!map) return;
-  const token = ++pointToken, note = $("mapview");
+  const token = ++pointToken, note = $("mapview"), day = level() === "day", when = day ? "on " + dayName(selDay) : "in " + (selected ? monthName(selected) : "");
   layers.points.clearLayers();
-  if (!pointsOn || !selected) return;
-  if (map.getZoom() < DETAIL_ZOOM) { note.textContent = "Zoom in further to see individual detections."; return; }
+  if (!(pointsOn || day) || !selected) return;
+  if (!day && map.getZoom() < DETAIL_ZOOM) { note.textContent = "Zoom in further to see individual detections."; return; }
   const x = S.months.find(v => v.m === selected), pick = mapSensor(x);
-  if (!pick.flying) return;
+  if (!pick.s || (day ? !flyingOn(pick.s, selDay) : !pick.flying)) return;
   let rows;
   try {
     if (pointCache.key !== D.region.id + "/" + selected) note.textContent = "Loading the detections for " + monthName(selected) + ".";
     rows = await monthRows(D.region.id + "/" + selected);
-  } catch (e) { if (token === pointToken) note.textContent = "The detections for this month could not be loaded."; return; }
+  } catch (e) { if (token === pointToken) note.textContent = "The detections for this " + (day ? "day" : "month") + " could not be loaded."; return; }
   if (token !== pointToken) return;
-  const b = map.getBounds(), here = rows.filter(r => r[3] === pick.s && b.contains([r[0], r[1]]));
+  layers.points.clearLayers();
+  const dd = day ? +selDay.slice(8) : 0, b = map.getBounds(), here = rows.filter(r => r[3] === pick.s && (!day || r[4] === dd) && b.contains([r[0], r[1]]));
   const n = Math.min(here.length, MAX_POINTS), step = here.length / n;
   // Square side in metres: the sensor's nadir footprint, but never under 5 pixels at this zoom.
   const mpp = 156543.03392 * Math.cos(b.getCenter().lat * Math.PI / 180) / Math.pow(2, map.getZoom());
@@ -1182,9 +1515,9 @@ async function drawPoints() {
       : {renderer: pointRenderer, color: "#fff", weight: 2, dashArray: "3 2", fill: false, interactive: false}).addTo(layers.points);
     drawn++; if (r[2]) counted++;
   }
-  note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view. Zoom in to see them all. "
-      : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view. ") + fmt(counted) + " counted (red squares), " + fmt(drawn - counted) + " not counted (hollow dashed squares: low confidence or a non-fire heat source)."
-    : "No " + SENSOR[pick.s] + " detection was recorded in this view in " + monthName(selected) + ". That does not mean nothing burned.")
+  note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view " + when + ". Zoom in to see them all. "
+      : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view " + when + ". ") + fmt(counted) + " counted (red squares), " + fmt(drawn - counted) + " not counted (hollow dashed squares: low confidence or a non-fire heat source)."
+    : "No " + SENSOR[pick.s] + " detection was recorded in this view " + when + ". That does not mean nothing burned.")
     + (regionBounds.contains(b) ? "" : " Nothing is shown outside the region box.");
 }
 
@@ -1290,14 +1623,15 @@ function downloadMonthly() {
 // ---------- wiring ----------
 $("dlmonthly").addEventListener("click", () => { if (D) downloadMonthly(); });
 $("region").addEventListener("change", e => load(e.target.value));
-$("mode").addEventListener("change", () => { if (D) { drawCalendar(); if (selected) selectMonth(selected); } });
-$("sensor").addEventListener("change", () => { drawMap(); writeHash(); });
-["drawgrid", "drawpts"].forEach(id => $(id).addEventListener("change", () => { pointsOn = $("drawpts").checked; updatePointsButton(); drawMap(); if (!pointsOn) onView(); }));
+$("mode").addEventListener("change", () => { if (D) { drawCalendar(); select(curSel()); } });
+$("sensor").addEventListener("change", () => { if (D) select(curSel()); });
+$("toauto").addEventListener("click", () => { $("sensor").value = "auto"; if (D) select(curSel()); $("sensor").focus(); });
+["drawgrid", "drawpts"].forEach(id => $(id).addEventListener("change", () => { pausePlay(); pointsOn = $("drawpts").checked; updatePointsButton(); drawMap(); if (!pointsOn) onView(); }));
 $("basemap").addEventListener("change", () => { $("basenote").textContent = ""; syncBasemap(); });
 $("outline").addEventListener("change", e => { if (map) toggleLayer(layers.box, e.target.checked); });
 $("layersbtn").addEventListener("click", () => setLayersOpen($("layersbtn").getAttribute("aria-expanded") !== "true"));
 $("whole").addEventListener("click", () => { clearArea(); });
-$("allyears").addEventListener("click", showAllYears);
+$("allyears").addEventListener("click", () => showAllYears());
 $("areaform").addEventListener("submit", e => {
   e.preventDefault();
   const v = ["aw", "as", "ae", "an"].map(id => parseFloat($(id).value));
