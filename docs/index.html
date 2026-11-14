@@ -182,12 +182,12 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 @media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:340px}
   .timeline{gap:6px}#tl-range{order:-1;flex-basis:100%}.tl-word{display:none}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
-  #tl-play{order:-3}#tl-range{order:-2;flex:1 1 40%}#tl-speed{order:-1}
-  #allyears{order:1}#tl-py{order:2}#tl-pm{order:3}#tl-label{order:4;flex:1 1 auto;min-width:0;text-align:center;font-size:.85rem}#tl-nm{order:5}#tl-ny{order:6}
+  #tl-play{order:-3}#tl-range{order:-2;flex:1 1 52%}#tl-speed{order:-1}
+  #tl-py{order:2}#tl-pm{order:3}#tl-label{order:4;flex:1 1 auto;min-width:0;text-align:center;font-size:.85rem}#tl-nm{order:5}#tl-ny{order:6}
   #legendpanel{width:240px}
   .leaflet-bottom.leaflet-left{bottom:36px}
   #biglabel{top:58px}#mapnotes{top:108px}
-  .mapshell{--tl-h:150px}.tl-levels{order:7;flex:1 1 100%}.tl-levels .tl-btn{flex:1 1 0}
+  .mapshell{--tl-h:150px}.tl-levels{order:7;flex:1 1 100%}.tl-levels .tl-btn{flex:1 1 0;padding:6px 4px;font-size:.9rem;min-width:0}
   #monthrow{grid-template-columns:repeat(6,minmax(0,1fr))}#monthrow strong{grid-column:1/-1}
   .leaflet-control-attribution{font-size:10px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
@@ -233,7 +233,6 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <button type="button" id="expand" class="mbtn" aria-pressed="false">Expand map</button>
   <details class="mpanel" id="legendpanel" open><summary class="mpanel-head">Legend</summary><div class="legend" id="maplegend"></div></details>
   <div class="timeline" role="group" aria-label="Time shown on the map">
-    <button type="button" id="allyears" class="tl-btn" aria-pressed="true" aria-label="All years">All<span class="tl-word"> years</span></button>
     <button type="button" id="tl-play" class="tl-btn" aria-pressed="false" aria-label="Play through time">▶ <span class="tl-word">Play</span></button>
     <select id="tl-speed" aria-label="Playback speed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select>
     <button type="button" id="tl-py" class="tl-btn" aria-label="Previous year">« <span class="tl-word">Year</span></button>
@@ -243,7 +242,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <button type="button" id="tl-ny" class="tl-btn" aria-label="Next year"><span class="tl-word">Year</span> »</button>
     <output id="tl-label" for="tl-range" aria-live="polite">All years</output>
     <span class="tl-levels" role="group" aria-label="Step the timeline by">
-      <button type="button" id="lv-year" class="tl-btn" aria-pressed="true">Years</button><button type="button" id="lv-month" class="tl-btn" aria-pressed="false">Months</button><button type="button" id="lv-day" class="tl-btn" aria-pressed="false" disabled>Days</button>
+      <button type="button" id="lv-day" class="tl-btn" aria-pressed="false">Days</button><button type="button" id="lv-month" class="tl-btn" aria-pressed="false">Months</button><button type="button" id="lv-year" class="tl-btn" aria-pressed="false">Years</button><button type="button" id="allyears" class="tl-btn" aria-pressed="false">All years</button>
     </span>
     <span id="playstatus" class="sr" role="status" aria-live="polite"></span>
   </div>
@@ -257,17 +256,6 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 
 <div class="wrap">
   <nav id="monthrow" aria-label="Months of the selected year" hidden></nav>
-  <section id="detsec" aria-labelledby="h-det" hidden>
-    <h2 id="h-det" tabindex="-1">Detections</h2>
-    <p id="detsum" aria-live="polite"></p>
-    <p class="note">Local time and UTC are the time of the satellite pass. Radiative power is the fire radiative power FIRMS reports for the pixel, in megawatts.</p>
-    <div class="howto">
-      <p><strong>When:</strong> the time is when the satellite passed over and saw the heat, not when the fire started. Each satellite passes about twice a day, so a fire can burn for hours unseen. Dates on this page are UTC dates, so a local evening or early morning can fall on the neighbouring date.</p>
-      <p style="margin:0"><strong>Where:</strong> the position is the centre of the satellite pixel: about 375 m across for VIIRS and about 1 km for MODIS, larger at the edge of the swath. The fire is somewhere inside it, not exactly at the point.</p>
-    </div>
-    <div class="calwrap dettable"><table class="plain" id="dettable"></table></div>
-    <div class="areabar"><button type="button" id="detmore" class="secondary" hidden>Show more</button><button type="button" id="detcsv" class="secondary">Download these rows (CSV)</button></div>
-  </section>
   <section aria-labelledby="h-what">
     <h2 id="h-what">What you are looking at</h2>
     <div id="explain" aria-live="polite"></div>
@@ -291,9 +279,20 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     </div>
   </section>
 
+  <section id="detsec" aria-labelledby="h-det" hidden>
+    <h2 id="h-det" tabindex="-1">Detections</h2>
+    <p id="detsum" aria-live="polite"></p>
+    <p class="note">Local time and UTC are the time of the satellite pass. Radiative power is the fire radiative power FIRMS reports for the pixel, in megawatts.</p>
+    <div class="howto">
+      <p><strong>When:</strong> the time is when the satellite passed over and saw the heat, not when the fire started. Each satellite passes about twice a day, so a fire can burn for hours unseen. Dates on this page are UTC dates, so a local evening or early morning can fall on the neighbouring date.</p>
+      <p style="margin:0"><strong>Where:</strong> the position is the centre of the satellite pixel: about 375 m across for VIIRS and about 1 km for MODIS, larger at the edge of the swath. The fire is somewhere inside it, not exactly at the point.</p>
+    </div>
+    <div class="calwrap dettable"><table class="plain" id="dettable"></table></div>
+    <div class="areabar"><button type="button" id="detmore" class="secondary" hidden>Show more</button><button type="button" id="detcsv" class="secondary">Download these rows (CSV)</button></div>
+  </section>
   <section aria-labelledby="h-drill">
     <h2 id="h-drill">Fire activity over time</h2>
-    <p class="note">Start with the years, select a year to see its months, then a month to see its days. The map, the timeline and the calendar follow.</p>
+    <p class="note">This opens on the days of one month. Select a bar to go down a level; use the trail above the chart to go up to the month, the year or all years. The map, the timeline and the calendar follow.</p>
     <div id="drill" aria-live="polite"></div>
   </section>
 
@@ -487,8 +486,8 @@ async function load(region, wish) {
   if (wish.sensor && [...$("sensor").options].some(o => o.value === wish.sensor)) $("sensor").value = wish.sensor;
   drawTrust(); drawRegionOnMap(); await setupDownload();
   if (token !== loadToken) return;
-  // With no time in the link the map opens on all years, so it is never empty on load.
-  applySel(wishSel(wish));
+  // With no time in the link the page opens on the latest day that has a counted detection, so the map is never empty on load.
+  applySel(startSel(wish));
   if (wish.area && !(await setArea(wish.area, true))) wish.area = null;
   if (token !== loadToken) return;
   if (!wish.area) { fillAreaForm(); await refresh(); }
@@ -557,7 +556,26 @@ async function loadDaily(region) {
   if (!r.ok) throw new Error(r.status);
   const d = await r.json(), t0 = Date.parse(d.start + "T00:00:00Z"), out = {standard: new Map(), nrt: new Map()};
   ["standard", "nrt"].forEach(q => { const f = d[q] || []; for (let i = 0; i < f.length; i += 5) out[q].set(new Date(t0 + f[i] * 864e5).toISOString().slice(0, 10), f.slice(i + 1, i + 5)); });
+  out.dates = [...new Set([...out.standard.keys(), ...out.nrt.keys()])].sort();
   return out;
+}
+// Which of the four counts a day is judged by: the satellite chosen on the map, or for the harmonized view the month's source.
+function viewIndex(d) {
+  const v = $("sensor").value, x = D.months.find(m => m.m === d.slice(0, 7));
+  return GRID_SENSORS.indexOf(v !== "auto" ? v : x && GRID_SENSORS.includes(x.src) ? x.src : "MODIS_AQUA");
+}
+function harmIndex(d) { const x = D.months.find(m => m.m === d.slice(0, 7)); return GRID_SENSORS.indexOf(x && GRID_SENSORS.includes(x.src) ? x.src : "MODIS_AQUA"); }
+// The most recent day with at least one counted detection in the harmonized view: where the page opens.
+function latestDay() {
+  if (!daily) return null;
+  for (let i = daily.dates.length - 1; i >= 0; i--) { const d = daily.dates[i]; if (d <= D.data_through && dayCounts(d)[harmIndex(d)] > 0) return d; }
+  return null;
+}
+// The day with the most counted detections among dates starting with a prefix ("2021", "2021-08", or "" for the whole record).
+function busiestIn(prefix) {
+  let best = null, top = 0;
+  if (daily) for (const d of daily.dates) { if (!d.startsWith(prefix) || d > D.data_through) continue; const n = dayCounts(d)[viewIndex(d)]; if (n > top) { top = n; best = d; } }
+  return best;
 }
 // Counted detections on one day, whole region: [aqua, terra, snpp, n20], standard and near-real-time together.
 function dayCounts(d) { const a = daily.standard.get(d) || [0, 0, 0, 0], b = daily.nrt.get(d) || [0, 0, 0, 0]; return a.map((v, i) => v + b[i]); }
@@ -578,6 +596,14 @@ function yearStats() {
 }
 function completeSpan(ys) { const c = Object.keys(ys).filter(y => ys[y].complete).sort(); return c.length ? {years: c, text: c[0] + " to " + c[c.length - 1]} : null; }
 function times(v, usual) { const r = v / usual; return "about " + (r >= 10 ? Math.round(r) : r.toFixed(1)) + " times"; }
+const FEW_DETECTIONS = 10;   // below this many on a day, the page says the day is quiet and offers busier ones
+// One sentence for a month on the MODIS Aqua scale, compared with the usual for that calendar month.
+function monthSentence(x, place) {
+  const m = +x.m.slice(5), med = S.medians[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
+  if (x.h == null) return st === "terra_only_not_harmonized" ? "In " + fullMonth(x.m) + " only the MODIS Terra satellite was flying (" + fmt(x.terra) + " detections). Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + fullMonth(x.m) + ".";
+  if (isPartial(x.status)) return fullMonth(x.m) + " has " + fmt(x.h) + " detections so far in " + place + " on the MODIS Aqua scale. The month is not complete, so it is not compared with a full " + mn + ".";
+  return fullMonth(x.m) + " had " + fmt(x.h) + " detections in " + place + " on the MODIS Aqua scale" + (med > 0 ? ", " + times(x.h, med) + " the usual " + mn + " (" + fmt(med) + (med === 1 ? " detection" : " detections") + ")." : med === 0 ? "; the usual " + mn + " has none." : ".");
+}
 function drawExplain() {
   const box = $("explain"), lv = level(), ys = yearStats(), cs = completeSpan(ys), s = [];
   const place = D.region.name + (area ? " (chosen area)" : ""), x = selected && S.months.find(v => v.m === selected);
@@ -593,13 +619,26 @@ function drawExplain() {
   } else {
     const m = +selected.slice(5), med = S.medians[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
     if (lv === "day") {
-      const pick = mapSensor(x);
-      s.push(pick.s && flyingOn(pick.s, selDay) ? "On " + dayName(selDay) + " " + SENSOR[pick.s] + " recorded " + fmt(dayCounts(selDay)[pick.i]) + " detections in " + D.region.name
-          + (x.h != null ? "; the whole month had " + fmt(x.h) + " on the MODIS Aqua scale" + (area ? " in the chosen area" : "") : "") + "." + (area ? " Daily counts cover the whole region, not the chosen area." : "")
+      const pick = mapSensor(x), ok = !!pick.s && flyingOn(pick.s, selDay) && !!daily, n = ok ? dayCounts(selDay)[pick.i] : null;
+      s.push(ok ? "On " + dayName(selDay) + " " + SENSOR[pick.s] + " recorded " + fmt(n) + (n === 1 ? " detection" : " detections") + " in " + D.region.name + "." + (area ? " Daily counts cover the whole region, not the chosen area." : "")
         : (pick.s ? SENSOR[pick.s] : "The chosen satellite") + " has no record for " + dayName(selDay) + ".");
-    } else if (x.h == null) s.push(st === "terra_only_not_harmonized" ? "In " + fullMonth(selected) + " only the MODIS Terra satellite was flying (" + fmt(x.terra) + " detections). Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + fullMonth(selected) + ".");
-    else if (isPartial(x.status)) s.push(fullMonth(selected) + " has " + fmt(x.h) + " detections so far in " + place + ". The month is not complete, so it is not compared with a full " + mn + ".");
-    else s.push(fullMonth(selected) + " had " + fmt(x.h) + " detections in " + place + (med > 0 ? ", " + times(x.h, med) + " the usual " + mn + " (" + fmt(med) + " detections)." : med === 0 ? "; the usual " + mn + " has none." : "."));
+      if (ok && n < FEW_DETECTIONS) {
+        // A quiet day is said in words, with one-click jumps to busy ones.
+        const peak = Math.max(...S.medians.map(v => v || 0)), quiet = peak > 0 && med != null && med < .25 * peak, year = D.data_through.slice(0, 4);
+        const jump = (text, d) => { const b = el("button", {type: "button", class: "linkish", text: text + (d ? " (" + dayName(d) + ")" : "")}); if (d) b.addEventListener("click", () => select({day: d}, {fit: true})); else b.disabled = true; return b; };
+        s.push(el("p", {}, (n === 0 ? "No detection was recorded" : "Only " + fmt(n) + (n === 1 ? " detection" : " detections")) + " on " + dayName(selDay)
+          + (quiet ? "; this is the quiet season here: the usual " + mn + " has " + fmt(med) + " detections, against " + fmt(peak) + " in the usual " + MONTH_FULL[S.medians.indexOf(peak)] + ". " : ". ")
+          + "Jump to: ", ...(busiestIn(year) && busiestIn(year) !== selDay ? [jump("Busiest day this year", busiestIn(year)), " or "] : []), jump("Busiest day on record", busiestIn("")), "."));
+      }
+      // The conversion between satellites is tested by month, so the day view also gives the month on the MODIS Aqua scale.
+      const c = S.current, whole = el("button", {type: "button", class: "linkish", text: "See the whole month"});
+      whole.addEventListener("click", () => select({month: selected}));
+      const text = c && c.month === selected
+        ? "So far in " + fullMonth(selected) + " (days " + c.days.replace("-", " to ") + "), MODIS Aqua recorded " + fmt(c.aqua_nrt_same_days) + " detections in " + place + "; the usual for the same days is " + fmt(c.baseline_median) + " (lowest " + fmt(c.baseline_min) + ", highest " + fmt(c.baseline_max) + ")."
+          + (c.value_aqua_equiv != null ? " NOAA-20, converted to the MODIS Aqua scale, gives about " + fmt(c.value_aqua_equiv) + "." : "")
+        : monthSentence(x, place);
+      s.push(el("p", {}, text + " ", whole, "."));
+    } else s.push(monthSentence(x, place));
     if (st === "provisional_nrt") s.push("This period is provisional: the numbers come from near-real-time data and can still change.");
   }
   s.push(lv === "day" ? "Hollow dashed squares are detections that were not counted, because the satellite was unsure or the heat was not a vegetation fire."
@@ -609,7 +648,7 @@ function drawExplain() {
   if (!D.calibration_accepted) s.push(D.region.id === "hawaii"
     ? "In Hawaiʻi most of the heat satellites detect comes from the volcano, and the newer VIIRS counts could not be converted reliably, so only MODIS Aqua is shown."
     : "In this region the newer VIIRS counts could not be converted reliably, so only MODIS Aqua is shown.");
-  box.replaceChildren(...s.map(t => el("p", {text: t})));
+  box.replaceChildren(...s.map(t => typeof t === "string" ? el("p", {text: t}) : t));
 }
 
 // ---------- fire activity over time: years, then months, then days ----------
@@ -980,16 +1019,19 @@ function drawAreaBanner() {
 
 // ---------- URL hash: region, month, map satellite, area ----------
 function readHash() {
-  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor"), at: p.get("at")};
+  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor"), at: p.get("at"), view: p.get("view")};
   const a = (p.get("area") || "").split(",").map(Number);
   if (a.length === 4 && a.every(Number.isFinite)) w.area = {w: a[0], s: a[1], e: a[2], n: a[3]};
   return w;
 }
 function wishAt(w) { const a = (w.at || "").split(",").map(Number); return a.length === 2 && a.every(Number.isFinite) ? a : null; }
+// What a link asks for; with no time in it, the latest day with a counted detection ("view=all" asks for all years).
+function startSel(w) { const d = !w.day && !w.month && !w.year && w.view !== "all" && latestDay(); return d ? {day: d} : wishSel(w); }
 function wishSel(w) { return w.day ? {day: w.day} : w.month ? {month: w.month} : w.year ? {year: w.year} : {}; }
 function writeHash() {
   if (!D) return;
   const p = new URLSearchParams({region: D.region.id}), lv = level();
+  if (lv === "all") p.set("view", "all");
   if (lv === "year") p.set("year", selYear);
   if (lv === "month") p.set("month", selected);
   if (lv === "day") p.set("day", selDay);
@@ -1002,7 +1044,7 @@ function applyHash() {
   if (w.region && w.region !== (D && D.region.id) && [...$("region").options].some(o => o.value === w.region)) { $("region").value = w.region; load(w.region, w); return; }
   if (!D) return;
   if (w.sensor && w.sensor !== $("sensor").value && [...$("sensor").options].some(o => o.value === w.sensor)) $("sensor").value = w.sensor;
-  const then = () => select(wishSel(w)).then(() => goAt(wishAt(w)));
+  const then = () => select(startSel(w)).then(() => goAt(wishAt(w)));
   if (w.area) setArea(w.area, true).then(then);
   else { if (area) clearArea(); then(); }
 }
@@ -1375,21 +1417,25 @@ function drawMonthRow() {
 function setLevel(to) {
   if (!D) return;
   const lv = level();
-  if (to === "year") select(selYear ? {year: selYear} : {});
+  if (to === "year") select({year: selYear || (latestDay() || D.data_through).slice(0, 4)});
   else if (to === "month") {
     if (selected) select({month: selected});
     else { const ms = D.months.filter(x => (!selYear || x.m.slice(0, 4) === selYear)), withData = ms.filter(x => x.h != null || x.terra != null);
       // From a year: its first month with data. From all years: the latest month.
       const pick = selYear ? (withData[0] || ms[0]) : (withData[withData.length - 1] || ms[ms.length - 1]);
       if (pick) select({month: pick.m}); }
-  } else if (to === "day" && selected && lv !== "day") select({day: busiestDay()}, {fit: true});   // the month's busiest day, and the map moves to it
+  } else if (to === "day" && lv !== "day") {
+    // From a month or a year: its busiest day, and the map moves to it. From all years: the most recent day with data.
+    const d = lv === "month" ? busiestIn(selected) || selected + "-01" : lv === "year" ? busiestIn(selYear) : latestDay();
+    if (d) select({day: d}, {fit: lv !== "all"});
+  }
 }
 function updateLevels() {
   const lv = level();
-  $("lv-year").setAttribute("aria-pressed", String(lv === "all" || lv === "year"));
+  $("lv-year").setAttribute("aria-pressed", String(lv === "year"));
   $("lv-month").setAttribute("aria-pressed", String(lv === "month"));
   $("lv-day").setAttribute("aria-pressed", String(lv === "day"));
-  $("lv-day").disabled = !selected || !daily;
+  $("lv-day").disabled = !daily;
 }
 function niceDate(d) { return dayName(d); }
 function notFlyingText(pick) {
@@ -1704,13 +1750,6 @@ async function showCellDetections(key, button) {
     "kahu-ahi_" + D.region.id + "_cell_" + (row / 10 - 90).toFixed(1) + "_" + (col / 10 - 180).toFixed(1) + "_" + month + "_" + pick.s + ".csv");
   map.closePopup();
   $("detsec").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-det").focus();
-}
-// The busiest day of the selected month for the satellite on the map (the first day if none has a detection).
-function busiestDay() {
-  const x = S.months.find(v => v.m === selected), pick = mapSensor(x);
-  let best = selected + "-01", top = -1;
-  if (daily && pick.s) for (let i = 1; i <= daysIn(selected); i++) { const d = selected + "-" + String(i).padStart(2, "0"); if (d > D.data_through) break; const n = dayCounts(d)[pick.i]; if (n > top) { top = n; best = d; } }
-  return best;
 }
 // Open the map on one point (the "at" part of a link), with its card if that detection is loaded.
 function goAt(at) {
