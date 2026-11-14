@@ -10,8 +10,12 @@ Reads daily_counts.csv from step 1 and writes, per region:
 Method
   k(m) = sum of VIIRS counts / sum of Aqua counts, over all training years, for calendar month m
   VIIRS Aqua-equivalent = VIIRS count / k(m)
-A second coefficient of the same form links NOAA-20 to Suomi NPP, so months after Suomi NPP
-stopped (2 Nov 2026) can still be expressed on the Aqua scale: NOAA-20 -> S-NPP -> Aqua.
+Months after Suomi NPP stopped (2 Nov 2026) come from NOAA-20. NOAA-20 is used 1:1 in place of
+S-NPP: the same leave-one-year-out test showed a NOAA-20 -> S-NPP coefficient does not reduce the
+error, so none is applied. That test is still run and reported.
+
+The current, incomplete month is compared with the same range of days in earlier years
+(month-to-date), never with a full-month median.
 
 Validation is leave-one-year-out: each year is predicted from coefficients fitted without it.
 Only standard-quality, complete months are used to fit or validate.
@@ -33,6 +37,9 @@ METRIC = "n_veg_conf"  # vegetation-fire detections (type 0), low confidence rem
 # Dates from the FIRMS archive download page.
 PARTIAL_START = {"MODIS_AQUA": "2002-07", "VIIRS_SNPP": "2012-01", "MODIS_TERRA": "2000-11"}
 SNPP_LAST_FULL_MONTH = "2026-10"  # S-NPP delivered no new observations after 2 Nov 2026
+# Calibration is refused for a region when it cannot be shown to work there.
+MAX_LOYO_ERROR_PCT = 50   # leave-one-year-out absolute error, as % of the observed total
+MIN_MONTHS_WITH_OWN_K = 9  # calendar months that have enough data for their own coefficient
 DRIFT_YEAR = 2022  # Aqua orbit drift: approximate, see README (to be verified)
 
 
@@ -161,6 +168,53 @@ def describe_k(all_pairs, k, annual):
     return {"annual_k": round(annual, 3) if annual else None, "by_month": table}
 
 
+def month_to_date(daily_path, data_through, k_month):
+    """Compare the current month so far with the same days of that month in earlier years.
+
+    The last date in the download is dropped: it was still being observed when the file was made.
+    Earlier years use MODIS Aqua standard data, which is already on the reference scale.
+    """
+    year, mon, last = int(data_through[:4]), data_through[5:7], int(data_through[8:]) - 1
+    if last < 1:
+        return None
+    now = 0
+    now_aqua = 0
+    past = defaultdict(int)
+    with open(daily_path, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            d = row["date"]
+            if d[5:7] != mon or int(d[8:]) > last:
+                continue
+            if int(d[:4]) == year and row["sensor"] == "VIIRS_NOAA20":
+                now += int(row[METRIC])
+            elif int(d[:4]) == year and row["sensor"] == "MODIS_AQUA":
+                now_aqua += int(row[METRIC])
+            elif int(d[:4]) < year and row["sensor"] == "MODIS_AQUA" and row["quality"] == "standard":
+                past[int(d[:4])] += int(row[METRIC])
+    # A year with no Aqua detections in those days has no rows; count it as 0 once Aqua was flying.
+    first_year = 2003 if mon <= "07" else 2002
+    values = sorted(past.get(y, 0) for y in range(first_year, year))
+    if not values:
+        return None
+    value = round(now / k_month, 1) if k_month else None
+    return {
+        "month": data_through[:7],
+        "days": f"1-{last}",
+        "source": "VIIRS_NOAA20 near-real-time, on the Aqua scale",
+        "value_aqua_equiv": value,
+        "raw_noaa20": now,
+        "aqua_nrt_same_days": now_aqua,
+        "baseline": f"MODIS Aqua, same days, {first_year}-{year - 1}",
+        "baseline_years": len(values),
+        "baseline_median": median(values),
+        "baseline_min": values[0],
+        "baseline_max": values[-1],
+        "years_below_current": sum(1 for v in values if v < value) if value is not None else None,
+        "years_below_current_aqua_nrt": sum(1 for v in values if v < now_aqua),
+        "caveat": "near-real-time files have no `type` column, so static heat sources are not removed from the current month",
+    }
+
+
 def calibrate(region_dir):
     monthly = load_monthly(region_dir / "daily_counts.csv")
     data_through = max(c["last_day"] for m in monthly.values() for c in m.values())
@@ -184,7 +238,8 @@ def calibrate(region_dir):
             "forward_test": forward_test(snpp_aqua, 2018, DRIFT_YEAR),
         },
         "noaa20_to_snpp": {
-            "definition": "k(m) = sum(VIIRS_NOAA20) / sum(VIIRS_SNPP) per calendar month; SNPP-equivalent = NOAA20 / k(m)",
+            "definition": "tested: k(m) = sum(VIIRS_NOAA20) / sum(VIIRS_SNPP) per calendar month",
+            "applied": "none - NOAA-20 is used 1:1 as S-NPP; see leave_one_year_out.uncalibrated for the error of doing so",
             "paired_months": len(n20_snpp),
             "years": [min(y for y, *_ in n20_snpp), max(y for y, *_ in n20_snpp)] if n20_snpp else None,
             "coefficients": describe_k(n20_snpp, k_ns, annual_ns),
@@ -192,8 +247,21 @@ def calibrate(region_dir):
         },
     }
 
+    loyo_err = (result["snpp_to_aqua"]["leave_one_year_out"]["monthly_k"]["all_years"] or {}).get("abs_error_pct_of_total")
+    own_k = sum(1 for v in k_sa.values() if v is not None)
+    accepted = loyo_err is not None and loyo_err <= MAX_LOYO_ERROR_PCT and own_k >= MIN_MONTHS_WITH_OWN_K
+    result["calibration_accepted"] = accepted
+    result["acceptance_rule"] = (f"leave-one-year-out error <= {MAX_LOYO_ERROR_PCT}% of total and at least "
+                                 f"{MIN_MONTHS_WITH_OWN_K} calendar months with their own coefficient; "
+                                 f"this region: error {loyo_err}%, {own_k} months")
+
     def coeff(k, annual, m):
+        if not accepted:
+            return None
         return k[m] if k[m] is not None else annual
+
+    result["current_month"] = month_to_date(region_dir / "daily_counts.csv", data_through,
+                                            coeff(k_sa, annual_sa, int(through_month[5:])))
 
     with open(region_dir / "monthly_series.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -209,13 +277,16 @@ def calibrate(region_dir):
             snpp_eq = n20_eq = ""
             if "VIIRS_SNPP" in cells and coeff(k_sa, annual_sa, m):
                 snpp_eq = round(cells["VIIRS_SNPP"]["value"] / coeff(k_sa, annual_sa, m), 1)
-            if "VIIRS_NOAA20" in cells and coeff(k_ns, annual_ns, m) and coeff(k_sa, annual_sa, m):
-                n20_eq = round(cells["VIIRS_NOAA20"]["value"] / coeff(k_ns, annual_ns, m) / coeff(k_sa, annual_sa, m), 1)
+            if "VIIRS_NOAA20" in cells and coeff(k_sa, annual_sa, m):
+                n20_eq = round(cells["VIIRS_NOAA20"]["value"] / coeff(k_sa, annual_sa, m), 1)
 
             partial = month == through_month
             # Which value represents the month, in order of preference.
             if q("MODIS_AQUA") == "standard" and month != PARTIAL_START["MODIS_AQUA"]:
                 value, source, status = val("MODIS_AQUA"), "MODIS_AQUA", "standard"
+            elif "MODIS_AQUA" in cells and month != PARTIAL_START["MODIS_AQUA"]:
+                # Aqua near-real-time: the reference sensor itself, not yet reprocessed.
+                value, source, status = val("MODIS_AQUA"), "MODIS_AQUA", "provisional_nrt"
             elif q("VIIRS_SNPP") == "standard" and snpp_eq != "":
                 value, source, status = snpp_eq, "VIIRS_SNPP", "standard_calibrated"
             elif n20_eq != "":
@@ -228,6 +299,9 @@ def calibrate(region_dir):
             elif "MODIS_TERRA" in cells:
                 # Before Aqua existed. Terra is a morning sensor and is not on the Aqua scale.
                 value, source, status = "", "MODIS_TERRA", "terra_only_not_harmonized"
+            elif "VIIRS_NOAA20" in cells or "VIIRS_SNPP" in cells:
+                # VIIRS saw something but this region has no trustworthy coefficient.
+                value, source, status = "", "VIIRS", "not_calibrated_insufficient_overlap"
             else:
                 value, source, status = "", "", "no_detections_coverage_unknown"
             if partial and status != "terra_only_not_harmonized":
@@ -255,6 +329,7 @@ def main():
     args = ap.parse_args()
     r = calibrate(args.region)
     sa = r["snpp_to_aqua"]
+    print(f"calibration accepted: {r['calibration_accepted']}  ({r['acceptance_rule']})")
     print(f"metric: {r['metric']}   data through: {r['data_through']}")
     print(f"S-NPP -> Aqua: {sa['paired_months']} paired months, years {sa['years']}, annual k = {sa['coefficients']['annual_k']}")
     print("  k by month: " + "  ".join(f"{m}:{v['k']}" for m, v in sa["coefficients"]["by_month"].items()))
@@ -267,6 +342,11 @@ def main():
     ns = r["noaa20_to_snpp"]
     print(f"NOAA-20 -> S-NPP: {ns['paired_months']} paired months, annual k = {ns['coefficients']['annual_k']}")
     show("Leave-one-year-out, NOAA-20 -> S-NPP (observed = S-NPP count):", ns["leave_one_year_out"])
+    cm = r["current_month"]
+    if cm:
+        print(f"Current month {cm['month']} days {cm['days']}: NOAA-20 on Aqua scale {cm['value_aqua_equiv']} "
+              f"(raw NOAA-20 {cm['raw_noaa20']}), Aqua near-real-time {cm['aqua_nrt_same_days']}; {cm['baseline']}: median {cm['baseline_median']}, "
+              f"range {cm['baseline_min']}-{cm['baseline_max']}; higher than {cm['years_below_current']} of {cm['baseline_years']} years")
     print(f"wrote {args.region / 'monthly_series.csv'} and {args.region / 'calibration.json'}")
 
 

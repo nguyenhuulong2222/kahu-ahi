@@ -537,15 +537,16 @@
       }
     }
   ],
-  "generated_at": "2026-11-14T20:03:22+00:00",
-  "problems": [
-    "DL_FIRE_J1V-C2_849383.zip:fire_nrt_J1V-C2_849383.csv: no `type` column; volcano/static sources cannot be separated",
-    "DL_FIRE_J1V-C2_849438.zip:fire_nrt_J1V-C2_849438.csv: no `type` column; volcano/static sources cannot be separated",
-    "DL_FIRE_M-C61_849382.zip:fire_nrt_M-C61_849382.csv: no `type` column; volcano/static sources cannot be separated",
-    "DL_FIRE_M-C61_849437.zip:fire_nrt_M-C61_849437.csv: no `type` column; volcano/static sources cannot be separated",
-    "DL_FIRE_SV-C2_849384.zip:fire_nrt_SV-C2_849384.csv: no `type` column; volcano/static sources cannot be separated",
-    "DL_FIRE_SV-C2_849439.zip:fire_nrt_SV-C2_849439.csv: no `type` column; volcano/static sources cannot be separated"
+  "generated_at": "2026-11-14T20:11:22+00:00",
+  "notes": [
+    "DL_FIRE_J1V-C2_849383.zip:fire_nrt_J1V-C2_849383.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_J1V-C2_849438.zip:fire_nrt_J1V-C2_849438.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_M-C61_849382.zip:fire_nrt_M-C61_849382.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_M-C61_849437.zip:fire_nrt_M-C61_849437.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_SV-C2_849384.zip:fire_nrt_SV-C2_849384.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_SV-C2_849439.zip:fire_nrt_SV-C2_849439.csv: no `type` column; static-source mask used instead"
   ],
+  "problems": [],
   "sensors": {
     "MODIS_AQUA/nrt": {
       "first": "2026-09-01",
@@ -587,5 +588,17 @@
       "last": "2026-07-31",
       "rows": 1096938
     }
+  },
+  "static_source_mask": {
+    "cell_deg": 0.02,
+    "cells_masked_all_files": 1415,
+    "checked_on": "standard rows inside the region (same rows the mask was built from)",
+    "min_hits": 3,
+    "non_veg_caught_pct": 98.2,
+    "non_veg_masked": 170052,
+    "non_veg_rows": 173175,
+    "veg_masked": 45412,
+    "veg_rows": 2047519,
+    "veg_wrongly_masked_pct": 2.2
   }
 }

@@ -29,6 +29,32 @@ from pathlib import Path
 DEFAULT_BBOX = (-124.5, 32.5, -114.0, 42.0)  # west, south, east, north
 CELL_DEG = 0.1  # grid size for grid_day_count
 
+# Near-real-time files have no `type` column, so volcanoes and static heat sources (type 1, 2, 3)
+# cannot be removed the normal way. Instead, places where the standard archive repeatedly recorded
+# a non-vegetation source are remembered, and near-real-time detections there are not counted as fire.
+MASK_DEG = 0.02       # about 2 km
+MASK_MIN_HITS = 3     # non-vegetation archive detections needed to mask a cell
+
+
+def mask_cell(lat, lon):
+    return (int((lat + 90) / MASK_DEG), int((lon + 180) / MASK_DEG))
+
+
+def build_static_mask(paths):
+    hits = Counter()
+    for path in paths:
+        for _, stream in iter_csv_members(path):
+            reader = csv.DictReader(stream)
+            if "type" not in (reader.fieldnames or []):
+                continue
+            for row in reader:
+                if row["type"].strip() not in ("0", ""):
+                    try:
+                        hits[mask_cell(float(row["latitude"]), float(row["longitude"]))] += 1
+                    except ValueError:
+                        pass
+    return {c for c, n in hits.items() if n >= MASK_MIN_HITS}
+
 # How FIRMS files name each satellite (the `satellite` column), mapped to one code per sensor.
 # The `instrument` column is not used: S-NPP archive files put "SNPP" there instead of "VIIRS".
 SATELLITE_CODES = {
@@ -99,11 +125,15 @@ def ingest(raw_dir, out_dir, bbox):
     cells = defaultdict(set)
     report = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
               "bbox": {"west": west, "south": south, "east": east, "north": north},
-              "cell_deg": CELL_DEG, "files": [], "problems": []}
+              "cell_deg": CELL_DEG, "files": [], "problems": [], "notes": []}
 
     paths = sorted(p for p in raw_dir.iterdir() if p.suffix.lower() in (".csv", ".zip"))
     if not paths:
         sys.exit(f"No .csv or .zip files found in {raw_dir}")
+
+    mask = build_static_mask(paths)
+    # How well the mask reproduces `type` on standard data inside the region, where the answer is known.
+    check = {"non_veg_rows": 0, "non_veg_masked": 0, "veg_rows": 0, "veg_masked": 0}
 
     for path in paths:
         digest = sha256_of(path)
@@ -156,8 +186,16 @@ def ingest(raw_dir, out_dir, bbox):
                 entry["rows_in_bbox"] += 1
                 key = (date, sensor, entry["quality"])
                 n_all[key] += 1
-                # type 0 = presumed vegetation fire. Files without `type` (NRT) cannot be classified.
-                if has_type and row["type"].strip() not in ("0", ""):
+                # type 0 = presumed vegetation fire. Files without `type` (NRT) fall back to the mask.
+                masked = mask_cell(lat, lon) in mask
+                if has_type:
+                    is_veg = row["type"].strip() in ("0", "")
+                    check["veg_rows" if is_veg else "non_veg_rows"] += 1
+                    if masked:
+                        check["veg_masked" if is_veg else "non_veg_masked"] += 1
+                    if not is_veg:
+                        continue
+                elif masked:
                     continue
                 n_veg[key] += 1
                 if has_conf and is_low_confidence(row["confidence"]):
@@ -169,7 +207,7 @@ def ingest(raw_dir, out_dir, bbox):
             if unknown:
                 report["problems"].append(f"{name}: unrecognised satellite values {unknown}; those rows not counted")
             if not has_type:
-                report["problems"].append(f"{name}: no `type` column; volcano/static sources cannot be separated")
+                report["notes"].append(f"{name}: no `type` column; static-source mask used instead")
             for k in ("satellite_values", "instrument_values", "type_values", "confidence_values", "version_values"):
                 entry[k] = dict(entry[k])
             report["files"].append(entry)
@@ -186,6 +224,13 @@ def ingest(raw_dir, out_dir, bbox):
         for key in sorted(n_all):
             w.writerow([*key, n_all[key], n_veg[key], n_veg_conf[key], len(cells[key])])
 
+    report["static_source_mask"] = {
+        "cell_deg": MASK_DEG, "min_hits": MASK_MIN_HITS, "cells_masked_all_files": len(mask),
+        "checked_on": "standard rows inside the region (same rows the mask was built from)",
+        **check,
+        "non_veg_caught_pct": round(100 * check["non_veg_masked"] / check["non_veg_rows"], 1) if check["non_veg_rows"] else None,
+        "veg_wrongly_masked_pct": round(100 * check["veg_masked"] / check["veg_rows"], 1) if check["veg_rows"] else None,
+    }
     dates = [k[0] for k in n_all]
     report["data_through"] = max(dates) if dates else None
     report["sensors"] = {}
@@ -209,8 +254,9 @@ def main():
     print(f"data through: {report['data_through']}")
     for name, s in sorted(report["sensors"].items()):
         print(f"  {name:28s} {s['rows']:>10,d} rows  {s['first']} -> {s['last']}")
-    for f in report["files"]:
-        print(f"  {f['file']}: satellite={f['satellite_values']} type={f['type_values']}")
+    m = report["static_source_mask"]
+    print(f"static-source mask: catches {m['non_veg_caught_pct']}% of non-vegetation rows, "
+          f"wrongly masks {m['veg_wrongly_masked_pct']}% of vegetation rows (standard data, in-sample)")
     if report["problems"]:
         print("PROBLEMS:")
         for p in report["problems"]:
