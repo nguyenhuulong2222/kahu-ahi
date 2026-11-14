@@ -297,8 +297,10 @@ const STATUS = {
   not_calibrated_insufficient_overlap:"VIIRS only, and not converted in this region",
   no_detections_coverage_unknown:"No satellite in this record was observing yet"
 };
-// Cividis, sampled: readable with colour-vision deficiency and in greyscale.
-const CIVIDIS = ["#00224e","#123570","#3b496c","#575d6d","#707173","#8a8678","#a59c74","#c3b369","#e1cc55","#fee838"];
+// Fire ramp, low to high: deep maroon, red, orange, yellow. Lightness rises at every step (L* 14 to 92), also under
+// simulated protanopia, deuteranopia and tritanopia, so it still reads in greyscale and with colour-vision deficiency.
+const FIRE = ["#4a0812","#6a0d16","#8b1218","#ab1b1a","#c9321a","#e0531a","#ee7a1e","#f6a02c","#fbc544","#ffe873"];
+const DETECTION_RED = "#e31a1c";
 const DIVERGE = ["#2166ac","#67a9cf","#d1e5f0","#f7f7f7","#fddbc7","#ef8a62","#b2182b"];
 // Order of the four counts in each cell of the grid files (pipeline/grid.py), and the matching month fields.
 const GRID_SENSORS = ["MODIS_AQUA","MODIS_TERRA","VIIRS_SNPP","VIIRS_NOAA20"];
@@ -327,9 +329,14 @@ function el(tag, attrs, ...kids) {
   return e;
 }
 function median(a) { const s = [...a].sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
-function textOn(hex) { const c = parseInt(hex.slice(1), 16), l = .299 * (c >> 16) + .587 * (c >> 8 & 255) + .114 * (c & 255); return l > 140 ? "#14213d" : "#fff"; }
+// White or near-black text, whichever has the higher WCAG contrast on the colour (at least 4.5:1 on every ramp step).
+function textOn(hex) {
+  const lin = c => { c /= 255; return c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); };
+  const c = parseInt(hex.slice(1), 16), y = .2126 * lin(c >> 16) + .7152 * lin(c >> 8 & 255) + .0722 * lin(c & 255);
+  return 1.05 / (y + .05) >= (y + .05) / .0553 ? "#fff" : "#111";
+}
 // One log scale for the calendar and the map: each colour step is a multiple, not an amount.
-function ramp(v, max) { return CIVIDIS[Math.min(9, Math.floor(Math.log10(v + 1) / Math.log10(Math.max(max, 10) + 1) * 10))]; }
+function ramp(v, max) { return FIRE[Math.min(9, Math.floor(Math.log10(v + 1) / Math.log10(Math.max(max, 10) + 1) * 10))]; }
 function deg(v, pos, neg) { return Math.abs(v).toFixed(1) + "° " + (v >= 0 ? pos : neg); }
 function areaText(a) { return deg(a.w, "E", "W") + " to " + deg(a.e, "E", "W") + ", " + deg(a.s, "N", "S") + " to " + deg(a.n, "N", "S"); }
 
@@ -451,10 +458,10 @@ function drawCalendar() {
     lg.append(el("span", {}, "Far below usual ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + DIVERGE.join(",") + ")"}), " far above usual"));
     lg.append(el("span", {text: "Usual = median of the same month, 2003 onward"}));
   } else {
-    lg.append(el("span", {}, "Fewer ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + CIVIDIS.join(",") + ")"}), " more (each step is a multiple, not an amount)"));
+    lg.append(el("span", {}, "Fewer ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + FIRE.join(",") + ")"}), " more detections (each step is a multiple, not an amount)"));
   }
-  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8a8678;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px #14213d"}), "Provisional"));
-  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8a8678;outline:2px dashed #14213d;outline-offset:-2px"}), "Month not complete"));
+  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#e0531a;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px #14213d"}), "Provisional"));
+  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#e0531a;outline:2px dashed #14213d;outline-offset:-2px"}), "Month not complete"));
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:repeating-linear-gradient(45deg,#dfe4ea 0 4px,#fff 4px 8px)"}), "Terra only, not on this scale"));
   if (!D.calibration_accepted) {
     const e = D.snpp_to_aqua.leave_one_year_out.monthly_k.all_years;
@@ -706,9 +713,9 @@ function applyHash() {
 // ---------- map ----------
 let map = null, regionBounds = null, shown = new Map(), shownInfo = null, pointsOn = false, pointCache = {key: null, rows: null}, drawToken = 0, pointToken = 0;
 const layers = {}, allYearsCache = {};
-// The map uses the upper seven steps of the calendar's cividis ramp: the two darkest steps vanish on the
+// The map uses the upper seven steps of the calendar's fire ramp: the darkest steps vanish on the
 // dark satellite basemap. Same log scale as the calendar; the legend lists each step's range.
-const MAP_RAMP = CIVIDIS.slice(3);
+const MAP_RAMP = FIRE.slice(3);
 const CELL_OPACITY = .82;
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
 // Kept short so it does not cover the map on a phone. The full GIBS acknowledgment is in the page footer.
@@ -1045,8 +1052,8 @@ function drawMapLegend(pick) {
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8d9097"}), "Dimmed: outside the region, not supported"));
   if (area) lg.append(el("span", {}, el("span", {class: "sw", style: "border:3px dashed #f2a900"}), "Chosen area"));
   if (pointsOn) {
-    lg.append(el("span", {}, el("span", {class: "sw", style: "background:#fff;border:1.5px solid #14213d;width:12px;height:12px"}), "Counted detection (filled square)"));
-    lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px dashed #b2182b;width:12px;height:12px"}), "Not counted (dashed outline): low confidence or a non-fire heat source"));
+    lg.append(el("span", {}, el("span", {class: "sw", style: "background:" + DETECTION_RED + ";border:1.5px solid #111;width:12px;height:12px"}), "Counted detection (filled red square)"));
+    lg.append(el("span", {}, el("span", {class: "sw", style: "background:#55627a;border:2px dashed #fff;width:12px;height:12px"}), "Not counted (hollow dashed square): low confidence or a non-fire heat source"));
     lg.append(el("span", {text: "Squares show the sensor's footprint at nadir: about 1 km for MODIS, 375 m for VIIRS (drawn at least 5 pixels wide)."}));
   }
 }
@@ -1171,12 +1178,12 @@ async function drawPoints() {
   for (let k = 0; k < n; k++) {
     const r = here[Math.floor(k * step)];
     L.rectangle(footprint(r[0], r[1], side), r[2]
-      ? {renderer: pointRenderer, color: "#14213d", weight: 1.5, fillColor: "#ffffff", fillOpacity: .95, interactive: false}
-      : {renderer: pointRenderer, color: "#b2182b", weight: 2, dashArray: "3 2", fill: false, interactive: false}).addTo(layers.points);
+      ? {renderer: pointRenderer, color: "#111", weight: 1, fillColor: DETECTION_RED, fillOpacity: 1, interactive: false}
+      : {renderer: pointRenderer, color: "#fff", weight: 2, dashArray: "3 2", fill: false, interactive: false}).addTo(layers.points);
     drawn++; if (r[2]) counted++;
   }
   note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view. Zoom in to see them all. "
-      : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view. ") + fmt(counted) + " counted (filled squares), " + fmt(drawn - counted) + " not counted (dashed outlines: low confidence or a non-fire heat source)."
+      : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view. ") + fmt(counted) + " counted (red squares), " + fmt(drawn - counted) + " not counted (hollow dashed squares: low confidence or a non-fire heat source)."
     : "No " + SENSOR[pick.s] + " detection was recorded in this view in " + monthName(selected) + ". That does not mean nothing burned.")
     + (regionBounds.contains(b) ? "" : " Nothing is shown outside the region box.");
 }

@@ -157,7 +157,7 @@ Lessons the team took from these trainings and where each is applied. ARSET and 
 - MODIS pixels are about 1 km and VIIRS I-band pixels 375 m, which is why VIIRS records 6 to 8 times as many detections. The ratio is therefore measured per region, not assumed: [pipeline/calibrate.py](pipeline/calibrate.py), "Validation" above.
 - Terra crosses in the morning and Aqua in the afternoon, so Terra is never merged into the Aqua scale: it has its own status and a hatched calendar cell ([docs/index.html](docs/index.html), calendar legend "Terra only, not on this scale").
 - Sensors saturate on large fires, so detection counts, not fire radiative power, are harmonized ("Metrics" above).
-- One colour-vision-safe ramp (cividis) with a legend, shared by the calendar and the map; the map uses its upper seven steps so they stay visible on satellite imagery ([docs/index.html](docs/index.html), `ramp()` and `mapStep()`).
+- One ramp with a legend, shared by the calendar and the map, whose lightness rises at every step so it survives greyscale and colour-vision deficiency; the map uses its upper seven steps so they stay visible on satellite imagery ([docs/index.html](docs/index.html), `ramp()` and `mapStep()`).
 - Coverage is uneven (clouds, smoke, overpass time), so 0 detections always carries "whether the area could be observed is unknown" ([docs/index.html](docs/index.html), month detail and map summary).
 
 **Monitoring Surface Water with SAR (OPERA DSWx)**
@@ -199,7 +199,9 @@ The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location
 ### Map display
 
 - The map opens on **All years**; selecting a calendar month shows that month, and the All years button returns to the total.
-- Cells use the upper seven steps of the calendar's cividis ramp on the same log scale: the two darkest steps disappear on the dark satellite imagery. The legend lists the count range of each step, worked out with the same function that colours the cells.
+- Colours: one fire ramp for the calendar and the map, low to high: deep maroon, red, orange, yellow (`FIRE` in `docs/index.html`). Lightness rises at every step (L* 14 to 92), and still does under simulated protanopia, deuteranopia and tritanopia (Machado et al. 2009 matrices); every step carries white or near-black text at 4.5:1 or better. Calendar cells keep their printed numbers, and provisional, partial, Terra-only and refused keep their borders, hatching and wording, so nothing depends on colour alone.
+- Map cells use the upper seven steps of that ramp on the same log scale: the darkest steps disappear on the dark satellite imagery.
+- Individual detections are red squares with a dark edge; detections that were not counted are hollow dashed squares. The legend lists the count range of each step, worked out with the same function that colours the cells.
 - Cells are drawn without gaps at 82% opacity so coastlines show through. Pointing at a cell, tapping it, or focusing a row of the "cells with the most detections" table outlines the cell and shows its count, so no value is given by colour alone.
 - Outside the region box the map is dimmed slightly; nothing is drawn there.
 - Layout: the map sits at the top of the page, full width, with the timeline along its bottom edge (about 70% of the window together). "Expand map" fills the window with the browser's Fullscreen API, or with a fixed-position fallback where that API is missing (iPhone Safari); Esc or "Close full screen" returns.
