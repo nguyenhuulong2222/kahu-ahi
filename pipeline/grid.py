@@ -173,8 +173,16 @@ def write(region_id, bbox, grid, mtd, mtd_info, out_dir):
     target.mkdir(parents=True, exist_ok=True)
     origin = cell_index(bbox[1], bbox[0])
     max_cell = [0, 0, 0, 0]
+    max_cell_year = [0, 0, 0, 0]   # largest total of one cell over one calendar year: the map's fixed scale for a year
     sizes = {}
     for year in sorted(grid):
+        year_cells = defaultdict(lambda: [0, 0, 0, 0])
+        for qualities in grid[year].values():
+            for cells in qualities.values():
+                for cell, counts in cells.items():
+                    year_cells[cell] = [a + b for a, b in zip(year_cells[cell], counts)]
+        for counts in year_cells.values():
+            max_cell_year = [max(a, b) for a, b in zip(max_cell_year, counts)]
         doc = {"year": int(year), "cell_deg": CELL_DEG, "origin": list(origin),
                "columns": ["row", "col", "aqua", "terra", "snpp", "n20"], "months": {}}
         for month in sorted(grid[year], key=int):
@@ -189,7 +197,7 @@ def write(region_id, bbox, grid, mtd, mtd_info, out_dir):
         path.write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
         sizes[year] = path.stat().st_size
     index = {"cell_deg": CELL_DEG, "origin": list(origin), "sensors": SENSORS,
-             "max_cell": dict(zip(SENSORS, max_cell)), "mtd": mtd_info,
+             "max_cell": dict(zip(SENSORS, max_cell)), "max_cell_year": dict(zip(SENSORS, max_cell_year)), "mtd": mtd_info,
              "years": {y: {"bytes": b} for y, b in sizes.items()},
              "checked": "per sensor per month totals equal monthly_series.csv; month-to-date equals calibration.json"}
     (target / "index.json").write_text(json.dumps(index, indent=1), encoding="utf-8")

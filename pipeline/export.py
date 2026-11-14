@@ -2,12 +2,16 @@
 """Step 3 of the Kahu Ahi pipeline: write the files the static web app reads.
 
   docs/data/<region>.json                  monthly series, coefficients, validation, current month
+  docs/data/<region>_daily.json            the counted metric per day, per sensor and data quality
   docs/data/hotspots/<region>/<year>.csv.gz  the hotspot records behind the numbers, one file per year
 
 Nothing is computed here that steps 1 and 2 did not already compute; this only repackages it.
+The daily file is daily_counts.csv in compact form. It is not written unless its days add up, per
+sensor and per month, to monthly_series.csv.
 
 Standard library only. Usage:
   python3 pipeline/export.py --id california --name "California" --bbox -124.5 32.5 -114.0 42.0
+Add --skip-hotspots to rewrite only the two summary files without reading data/raw again.
 """
 import argparse
 import csv
@@ -15,6 +19,8 @@ import gzip
 import io
 import json
 import sys
+from collections import defaultdict
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -60,6 +66,58 @@ def export_summary(region_id, name, bbox, processed, out_dir):
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / f"{region_id}.json").write_text(json.dumps(summary, separators=(",", ":")), encoding="utf-8")
     return summary
+
+
+# Order of the counts in each day of the daily file, and the monthly_series.csv column each must add up to.
+DAILY_SENSORS = {"MODIS_AQUA": "aqua", "MODIS_TERRA": "terra", "VIIRS_SNPP": "snpp", "VIIRS_NOAA20": "noaa20"}
+
+
+def export_daily(region_id, processed, out_dir):
+    """Repackage daily_counts.csv (n_veg_conf per day, sensor and quality). Stops if it disagrees with the monthly series.
+
+    Layout: "standard" and "nrt" are flat arrays [day, aqua, terra, snpp, n20, day, ...], where day counts
+    from "start". A day with no counted detection has no entry.
+    """
+    sensors = list(DAILY_SENSORS)
+    days = {"standard": defaultdict(lambda: [0, 0, 0, 0]), "nrt": defaultdict(lambda: [0, 0, 0, 0])}
+    by_month = defaultdict(lambda: [0, 0, 0, 0])
+    with open(processed / "daily_counts.csv", newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            n = int(r["n_veg_conf"])
+            if r["sensor"] not in sensors or r["quality"] not in days or n == 0:
+                continue
+            i = sensors.index(r["sensor"])
+            days[r["quality"]][r["date"]][i] += n
+            by_month[r["date"][:7]][i] += n
+    problems = []
+    with open(processed / "monthly_series.csv", newline="", encoding="utf-8") as f:
+        seen = set()
+        for r in csv.DictReader(f):
+            seen.add(r["month"])
+            for i, s in enumerate(sensors):
+                want, got = int(r[DAILY_SENSORS[s]] or 0), by_month[r["month"]][i] if r["month"] in by_month else 0
+                if want != got:
+                    problems.append(f"{r['month']} {s}: daily sum {got}, monthly_series.csv {want}")
+    problems += [f"{m}: daily counts but no row in monthly_series.csv" for m in sorted(set(by_month) - seen)]
+    if problems:
+        print(f"{region_id}: DAILY COUNTS DO NOT ADD UP TO THE MONTHLY SERIES. {region_id}_daily.json not written.", file=sys.stderr)
+        for p in problems[:40]:
+            print("  -", p, file=sys.stderr)
+        sys.exit(1)
+    all_dates = [d for q in days.values() for d in q]
+    start = min(all_dates)[:7] + "-01" if all_dates else None
+    d0 = date.fromisoformat(start) if start else None
+    doc = {"region": region_id, "metric": "n_veg_conf", "start": start,
+           "columns": ["day", "aqua", "terra", "snpp", "n20"],
+           "checked": "per sensor per month, the days add up to monthly_series.csv"}
+    for q, rows in days.items():
+        flat = []
+        for d in sorted(rows):
+            flat.extend([(date.fromisoformat(d) - d0).days, *rows[d]])
+        doc[q] = flat
+    path = out_dir / f"{region_id}_daily.json"
+    path.write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
+    return sum(len(r) for r in days.values()), path.stat().st_size
 
 
 def detections(bbox, raw_dir):
@@ -135,14 +193,19 @@ def main():
     ap.add_argument("--raw", type=Path, default=Path("data/raw"))
     ap.add_argument("--processed", type=Path, default=None)
     ap.add_argument("--out", type=Path, default=Path("docs/data"))
+    ap.add_argument("--skip-hotspots", action="store_true", help="write only <region>.json and <region>_daily.json")
     args = ap.parse_args()
     processed = args.processed or Path("data/processed") / args.id
     summary = export_summary(args.id, args.name, args.bbox, processed, args.out)
+    n_days, size = export_daily(args.id, processed, args.out)
+    print(f"{args.id}: {len(summary['months'])} months, data through {summary['data_through']}, "
+          f"calibration accepted: {summary['calibration_accepted']}")
+    print(f"daily: {n_days:,} day entries with counted detections, {size / 1e3:.1f} kB; days add up to monthly_series.csv")
+    if args.skip_hotspots:
+        return
     index = export_hotspots(args.id, args.bbox, args.raw, args.out)
     total_rows = sum(v["rows"] for v in index.values())
     total_mb = sum(v["bytes_gz"] for v in index.values()) / 1e6
-    print(f"{args.id}: {len(summary['months'])} months, data through {summary['data_through']}, "
-          f"calibration accepted: {summary['calibration_accepted']}")
     print(f"hotspots: {total_rows:,} rows in {len(index)} yearly files, {total_mb:.1f} MB compressed")
 
 

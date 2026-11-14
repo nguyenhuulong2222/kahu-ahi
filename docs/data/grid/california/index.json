@@ -16,6 +16,12 @@
   "VIIRS_SNPP": 2518,
   "VIIRS_NOAA20": 2576
  },
+ "max_cell_year": {
+  "MODIS_AQUA": 327,
+  "MODIS_TERRA": 329,
+  "VIIRS_SNPP": 3189,
+  "VIIRS_NOAA20": 3130
+ },
  "mtd": {
   "month": "2026-11",
   "days": [
