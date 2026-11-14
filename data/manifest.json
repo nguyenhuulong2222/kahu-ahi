@@ -1,25 +1,431 @@
 {
-  "generated_at": null,
-  "data_through": null,
+  "generated_at": "2026-11-14T20:48:04+00:00",
+  "data_through": "2026-11-14",
   "regions": [
     {
       "id": "california",
+      "name": "California",
       "role": "calibration",
-      "bbox": { "lat_min": 32.5, "lat_max": 42.0, "lon_min": -124.5, "lon_max": -114.0 }
+      "bbox": {
+        "lat_min": 32.5,
+        "lat_max": 42.0,
+        "lon_min": -124.5,
+        "lon_max": -114.0
+      },
+      "data_through": "2026-11-14",
+      "calibration_accepted": true
+    },
+    {
+      "id": "hawaii",
+      "name": "Hawaiʻi",
+      "role": "low-detection case study; calibration refused",
+      "bbox": {
+        "lat_min": 18.7,
+        "lat_max": 22.5,
+        "lon_min": -160.6,
+        "lon_max": -154.5
+      },
+      "data_through": "2026-11-14",
+      "calibration_accepted": false
+    },
+    {
+      "id": "vietnam",
+      "name": "Vietnam region",
+      "role": "second calibration region (rectangle also covers parts of Laos, Cambodia and southern China)",
+      "bbox": {
+        "lat_min": 8.4,
+        "lat_max": 23.4,
+        "lon_min": 102.1,
+        "lon_max": 109.5
+      },
+      "data_through": "2026-11-14",
+      "calibration_accepted": true
     }
   ],
   "inputs": [
     {
+      "region": "california",
+      "download": "DL_FIRE_J1V-C2_849383.zip",
+      "file": "fire_archive_J1V-C2_849383.csv",
+      "product": "VJ114IMGML",
+      "collection": "2",
+      "satellite": [
+        "N20"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2018-04-01",
+        "2026-07-31"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "13180c47d8b526b63f80d27cf7a5c550ef7f42a5645d61a88e9485cdc83ef71f",
+      "sha256_of": "the downloaded .zip",
+      "rows": 762802
+    },
+    {
+      "region": "california",
+      "download": "DL_FIRE_J1V-C2_849383.zip",
+      "file": "fire_nrt_J1V-C2_849383.csv",
+      "product": "VJ114IMGTDL_NRT",
+      "collection": "2",
+      "satellite": [
+        "N20"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-08-01",
+        "2026-11-14"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "13180c47d8b526b63f80d27cf7a5c550ef7f42a5645d61a88e9485cdc83ef71f",
+      "sha256_of": "the downloaded .zip",
+      "rows": 15625
+    },
+    {
+      "region": "hawaii",
+      "download": "DL_FIRE_J1V-C2_849438.zip",
+      "file": "fire_archive_J1V-C2_849438.csv",
+      "product": "VJ114IMGML",
+      "collection": "2",
+      "satellite": [
+        "N20"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2018-04-01",
+        "2026-07-31"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "25458b4f174a0a2402dc8dd00d8817150580c7d6b2c77ebf836aa7714b051e31",
+      "sha256_of": "the downloaded .zip",
+      "rows": 81566
+    },
+    {
+      "region": "hawaii",
+      "download": "DL_FIRE_J1V-C2_849438.zip",
+      "file": "fire_nrt_J1V-C2_849438.csv",
+      "product": "VJ114IMGTDL_NRT",
+      "collection": "2",
+      "satellite": [
+        "N20"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-08-01",
+        "2026-11-14"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "25458b4f174a0a2402dc8dd00d8817150580c7d6b2c77ebf836aa7714b051e31",
+      "sha256_of": "the downloaded .zip",
+      "rows": 1825
+    },
+    {
+      "region": "vietnam",
+      "download": "DL_FIRE_J1V-C2_849606.zip",
+      "file": "fire_archive_J1V-C2_849606.csv",
+      "product": "VJ114IMGML",
+      "collection": "2",
+      "satellite": [
+        "N20"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2018-04-01",
+        "2026-07-31"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "aa34d32096c44ed586cea3ab477157328520274b6813b692bab8f2be719b69f5",
+      "sha256_of": "the downloaded .zip",
+      "rows": 2882023
+    },
+    {
+      "region": "vietnam",
+      "download": "DL_FIRE_J1V-C2_849606.zip",
+      "file": "fire_nrt_J1V-C2_849606.csv",
+      "product": "VJ114IMGTDL_NRT",
+      "collection": "2",
+      "satellite": [
+        "N20"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-08-01",
+        "2026-11-14"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "aa34d32096c44ed586cea3ab477157328520274b6813b692bab8f2be719b69f5",
+      "sha256_of": "the downloaded .zip",
+      "rows": 10309
+    },
+    {
+      "region": "california",
+      "download": "DL_FIRE_M-C61_849382.zip",
+      "file": "fire_archive_M-C61_849382.csv",
       "product": "MCD14ML",
       "collection": "6.1",
-      "satellite": "A",
+      "satellite": [
+        "Aqua",
+        "Terra"
+      ],
       "quality": "standard",
-      "date_range": null,
-      "filter": null,
+      "date_range": [
+        "2000-11-01",
+        "2026-08-31"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
       "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
-      "accessed": null,
-      "sha256": null,
-      "rows": null
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "bd8cd927d6d9f99eea649696a0e77d225dd4b7dad53f5d9b655c20cf73333a9c",
+      "sha256_of": "the downloaded .zip",
+      "rows": 360954
+    },
+    {
+      "region": "california",
+      "download": "DL_FIRE_M-C61_849382.zip",
+      "file": "fire_nrt_M-C61_849382.csv",
+      "product": "MCD14DL",
+      "collection": "6.1",
+      "satellite": [
+        "Aqua",
+        "Terra"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-09-01",
+        "2026-11-13"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "bd8cd927d6d9f99eea649696a0e77d225dd4b7dad53f5d9b655c20cf73333a9c",
+      "sha256_of": "the downloaded .zip",
+      "rows": 1306
+    },
+    {
+      "region": "hawaii",
+      "download": "DL_FIRE_M-C61_849437.zip",
+      "file": "fire_archive_M-C61_849437.csv",
+      "product": "MCD14ML",
+      "collection": "6.1",
+      "satellite": [
+        "Aqua",
+        "Terra"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2000-11-05",
+        "2026-08-31"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "68b606358dcda80e0cd67fb76e8cf68ef24500bca020347ddb06836c55232e5d",
+      "sha256_of": "the downloaded .zip",
+      "rows": 80102
+    },
+    {
+      "region": "hawaii",
+      "download": "DL_FIRE_M-C61_849437.zip",
+      "file": "fire_nrt_M-C61_849437.csv",
+      "product": "MCD14DL",
+      "collection": "6.1",
+      "satellite": [
+        "Aqua",
+        "Terra"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-09-01",
+        "2026-11-13"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "68b606358dcda80e0cd67fb76e8cf68ef24500bca020347ddb06836c55232e5d",
+      "sha256_of": "the downloaded .zip",
+      "rows": 290
+    },
+    {
+      "region": "vietnam",
+      "download": "DL_FIRE_M-C61_849605.zip",
+      "file": "fire_archive_M-C61_849605.csv",
+      "product": "MCD14ML",
+      "collection": "6.1",
+      "satellite": [
+        "Aqua",
+        "Terra"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2000-11-01",
+        "2026-08-31"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "f4168ca9ea0c60bc68a3773b5a5c7400bfcc1827a9ba3e2cdd0e9bdbff898f65",
+      "sha256_of": "the downloaded .zip",
+      "rows": 1993460
+    },
+    {
+      "region": "vietnam",
+      "download": "DL_FIRE_M-C61_849605.zip",
+      "file": "fire_nrt_M-C61_849605.csv",
+      "product": "MCD14DL",
+      "collection": "6.1",
+      "satellite": [
+        "Aqua",
+        "Terra"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-09-01",
+        "2026-11-14"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "f4168ca9ea0c60bc68a3773b5a5c7400bfcc1827a9ba3e2cdd0e9bdbff898f65",
+      "sha256_of": "the downloaded .zip",
+      "rows": 2347
+    },
+    {
+      "region": "california",
+      "download": "DL_FIRE_SV-C2_849384.zip",
+      "file": "fire_archive_SV-C2_849384.csv",
+      "product": "VNP14IMGML",
+      "collection": "2",
+      "satellite": [
+        "SNPP"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2012-01-20",
+        "2026-07-31"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "fb45d6a1c6e46c7c8e16029650af6679194c7adc1a8d6b9dc609f6082078c68a",
+      "sha256_of": "the downloaded .zip",
+      "rows": 1096938
+    },
+    {
+      "region": "california",
+      "download": "DL_FIRE_SV-C2_849384.zip",
+      "file": "fire_nrt_SV-C2_849384.csv",
+      "product": "VNP14IMGTDL_NRT",
+      "collection": "2",
+      "satellite": [
+        "SNPP"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-08-01",
+        "2026-11-02"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "fb45d6a1c6e46c7c8e16029650af6679194c7adc1a8d6b9dc609f6082078c68a",
+      "sha256_of": "the downloaded .zip",
+      "rows": 13041
+    },
+    {
+      "region": "hawaii",
+      "download": "DL_FIRE_SV-C2_849439.zip",
+      "file": "fire_archive_SV-C2_849439.csv",
+      "product": "VNP14IMGML",
+      "collection": "2",
+      "satellite": [
+        "SNPP"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2012-01-20",
+        "2026-07-31"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "9b58a7510647d270d2b24b7d3d8f5f2d3271b1fb3c29e0dd3123f065aec9e629",
+      "sha256_of": "the downloaded .zip",
+      "rows": 198027
+    },
+    {
+      "region": "hawaii",
+      "download": "DL_FIRE_SV-C2_849439.zip",
+      "file": "fire_nrt_SV-C2_849439.csv",
+      "product": "VNP14IMGTDL_NRT",
+      "collection": "2",
+      "satellite": [
+        "SNPP"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-08-01",
+        "2026-11-02"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "9b58a7510647d270d2b24b7d3d8f5f2d3271b1fb3c29e0dd3123f065aec9e629",
+      "sha256_of": "the downloaded .zip",
+      "rows": 1697
+    },
+    {
+      "region": "vietnam",
+      "download": "DL_FIRE_SV-C2_849607.zip",
+      "file": "fire_archive_SV-C2_849607.csv",
+      "product": "VNP14IMGML",
+      "collection": "2",
+      "satellite": [
+        "SNPP"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2012-01-20",
+        "2026-07-31"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "6b10c4841abee60e29071ba13eb5535c49bf27d54f7ae4aed56c2facc5576654",
+      "sha256_of": "the downloaded .zip",
+      "rows": 5567796
+    },
+    {
+      "region": "vietnam",
+      "download": "DL_FIRE_SV-C2_849607.zip",
+      "file": "fire_nrt_SV-C2_849607.csv",
+      "product": "VNP14IMGTDL_NRT",
+      "collection": "2",
+      "satellite": [
+        "SNPP"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-08-01",
+        "2026-11-01"
+      ],
+      "filter": "FIRMS archive download for the region's bounding box; pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "6b10c4841abee60e29071ba13eb5535c49bf27d54f7ae4aed56c2facc5576654",
+      "sha256_of": "the downloaded .zip",
+      "rows": 8850
     }
   ]
 }

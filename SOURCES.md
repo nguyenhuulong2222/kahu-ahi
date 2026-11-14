@@ -6,14 +6,20 @@ Every source used in this project is listed here, including free and open ones. 
 
 | Product | Description | Access | Date accessed |
 |---|---|---|---|
-| MCD14ML (MODIS Collection 6.1) | Standard monthly active fire locations, Terra + Aqua | FIRMS Archive Download — https://firms.modaps.eosdis.nasa.gov/download/ | `TBD` |
-| VNP14IMGML | VIIRS 375 m standard active fire, Suomi NPP | FIRMS Archive Download | `TBD` |
-| VJ114IMGML | VIIRS 375 m standard active fire, NOAA-20 | FIRMS Archive Download | `TBD` |
-| VJ114IMGTDL_NRT | VIIRS 375 m near-real-time active fire, NOAA-20 | FIRMS | `TBD` |
+| MCD14ML (MODIS Collection 6.1) | Standard monthly active fire locations, Terra + Aqua | FIRMS Archive Download — https://firms.modaps.eosdis.nasa.gov/download/ | 14 Nov 2026 |
+| MCD14DL | MODIS near-real-time active fire, Terra + Aqua (in the same archive download, months after the standard data) | FIRMS Archive Download | 14 Nov 2026 |
+| VNP14IMGML | VIIRS 375 m standard active fire, Suomi NPP | FIRMS Archive Download | 14 Nov 2026 |
+| VNP14IMGTDL_NRT | VIIRS 375 m near-real-time active fire, Suomi NPP | FIRMS Archive Download | 14 Nov 2026 |
+| VJ114IMGML | VIIRS 375 m standard active fire, NOAA-20 | FIRMS Archive Download | 14 Nov 2026 |
+| VJ114IMGTDL_NRT | VIIRS 375 m near-real-time active fire, NOAA-20 | FIRMS Archive Download | 14 Nov 2026 |
+
+One archive download per sensor family and region (nine in all); file names, row counts and SHA-256 hashes are in [data/manifest.json](data/manifest.json). Access dates are the dates of those downloads.
 
 ### FIRMS acknowledgment
 
-`TBD — paste the official acknowledgment statement from https://www.earthdata.nasa.gov/data/tools/firms`
+From the FIRMS FAQ (https://www.earthdata.nasa.gov/data/tools/firms/faq, "Are there any restrictions on using data or imagery from FIRMS?"), accessed 14 Nov 2026:
+
+> We acknowledge the use of imagery from the NASA LANCE FIRMS ( https://earthdata.nasa.gov/firms ), part of the NASA Earth Science Data and Information System (ESDIS).
 
 ## NASA documentation
 
@@ -40,7 +46,11 @@ Every source used in this project is listed here, including free and open ones. 
 ## Training that informed the approach
 
 - NASA ARSET, Fundamentals of Remote Sensing
-- NASA ARSET, Monitoring Surface Water with SAR (data-status handling in OPERA DSWx)
+- NASA ARSET, Monitoring Surface Water with SAR (OPERA DSWx)
+- NASA ARSET, NISAR Surface Displacement, part 1
+- NASA ARSET, Geostationary Remote Sensing of Aerosols
+
+How each one shaped the project is described in the README, "What NASA ARSET training changed in this project". ARSET and NASA did not review or endorse this work.
 
 ## Other projects consulted
 
@@ -50,4 +60,9 @@ Ideas only. No code copied.
 
 ## Basemap and software
 
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Pages read when choosing them (14 Nov 2026):
+
+- OpenStreetMap copyright and licence — https://www.openstreetmap.org/copyright
+- OSMF Tile Usage Policy — https://operations.osmfoundation.org/policies/tiles/
+- CARTO basemap terms (not used: free use requires a CARTO API key) — https://carto.com/legal/basemap-terms/ and https://github.com/CartoDB/basemap-styles
+- Leaflet 1.9.4 licence — https://github.com/Leaflet/Leaflet/blob/v1.9.4/LICENSE; files and SRI hashes from https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/
