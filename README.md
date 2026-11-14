@@ -108,11 +108,12 @@ Months: 174 paired months per region (February 2012 to July 2026, standard data)
 
 ## Map grid (pipeline step 4)
 
-`pipeline/grid.py` counts detections on a 0.1° grid (about 11 km north–south) and writes `docs/data/grid/<region>/<year>.json`.
+`pipeline/grid.py` counts detections on a 0.1° grid (about 11 km north–south) and writes `docs/data/grid/<region>/<year>.json` and `docs/data/grid/<region>/all_years.json`.
 
 - Which detections are inside a region and which are counted comes from `export.detections()`, the same function that sets the `counted` column in the hotspot CSVs: type 0 (or, for near-real-time rows without `type`, outside the static-source mask), low confidence removed. The map, the calendar and the CSV therefore use one rule.
 - Each year file holds, per month, every cell with at least one counted detection, with separate counts for MODIS Aqua, MODIS Terra, VIIRS Suomi NPP and VIIRS NOAA-20, split into standard and near-real-time lists. Cells are flat arrays of integers relative to the region's south-west cell. Each file also holds the cells for days 1 to D of the current calendar month, for the month-to-date comparison.
-- Before writing, the step checks that the cells add up, per sensor and per month, to `monthly_series.csv`, and that the month-to-date cells reproduce the month-to-date numbers in `calibration.json`. If either check fails it stops, lists the mismatches and writes nothing.
+- Before writing, the step checks that the cells add up, per sensor and per month, to `monthly_series.csv`, that the month-to-date cells reproduce the month-to-date numbers in `calibration.json`, and that the all-years cells add up to `monthly_series.csv` over the same years. If any check fails it stops, lists the mismatches and writes nothing.
+- `all_years.json` is the map's default view: each cell's total over every complete standard year, per satellite. A year counts for a satellite when all 12 months are complete standard data under `calibrate.usable()`: MODIS Aqua 2003–2025 (23 years, the same years as the calendar's "usual"), Terra 2001–2025, Suomi NPP 2013–2025, NOAA-20 2019–2025 in all three regions. The step checks that these totals equal `monthly_series.csv` summed over the same years. Sizes: California 87 kB, Hawaiʻi 3 kB, Vietnam region 160 kB.
 - A point is placed in the cell `floor((lat + 90) × 10 + 10⁻⁶)`, `floor((lon + 180) × 10 + 10⁻⁶)`; the web app bins CSV rows with the same expression.
 
 Sizes (uncompressed JSON; GitHub Pages serves it gzip-compressed, about a third of this): California 1.30 MB for 27 years, largest year 94 kB; Hawaiʻi 0.03 MB; Vietnam region 9.95 MB, largest year about 600 kB (180 kB gzip).
@@ -156,7 +157,7 @@ Lessons the team took from these trainings and where each is applied. ARSET and 
 - MODIS pixels are about 1 km and VIIRS I-band pixels 375 m, which is why VIIRS records 6 to 8 times as many detections. The ratio is therefore measured per region, not assumed: [pipeline/calibrate.py](pipeline/calibrate.py), "Validation" above.
 - Terra crosses in the morning and Aqua in the afternoon, so Terra is never merged into the Aqua scale: it has its own status and a hatched calendar cell ([docs/index.html](docs/index.html), calendar legend "Terra only, not on this scale").
 - Sensors saturate on large fires, so detection counts, not fire radiative power, are harmonized ("Metrics" above).
-- One colour-vision-safe ramp (cividis) with a legend, shared by the calendar and the map ([docs/index.html](docs/index.html), `ramp()`).
+- One colour-vision-safe ramp (cividis) with a legend, shared by the calendar and the map; the map uses its upper seven steps so they stay visible on satellite imagery ([docs/index.html](docs/index.html), `ramp()` and `mapStep()`).
 - Coverage is uneven (clouds, smoke, overpass time), so 0 detections always carries "whether the area could be observed is unknown" ([docs/index.html](docs/index.html), month detail and map summary).
 
 **Monitoring Surface Water with SAR (OPERA DSWx)**
@@ -191,7 +192,14 @@ python3 pipeline/grid.py      --id california --bbox -124.5 32.5 -114.0 42.0
 
 Hawaiʻi uses `--bbox -160.6 18.7 -154.5 22.5`; the Vietnam region `--bbox 102.1 8.4 109.5 23.4`.
 
-The web app is the static folder `docs/`: `python3 -m http.server -d docs 8000`, then open http://localhost:8000. It requests only its own files, Leaflet from cdnjs and OpenStreetMap tiles; no API keys.
+The web app is the static folder `docs/`: `python3 -m http.server -d docs 8000`, then open http://localhost:8000. It requests only its own files, Leaflet from cdnjs, and basemap tiles: NASA GIBS (Blue Marble with coastline, border and label overlays) up to zoom 8 and OpenStreetMap above it. No API keys, and no FIRMS or other data API is called from the page.
+
+### Map display
+
+- The map opens on **All years**; selecting a calendar month shows that month, and the All years button returns to the total.
+- Cells use the upper seven steps of the calendar's cividis ramp on the same log scale: the two darkest steps disappear on the dark satellite imagery. The legend lists the count range of each step, worked out with the same function that colours the cells.
+- Cells are drawn without gaps at 82% opacity so coastlines show through. Pointing at a cell, tapping it, or focusing a row of the "cells with the most detections" table outlines the cell and shows its count, so no value is given by colour alone.
+- Outside the region box the map is dimmed slightly; nothing is drawn there.
 
 ## License
 

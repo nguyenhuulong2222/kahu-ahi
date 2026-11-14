@@ -62,6 +62,8 @@ Ideas only. No code copied.
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Pages read when choosing them (14 Nov 2026):
 
+- NASA GIBS API documentation, including the acknowledgment text — https://nasa-gibs.github.io/gibs-api-docs/ and https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api
+- NASA GIBS WMTS capabilities (EPSG:3857), for layer names, titles and tile matrix sets — https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/1.0.0/WMTSCapabilities.xml
 - OpenStreetMap copyright and licence — https://www.openstreetmap.org/copyright
 - OSMF Tile Usage Policy — https://operations.osmfoundation.org/policies/tiles/
 - CARTO basemap terms (not used: free use requires a CARTO API key) — https://carto.com/legal/basemap-terms/ and https://github.com/CartoDB/basemap-styles
