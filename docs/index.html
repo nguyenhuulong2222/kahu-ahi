@@ -175,6 +175,9 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
       <button id="dl" type="button">Download CSV</button>
     </div>
     <p class="note" id="dlnote" aria-live="polite" style="margin-top:10px"></p>
+    <h3 style="font-size:1.05rem;margin:20px 0 4px">The monthly table</h3>
+    <p>One row per month, as in the calendar: the value, its status, each satellite's count, the VIIRS values on the Aqua scale, and the conversion's tested error for that period.</p>
+    <button id="dlmonthly" type="button" class="secondary">Download the monthly table (CSV)</button>
   </section>
 
   <section aria-labelledby="h-limits">
@@ -197,7 +200,7 @@ const SENSOR = {MODIS_AQUA:"MODIS Aqua", MODIS_TERRA:"MODIS Terra", VIIRS_SNPP:"
 const STATUS = {
   standard:"Standard-quality data, measured by MODIS Aqua",
   standard_calibrated:"VIIRS, converted to the Aqua scale",
-  provisional_nrt:"Provisional: near-real-time data, not yet reprocessed by NASA",
+  provisional_nrt:"Provisional: near-real-time data. It arrives much sooner than standard data, which lags by 2 to 3 months, but is not yet reprocessed by NASA and has no fire-type field, so it is less certain than standard data",
   partial_first_month:"Aqua's first month, only partly observed",
   terra_only_not_harmonized:"Before Aqua: only MODIS Terra, a morning satellite. Not on the same scale, so not coloured",
   not_calibrated_insufficient_overlap:"VIIRS only, and not converted in this region",
@@ -387,10 +390,23 @@ function drawDetail(x) {
   if (x.h != null && med != null && !isPartial(x.status)) line += " The usual " + MONTHS[m - 1] + " is " + fmt(med) + (med > 0 ? " (this is " + (x.h / med).toFixed(1) + " times that)." : ".");
   box.append(el("p", {text: line}));
   box.append(el("p", {class: "note", text: (STATUS[st] || st) + (x.status.startsWith("partial_month_") ? ". This month is not complete, so it is not compared with a full month." : ".")}));
+  const v = validationFor(x);
+  if (v) box.append(el("p", {class: "note", text: v.text}));
   const rows = [["MODIS Terra", x.terra, null], ["MODIS Aqua", x.aqua, x.aqua], ["VIIRS Suomi NPP", x.snpp, x.snpp_eq], ["VIIRS NOAA-20", x.n20, x.n20_eq]];
   const t = el("table", {}, el("tr", {}, el("th", {text: "Satellite"}), el("th", {class: "num", text: "Counted"}), el("th", {class: "num", text: "On the Aqua scale"})));
   rows.forEach(r => t.append(el("tr", {}, el("td", {text: r[0]}), el("td", {class: "num", text: r[1] == null ? "not flying" : fmt(r[1])}), el("td", {class: "num", text: r[2] == null ? "not converted" : fmt(r[2])}))));
   box.append(t);
+}
+
+// The region's leave-one-year-out error for the period a month falls in, for any VIIRS value shown on the Aqua scale.
+function validationFor(x) {
+  const y = +x.m.slice(0, 4);
+  if (x.snpp == null && x.n20 == null) return null;   // no VIIRS satellite flying
+  const L = D.snpp_to_aqua.leave_one_year_out.monthly_k, key = y < 2022 ? "before_2022" : "2022_onward", e = L[key];
+  const period = y < 2022 ? "2012 to 2021" : "2022 onward";
+  if (!D.calibration_accepted) return {period: "all years (refused, not converted)", e: L.all_years, text: "VIIRS is not converted in " + D.region.name + ": when tested, the conversion was wrong by " + pct(L.all_years && L.all_years.abs_error_pct_of_total) + " of the total."};
+  if (!e) return null;
+  return {period, e, text: "VIIRS values on the Aqua scale for this period: tested year by year " + (y < 2022 ? "over 2012 to 2021" : "from 2022 onward") + ", the conversion was off by " + pct(e.abs_error_pct_of_total) + " of the total and ran " + (e.bias_pct >= 0 ? "high" : "low") + " by " + pct(Math.abs(e.bias_pct)) + ". That test covers all of " + D.region.name + (area ? ", not the chosen area." : ".")};
 }
 
 function drawNow() {
@@ -425,6 +441,13 @@ function drawNow() {
   if (c.value_aqua_equiv != null) t.append(el("tr", {}, el("td", {}, el("span", {class: "sw", style: "background:#0b6e6e;border-radius:50%;width:12px;height:12px"}), "NOAA-20, converted"), el("td", {class: "num", text: fmt(c.value_aqua_equiv)}), el("td", {class: "num", text: c.years_below_current + " of " + c.baseline_years + " years"})));
   box.append(t);
   box.append(el("p", {class: "note", style: "margin-top:10px", text: c.value_aqua_equiv != null ? "Two satellites, two estimates. Where they disagree, the gap is the uncertainty. Both are provisional." + (area ? " The NOAA-20 conversion is the one fitted for the whole region." : "") : "Provisional. VIIRS is not converted in this region, so only Aqua is shown."}));
+  // Say what drives a gap between the two estimates, with the numbers behind it.
+  const m = +c.month.slice(5), bm = D.snpp_to_aqua.coefficients.by_month[String(m)], k = coeff(m);
+  if (c.value_aqua_equiv != null && c.aqua_nrt_same_days > 0 && k) {
+    box.append(el("p", {class: "note", text: "Over these days NOAA-20 recorded " + (c.raw_noaa20 / c.aqua_nrt_same_days).toFixed(1) + " detections for every one from Aqua. The conversion for " + MONTHS[m - 1] + " assumes " + k.toFixed(1)
+      + (bm.yearly_ratio_min != null ? "; in earlier years the " + MONTHS[m - 1] + " ratio ranged from " + bm.yearly_ratio_min + " to " + bm.yearly_ratio_max : "")
+      + ". The difference between the two estimates comes from that gap, not from the conversion arithmetic. Why this year's ratio differs from the earlier years is not known from this record."}));
+  }
 }
 
 function drawSeason() {
@@ -674,7 +697,7 @@ async function drawMap() {
   });
   const where = area ? "inside the chosen area" : "across " + D.region.name;
   const [t, c] = area ? [areaTotal, areaCells] : [total, cells];
-  sum.textContent = name + ", " + pick.label + ": " + (pick.k ? fmt1(t) : fmt(t)) + " detections in " + fmt(c) + " cells " + where
+  sum.textContent = name + ", " + pick.label + ": " + (pick.k ? fmt1(t) : fmt(t)) + (t === 1 ? " detection in " : " detections in ") + fmt(c) + (c === 1 ? " cell " : " cells ") + where
     + (area ? " (" + (pick.k ? fmt1(total) : fmt(total)) + " in the whole region)" : "") + "."
     + (isPartial(x.status) ? " The month is not complete." : "") + (baseStatus(x.status) === "provisional_nrt" ? " Provisional data." : "")
     + " Blank cells mean no detection was recorded, not that nothing burned: when each place could be observed is unknown.";
@@ -876,7 +899,23 @@ async function download() {
   btn.disabled = false;
 }
 
+function downloadMonthly() {
+  const q = v => v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+  const head = ["month", "value_aqua_scale", "source", "status", "status_meaning", "modis_terra", "modis_aqua", "viirs_snpp", "viirs_noaa20",
+    "snpp_aqua_scale", "noaa20_aqua_scale", "validation_period", "validation_error_pct", "validation_bias_pct", "area"];
+  const where = area ? [area.w, area.s, area.e, area.n].map(v => v.toFixed(1)).join(" ") : "whole region";
+  const lines = [head.join(",")].concat(S.months.map(x => {
+    const v = validationFor(x), st = baseStatus(x.status);
+    return [x.m, x.h, x.src, x.status, (STATUS[st] || st) + (x.status.startsWith("partial_month_") ? "; month not complete" : ""), x.terra, x.aqua, x.snpp, x.n20,
+      x.snpp_eq, x.n20_eq, v && v.period, v && v.e && v.e.abs_error_pct_of_total, v && v.e && v.e.bias_pct, where].map(q).join(",");
+  }));
+  const a = el("a", {href: URL.createObjectURL(new Blob([lines.join("\n") + "\n"], {type: "text/csv"})),
+    download: "kahu-ahi_" + D.region.id + (area ? "_area_" + where.replace(/ /g, "_") : "") + "_monthly.csv"});
+  document.body.append(a); a.click(); a.remove();
+}
+
 // ---------- wiring ----------
+$("dlmonthly").addEventListener("click", () => { if (D) downloadMonthly(); });
 $("region").addEventListener("change", e => load(e.target.value));
 $("mode").addEventListener("change", () => { if (D) { drawCalendar(); if (selected) selectMonth(selected); } });
 $("sensor").addEventListener("change", () => { drawMap(); writeHash(); });
