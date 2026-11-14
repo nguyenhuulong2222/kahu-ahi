@@ -202,6 +202,93 @@
         "type"
       ],
       "confidence_values": {
+        "h": 124275,
+        "l": 277647,
+        "n": 2480101
+      },
+      "date_max": "2026-07-31",
+      "date_min": "2018-04-01",
+      "file": "DL_FIRE_J1V-C2_849606.zip:fire_archive_J1V-C2_849606.csv",
+      "instrument_values": {
+        "VIIRS": 2882023
+      },
+      "quality": "standard",
+      "rows": 2882023,
+      "rows_in_bbox": 0,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "N20": 2882023
+      },
+      "sha256_of_download": "aa34d32096c44ed586cea3ab477157328520274b6813b692bab8f2be719b69f5",
+      "type_values": {
+        "0": 2830937,
+        "2": 35008,
+        "3": 16078
+      },
+      "version_values": {
+        "2": 2882023
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight"
+      ],
+      "confidence_values": {
+        "h": 197,
+        "l": 428,
+        "n": 9684
+      },
+      "date_max": "2026-11-14",
+      "date_min": "2026-08-01",
+      "file": "DL_FIRE_J1V-C2_849606.zip:fire_nrt_J1V-C2_849606.csv",
+      "instrument_values": {
+        "VIIRS": 10309
+      },
+      "quality": "nrt",
+      "rows": 10309,
+      "rows_in_bbox": 0,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "N20": 10309
+      },
+      "sha256_of_download": "aa34d32096c44ed586cea3ab477157328520274b6813b692bab8f2be719b69f5",
+      "type_values": {},
+      "version_values": {
+        "2.0NRT": 10309
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight",
+        "type"
+      ],
+      "confidence_values": {
         "<30": 21283,
         ">=30": 339671
       },
@@ -380,6 +467,94 @@
         "type"
       ],
       "confidence_values": {
+        "<30": 89307,
+        ">=30": 1904153
+      },
+      "date_max": "2026-08-31",
+      "date_min": "2000-11-01",
+      "file": "DL_FIRE_M-C61_849605.zip:fire_archive_M-C61_849605.csv",
+      "instrument_values": {
+        "MODIS": 1993460
+      },
+      "quality": "standard",
+      "rows": 1993460,
+      "rows_in_bbox": 0,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "Aqua": 1415898,
+        "Terra": 577562
+      },
+      "sha256_of_download": "f4168ca9ea0c60bc68a3773b5a5c7400bfcc1827a9ba3e2cdd0e9bdbff898f65",
+      "type_values": {
+        "0": 1925360,
+        "2": 62063,
+        "3": 6037
+      },
+      "version_values": {
+        "6.03": 1699692,
+        "61.03": 293768
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight"
+      ],
+      "confidence_values": {
+        "<30": 101,
+        ">=30": 2246
+      },
+      "date_max": "2026-11-14",
+      "date_min": "2026-09-01",
+      "file": "DL_FIRE_M-C61_849605.zip:fire_nrt_M-C61_849605.csv",
+      "instrument_values": {
+        "MODIS": 2347
+      },
+      "quality": "nrt",
+      "rows": 2347,
+      "rows_in_bbox": 0,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "Aqua": 1494,
+        "Terra": 853
+      },
+      "sha256_of_download": "f4168ca9ea0c60bc68a3773b5a5c7400bfcc1827a9ba3e2cdd0e9bdbff898f65",
+      "type_values": {},
+      "version_values": {
+        "6.1NRT": 2347
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight",
+        "type"
+      ],
+      "confidence_values": {
         "h": 83915,
         "l": 52077,
         "n": 960946
@@ -535,16 +710,106 @@
       "version_values": {
         "2.0NRT": 1697
       }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight",
+        "type"
+      ],
+      "confidence_values": {
+        "h": 248275,
+        "l": 517850,
+        "n": 4801671
+      },
+      "date_max": "2026-07-31",
+      "date_min": "2012-01-20",
+      "file": "DL_FIRE_SV-C2_849607.zip:fire_archive_SV-C2_849607.csv",
+      "instrument_values": {
+        "SNPP": 5567796
+      },
+      "quality": "standard",
+      "rows": 5567796,
+      "rows_in_bbox": 0,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "SNPP": 5567796
+      },
+      "sha256_of_download": "6b10c4841abee60e29071ba13eb5535c49bf27d54f7ae4aed56c2facc5576654",
+      "type_values": {
+        "0": 5488275,
+        "2": 52105,
+        "3": 27416
+      },
+      "version_values": {
+        "2": 5567796
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight"
+      ],
+      "confidence_values": {
+        "h": 182,
+        "l": 364,
+        "n": 8304
+      },
+      "date_max": "2026-11-01",
+      "date_min": "2026-08-01",
+      "file": "DL_FIRE_SV-C2_849607.zip:fire_nrt_SV-C2_849607.csv",
+      "instrument_values": {
+        "SNPP": 8850
+      },
+      "quality": "nrt",
+      "rows": 8850,
+      "rows_in_bbox": 0,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "SNPP": 8850
+      },
+      "sha256_of_download": "6b10c4841abee60e29071ba13eb5535c49bf27d54f7ae4aed56c2facc5576654",
+      "type_values": {},
+      "version_values": {
+        "2.0NRT": 8850
+      }
     }
   ],
-  "generated_at": "2026-11-14T20:11:33+00:00",
+  "generated_at": "2026-11-14T20:44:39+00:00",
   "notes": [
     "DL_FIRE_J1V-C2_849383.zip:fire_nrt_J1V-C2_849383.csv: no `type` column; static-source mask used instead",
     "DL_FIRE_J1V-C2_849438.zip:fire_nrt_J1V-C2_849438.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_J1V-C2_849606.zip:fire_nrt_J1V-C2_849606.csv: no `type` column; static-source mask used instead",
     "DL_FIRE_M-C61_849382.zip:fire_nrt_M-C61_849382.csv: no `type` column; static-source mask used instead",
     "DL_FIRE_M-C61_849437.zip:fire_nrt_M-C61_849437.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_M-C61_849605.zip:fire_nrt_M-C61_849605.csv: no `type` column; static-source mask used instead",
     "DL_FIRE_SV-C2_849384.zip:fire_nrt_SV-C2_849384.csv: no `type` column; static-source mask used instead",
-    "DL_FIRE_SV-C2_849439.zip:fire_nrt_SV-C2_849439.csv: no `type` column; static-source mask used instead"
+    "DL_FIRE_SV-C2_849439.zip:fire_nrt_SV-C2_849439.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_SV-C2_849607.zip:fire_nrt_SV-C2_849607.csv: no `type` column; static-source mask used instead"
   ],
   "problems": [],
   "sensors": {
@@ -591,7 +856,7 @@
   },
   "static_source_mask": {
     "cell_deg": 0.02,
-    "cells_masked_all_files": 1415,
+    "cells_masked_all_files": 4518,
     "checked_on": "standard rows inside the region (same rows the mask was built from)",
     "min_hits": 3,
     "non_veg_caught_pct": 99.9,
