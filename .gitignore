@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.DS_Store
+node_modules/
+# raw FIRMS downloads stay local (large); processed outputs are committed
+data/raw/
