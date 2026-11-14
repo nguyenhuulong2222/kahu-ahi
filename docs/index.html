@@ -67,8 +67,15 @@ button.secondary{background:#fff;color:var(--action)}
 button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
 .banner strong{font-weight:700}
 /* map */
-#map{height:460px;margin-top:12px;border:1px solid var(--line);border-radius:4px;isolation:isolate;background:var(--nodata)}
-#map .leaflet-tile-pane{filter:grayscale(1) contrast(.85) brightness(1.06)}
+#map{height:520px;margin-top:12px;border:1px solid var(--line);border-radius:4px;isolation:isolate;background:#0d1b2a}
+.steps{display:inline-flex;flex-wrap:wrap;gap:4px 10px}
+.step{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+.chip{display:inline-block;width:22px;height:14px;border-radius:2px;background:#24303c;overflow:hidden}
+.chip span{display:block;width:100%;height:100%}
+.legtitle{flex-basis:100%}
+button.linkish{all:unset;cursor:pointer;color:var(--action);text-decoration:underline}
+button.linkish:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+.celltip{font:600 .85rem/1.3 var(--font);width:max-content;max-width:min(260px,70vw);white-space:normal}
 #map.drawing{cursor:crosshair;touch-action:none}
 #map.drawing .leaflet-interactive{cursor:crosshair}
 .leaflet-container:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
@@ -82,7 +89,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 .coords input{width:100%}
 .areabar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:14px}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:4px}
-@media(max-width:600px){#map{height:360px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){#map{height:380px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -111,7 +118,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 
   <section aria-labelledby="h-map">
     <h2 id="h-map">Where it burned</h2>
-    <p class="note">The month selected in the calendar, on a grid of 0.1° cells (about 10 km). Only the region inside the outlined box is supported.</p>
+    <p class="note">All complete years, or the month selected in the calendar, on a grid of 0.1° cells (about 10 km). Point at a cell, or select one in the table below the map, to see its count. Only the region inside the outlined box is supported.</p>
     <div class="controls" style="margin-top:8px">
       <div><label for="sensor">Satellite on the map</label>
         <select id="sensor">
@@ -121,13 +128,14 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
           <option value="VIIRS_SNPP">VIIRS Suomi NPP, as recorded</option>
           <option value="VIIRS_NOAA20">VIIRS NOAA-20, as recorded</option>
         </select></div>
+      <button id="allyears" type="button" class="secondary" aria-pressed="true">All years</button>
       <button id="pts" type="button" class="secondary" aria-pressed="false" disabled>Show individual detections</button>
     </div>
     <p id="mapsum" aria-live="polite">Loading the map.</p>
     <p class="note" id="mapview" aria-live="polite"></p>
     <div id="map" aria-label="Map of the selected month's fire detections. The text above the map describes what it shows." aria-describedby="mapsum"></div>
     <div class="legend" id="maplegend"></div>
-    <details id="topcells"><summary>Cells with the most detections this month</summary><div></div></details>
+    <details id="topcells"><summary>Cells with the most detections in this view</summary><div></div></details>
 
     <h3 style="font-size:1.05rem;margin:22px 0 4px">Choose an area</h3>
     <p class="note" style="margin:0">Draw a rectangle on the map, or type its edges in decimal degrees (longitudes west of Greenwich are negative, as in California and Hawaiʻi; in the Vietnam region all four edges are positive). The area is widened to whole 0.1° cells and kept inside the region box. The calendar, the comparisons and the download then cover only that area.</p>
@@ -189,7 +197,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </section>
 
   <footer>
-    <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>; basemap © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p>
+    <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; street map above zoom 8 and the GIBS overlays © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS). Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p>
   </footer>
 </main>
 
@@ -286,8 +294,8 @@ async function load(region, wish) {
   if (wish.sensor && [...$("sensor").options].some(o => o.value === wish.sensor)) $("sensor").value = wish.sensor;
   drawTrust(); drawRegionOnMap(); await setupDownload();
   if (token !== loadToken) return;
-  const months = D.months.filter(x => x.h != null && !isPartial(x.status));
-  selected = D.months.some(x => x.m === wish.month) ? wish.month : (months.length ? months[months.length - 1].m : null);
+  // With no month in the link the map opens on all years, so it is never empty on load.
+  selected = D.months.some(x => x.m === wish.month) ? wish.month : null;
   if (wish.area && !(await setArea(wish.area, true))) wish.area = null;
   if (token !== loadToken) return;
   if (!wish.area) { fillAreaForm(); refresh(); }
@@ -303,7 +311,7 @@ function gridYear(year) {
 // Redraw everything that depends on the series on show.
 function refresh() {
   drawCalendar(); drawNow(); drawSeason(); drawAreaBanner(); describeDownload();
-  if (selected) selectMonth(selected); else drawMap();
+  if (selected) selectMonth(selected); else { drawMap(); writeHash(); }
 }
 
 // ---------- calendar ----------
@@ -609,13 +617,39 @@ function applyHash() {
   if (!D) return;
   if (w.sensor && w.sensor !== $("sensor").value && [...$("sensor").options].some(o => o.value === w.sensor)) $("sensor").value = w.sensor;
   if (w.area) setArea(w.area, true).then(() => w.month && selectMonth(w.month));
-  else { if (area) clearArea(); if (w.month) selectMonth(w.month); }
+  else { if (area) clearArea(); if (w.month) selectMonth(w.month); else if (selected) showAllYears(); }
 }
 
 // ---------- map ----------
-let map = null, regionBounds = null, shown = new Map(), pointsOn = false, pointCache = {key: null, rows: null}, drawToken = 0, pointToken = 0;
-const layers = {};
-const cellRenderer = typeof L !== "undefined" ? L.canvas({padding: .3}) : null;
+let map = null, regionBounds = null, shown = new Map(), shownInfo = null, pointsOn = false, pointCache = {key: null, rows: null}, drawToken = 0, pointToken = 0;
+const layers = {}, allYearsCache = {};
+// The map uses the upper seven steps of the calendar's cividis ramp: the two darkest steps vanish on the
+// dark satellite basemap. Same log scale as the calendar; the legend lists each step's range.
+const MAP_RAMP = CIVIDIS.slice(3);
+const CELL_OPACITY = .82;
+const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
+// Kept short so it does not cover the map on a phone. The full GIBS acknowledgment is in the page footer.
+// The GIBS reference overlays and the street map share one OpenStreetMap string, which Leaflet shows once.
+const GIBS_ATTR = 'Imagery: <a href="https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api">NASA GIBS</a> Blue Marble';
+const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · <a href="https://www.openstreetmap.org/fixthemap">Report a map issue</a>';
+let cellRenderer = null, pointRenderer = null;
+
+function mapStep(v, max) { return Math.min(MAP_RAMP.length - 1, Math.floor(Math.log10(v + 1) / Math.log10(Math.max(max, 10) + 1) * MAP_RAMP.length)); }
+// The legend's steps, worked out with mapStep() itself so they always match the drawn colours.
+// Whole counts: run every count from 1 to the largest through mapStep() (steps no count can reach are left out).
+// Counts converted to the Aqua scale are fractional: give each step's range of values instead.
+function legendSteps(max, fractional) {
+  const out = [];
+  if (fractional) {
+    const t = i => Math.pow(Math.max(max, 10) + 1, i / MAP_RAMP.length) - 1;
+    return MAP_RAMP.map((c, i) => ({c, text: i === 0 ? "under " + fmt1(t(1)) : i === MAP_RAMP.length - 1 ? fmt1(t(i)) + "+" : fmt1(t(i)) + " to " + fmt1(t(i + 1))}));
+  }
+  for (let v = 1; v <= Math.max(max, 1); v++) {
+    const i = mapStep(v, max), last = out[out.length - 1];
+    if (last && last.i === i) last.hi = v; else out.push({i, lo: v, hi: v});
+  }
+  return out.map((r, j) => ({c: MAP_RAMP[r.i], text: j === out.length - 1 ? fmt(r.lo) + (r.hi > r.lo ? "+" : "") : r.lo === r.hi ? fmt(r.lo) : fmt(r.lo) + "–" + fmt(r.hi)}));
+}
 
 function setupMap() {
   if (typeof L === "undefined") {
@@ -624,11 +658,32 @@ function setupMap() {
     return;
   }
   map = L.map("map", {zoomSnap: .5, zoomAnimation: !REDUCE, fadeAnimation: !REDUCE, markerZoomAnimation: !REDUCE, inertia: !REDUCE, maxZoom: 13, minZoom: 3});
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · <a href="https://www.openstreetmap.org/fixthemap">Report a map issue</a>'}).addTo(map);
-  ["mask", "cells", "box", "area", "points"].forEach(k => layers[k] = L.layerGroup().addTo(map));
+  // Panes, bottom to top: basemap, coastlines and borders, grid cells, place labels, outlines, detections.
+  map.createPane("refs").style.zIndex = 250;
+  map.createPane("cells").style.zIndex = 410;
+  map.createPane("labels").style.zIndex = 430;
+  map.getPane("labels").style.pointerEvents = "none";
+  map.getPane("cells").style.opacity = CELL_OPACITY;
+  map.createPane("pts").style.zIndex = 460;
+  cellRenderer = L.canvas({pane: "cells", padding: .3});
+  pointRenderer = L.canvas({pane: "pts", padding: .3});
+  // NASA GIBS up to its native zoom 8; colour OpenStreetMap from zoom 9 for street-level context.
+  L.tileLayer(GIBS + "BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg",
+    {maxNativeZoom: 8, maxZoom: 8, attribution: GIBS_ATTR}).addTo(map);
+  L.tileLayer(GIBS + "Reference_Features/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
+    {maxNativeZoom: 9, maxZoom: 8, pane: "refs", attribution: OSM_ATTR}).addTo(map);
+  L.tileLayer(GIBS + "Reference_Labels/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
+    {maxNativeZoom: 9, maxZoom: 8, pane: "labels"}).addTo(map);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {minZoom: 9, maxZoom: 13, attribution: OSM_ATTR}).addTo(map);
+  ["mask", "cells", "box", "area", "hover", "points"].forEach(k => layers[k] = L.layerGroup().addTo(map));
   map.on("moveend", onView);
-  map.on("click", e => { if (!drawing) cellPopup(e.latlng); });
+  map.on("click", e => { if (!drawing) showCell(cellKey(e.latlng), true); });
+  let frame = 0;
+  map.on("mousemove", e => {
+    if (drawing || frame) return;
+    frame = requestAnimationFrame(() => { frame = 0; const k = cellKey(e.latlng); if (shown.has(k)) showCell(k, false); else layers.hover.clearLayers(); });
+  });
+  map.on("mouseout", () => layers.hover.clearLayers());
   setupDrawing();
 }
 
@@ -636,12 +691,14 @@ function drawRegionOnMap() {
   if (!map) return;
   const R = regionBox();
   regionBounds = L.latLngBounds([R.s, R.w], [R.n, R.e]);
-  layers.mask.clearLayers(); layers.box.clearLayers(); layers.points.clearLayers(); layers.area.clearLayers();
-  // Everything outside the region box is shaded: nothing is shown there.
+  ["mask", "box", "points", "area", "hover"].forEach(k => layers[k].clearLayers());
+  // Outside the region box is dimmed slightly: nothing is shown there.
   L.polygon([[[-85, -360], [85, -360], [85, 360], [-85, 360]], [[R.s, R.w], [R.n, R.w], [R.n, R.e], [R.s, R.e]]],
-    {stroke: false, fillColor: "#14213d", fillOpacity: .3, interactive: false}).addTo(layers.mask);
-  L.rectangle(regionBounds, {fill: false, color: "#14213d", weight: 2, interactive: false}).addTo(layers.box);
-  map.fitBounds(regionBounds, {animate: false, padding: [8, 8]});
+    {stroke: false, fillColor: "#000", fillOpacity: .22, interactive: false}).addTo(layers.mask);
+  // A white outline on a dark halo reads on both the satellite basemap and the street map.
+  L.rectangle(regionBounds, {fill: false, color: "#000", opacity: .55, weight: 5, interactive: false}).addTo(layers.box);
+  L.rectangle(regionBounds, {fill: false, color: "#fff", weight: 2, interactive: false}).addTo(layers.box);
+  map.fitBounds(regionBounds, {animate: false, paddingTopLeft: [8, 8], paddingBottomRight: [8, 34]});
   updatePointsButton();
 }
 function drawAreaOnMap() {
@@ -660,56 +717,87 @@ function mapSensor(x) {
   } else label = SENSOR[s] + (s === "MODIS_AQUA" ? "" : ", as recorded (not converted)");
   return {s, i: GRID_SENSORS.indexOf(s), k, label, flying: !!s && x[FIELD[s]] != null};
 }
+// The same for the all-years view: each satellite over its own complete standard years (pipeline/grid.py).
+function allYearsSensor(A) {
+  const auto = $("sensor").value === "auto", s = auto ? "MODIS_AQUA" : $("sensor").value, ys = A.years[s] || [];
+  return {s, i: GRID_SENSORS.indexOf(s), k: null, flying: ys.length > 0, years: ys,
+    span: ys.length ? ys[0] + " to " + ys[ys.length - 1] + " (" + ys.length + " complete years)" : "",
+    label: SENSOR[s] + (s === "MODIS_AQUA" ? "" : ", as recorded (not converted)")};
+}
+function allYears() {
+  const id = D.region.id;
+  if (!allYearsCache[id]) allYearsCache[id] = fetch("data/grid/" + id + "/all_years.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .catch(e => { delete allYearsCache[id]; throw e; });
+  return allYearsCache[id];
+}
 
 async function drawMap() {
-  if (!map || !D || !selected) return;
-  const token = ++drawToken, x = S.months.find(v => v.m === selected), pick = mapSensor(x);
-  layers.cells.clearLayers(); shown = new Map();
-  const sum = $("mapsum"), name = monthName(selected);
+  if (!map || !D) return;
+  const token = ++drawToken, sum = $("mapsum");
+  layers.cells.clearLayers(); layers.hover.clearLayers(); shown = new Map(); shownInfo = null;
+  updateAllYearsButton(); updatePointsButton();
   if (!G) { sum.textContent = "The map grid for this region could not be found."; return; }
-  if (!pick.flying) {
-    sum.textContent = name + ": " + (pick.s ? SENSOR[pick.s] + " has no record for this month (the satellite was not flying)." : "no satellite in this record was observing yet.");
-    drawMapLegend(pick, 0); drawTopCells(pick); drawPoints(); return;
-  }
-  let g;
-  try { g = await gridYear(+selected.slice(0, 4)); } catch (e) { if (token === drawToken) sum.textContent = "The map data for " + name + " could not be loaded."; return; }
+  const x = selected && S.months.find(v => v.m === selected);
+  let pick, name, lists, origin;
+  try {
+    if (x) {
+      pick = mapSensor(x); name = monthName(selected);
+      if (pick.flying) {
+        const g = await gridYear(+selected.slice(0, 4));
+        origin = g.origin; lists = Object.values(g.months[String(+selected.slice(5))] || {});
+        pick.max = pick.k || pick.s === "MODIS_AQUA" ? G.max_cell.MODIS_AQUA : G.max_cell[pick.s];
+      }
+    } else {
+      const A = await allYears();
+      pick = allYearsSensor(A); name = "All years"; origin = A.origin; lists = [A.cells]; pick.max = A.max_cell[pick.s];
+    }
+  } catch (e) { if (token === drawToken) sum.textContent = "The map data for " + (selected ? monthName(selected) : "all years") + " could not be loaded."; return; }
   if (token !== drawToken) return;
-  const month = g.months[String(+selected.slice(5))] || {};
-  for (const q in month) {
-    const f = month[q];
+  if (!pick.flying) {
+    sum.textContent = name + ": " + (pick.s ? SENSOR[pick.s] + (x ? " has no record for this month (the satellite was not flying)." : " has no complete standard year in this record.") : "no satellite in this record was observing yet.");
+    drawMapLegend(pick); drawTopCells(pick); drawPoints(); return;
+  }
+  for (const f of lists) {
     for (let i = 0; i < f.length; i += 6) {
       const n = f[i + 2 + pick.i];
       if (!n) continue;
-      const key = (g.origin[0] + f[i]) * 10000 + g.origin[1] + f[i + 1];
+      const key = (origin[0] + f[i]) * 10000 + origin[1] + f[i + 1];
       shown.set(key, (shown.get(key) || 0) + n);
     }
   }
-  const max = pick.k || pick.s === "MODIS_AQUA" ? G.max_cell.MODIS_AQUA : G.max_cell[pick.s];
   let total = 0, cells = 0, areaTotal = 0, areaCells = 0;
   shown.forEach((n, key) => {
-    const row = Math.floor(key / 10000), col = key % 10000, v = pick.k ? n / pick.k : n;
+    const row = Math.floor(key / 10000), col = key % 10000, v = pick.k ? n / pick.k : n, c = MAP_RAMP[mapStep(v, pick.max)];
     shown.set(key, v);
     total += v; cells++;
     if (area && inArea(row, col)) { areaTotal += v; areaCells++; }
     const s = row / 10 - 90, w = col / 10 - 180;
-    L.rectangle([[s, w], [s + .1, w + .1]], {renderer: cellRenderer, interactive: false, color: "#14213d", weight: .4, opacity: .35,
-      fillColor: ramp(pick.k ? v : n, pick.k ? max : max), fillOpacity: pointsOn ? .45 : .85}).addTo(layers.cells);
+    // Opaque cells with an outline in their own colour leave no gaps; the pane's opacity lets coastlines through.
+    L.rectangle([[s, w], [s + .1, w + .1]], {renderer: cellRenderer, interactive: false, color: c, weight: 1, opacity: 1, fillColor: c, fillOpacity: 1}).addTo(layers.cells);
   });
+  map.getPane("cells").style.opacity = pointsOn ? .45 : CELL_OPACITY;
+  shownInfo = {pick, name, when: x ? monthName(selected) : "total over " + pick.span};
   const where = area ? "inside the chosen area" : "across " + D.region.name;
   const [t, c] = area ? [areaTotal, areaCells] : [total, cells];
-  sum.textContent = name + ", " + pick.label + ": " + (pick.k ? fmt1(t) : fmt(t)) + (t === 1 ? " detection in " : " detections in ") + fmt(c) + (c === 1 ? " cell " : " cells ") + where
-    + (area ? " (" + (pick.k ? fmt1(total) : fmt(total)) + " in the whole region)" : "") + "."
-    + (isPartial(x.status) ? " The month is not complete." : "") + (baseStatus(x.status) === "provisional_nrt" ? " Provisional data." : "")
+  const f = v => pick.k ? fmt1(v) : fmt(v);
+  sum.textContent = name + ", " + pick.label + ": " + f(t) + (t === 1 ? " detection in " : " detections in ") + fmt(c) + (c === 1 ? " cell " : " cells ") + where
+    + (area ? " (" + f(total) + " in the whole region)" : "")
+    + (x ? "." : ", summed over " + pick.span + ". Select a month in the calendar to see one month.")
+    + (x && isPartial(x.status) ? " The month is not complete." : "") + (x && baseStatus(x.status) === "provisional_nrt" ? " Provisional data." : "")
     + " Blank cells mean no detection was recorded, not that nothing burned: when each place could be observed is unknown.";
-  drawMapLegend(pick, max); drawTopCells(pick); onView(); drawPoints();
+  drawMapLegend(pick); drawTopCells(pick); onView(); drawPoints();
 }
 
-function drawMapLegend(pick, max) {
+function drawMapLegend(pick) {
   const lg = $("maplegend"); lg.replaceChildren();
-  if (pick.flying) lg.append(el("span", {}, "1 ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + CIVIDIS.join(",") + ")"}), " " + fmt(max) + " or more detections in a cell (same log scale as the calendar)"));
-  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#fff;border:1px solid #8793a6"}), "Blank: no detection recorded"));
-  lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px solid #14213d"}), "Supported region"));
-  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#a5adbb"}), "Shaded: outside the region, not supported"));
+  if (pick.flying) {
+    const steps = el("span", {class: "steps"});
+    legendSteps(pick.max, !!pick.k).forEach(st => steps.append(el("span", {class: "step"}, el("span", {class: "chip"}, el("span", {style: "background:" + st.c + ";opacity:" + CELL_OPACITY})), st.text)));
+    lg.append(el("span", {class: "legtitle", text: "Detections in a 0.1° cell" + (selected ? "" : ", " + pick.span) + " (each step is a multiple, not an amount):"}), steps);
+  }
+  lg.append(el("span", {}, el("span", {class: "sw", style: "background:transparent;border:1px dashed #55627a"}), "Blank: no detection recorded, not \"no fire\""));
+  lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px solid #fff;box-shadow:0 0 0 2px #333"}), "Supported region"));
+  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8d9097"}), "Dimmed: outside the region, not supported"));
   if (area) lg.append(el("span", {}, el("span", {class: "sw", style: "border:3px dashed #f2a900"}), "Chosen area"));
   if (pointsOn) {
     lg.append(el("span", {}, el("span", {class: "dot", style: "background:#fff;border:2px solid #14213d"}), "Counted detection (filled dot)"));
@@ -717,24 +805,38 @@ function drawMapLegend(pick, max) {
   }
 }
 
+function cellKey(ll) { return cellOf(ll.lat + 90) * 10000 + cellOf(ll.lng + 180); }
 function cellName(key) {
   const row = Math.floor(key / 10000), col = key % 10000;
-  return deg(row / 10 - 90 + .05, "N", "S").replace(".0", ".0") + ", " + deg(col / 10 - 180 + .05, "E", "W");
+  return deg(row / 10 - 90 + .05, "N", "S") + ", " + deg(col / 10 - 180 + .05, "E", "W");
+}
+function cellText(key) {
+  const v = shown.get(key), i = shownInfo;
+  if (!i) return "";
+  return "Cell centred on " + cellName(key) + ": " + (v ? (i.pick.k ? fmt1(v) : fmt(v)) + (v === 1 ? " detection" : " detections") : "no detection recorded (not the same as no fire)") + ", " + i.when + ", " + i.pick.label + ".";
+}
+// Outline one cell and show its count. Used on hover, on click or tap, and when a cell in the table below gets focus.
+function showCell(key, includeEmpty) {
+  layers.hover.clearLayers();
+  const row = Math.floor(key / 10000), col = key % 10000, s = row / 10 - 90, w = col / 10 - 180;
+  if (!shownInfo || !regionBounds || !regionBounds.contains([s + .05, w + .05]) || (!includeEmpty && !shown.has(key))) return;
+  L.rectangle([[s, w], [s + .1, w + .1]], {fill: false, color: "#000", weight: 4, opacity: .6, interactive: false}).addTo(layers.hover);
+  // Open the label below a cell near the top of the map so it is not cut off.
+  const below = map.latLngToContainerPoint([s + .1, w]).y < 110;
+  L.rectangle([[s, w], [s + .1, w + .1]], {fill: false, color: "#fff", weight: 2, interactive: false})
+    .bindTooltip(cellText(key), {permanent: true, direction: below ? "bottom" : "top", offset: [0, below ? 4 : -4], className: "celltip"}).addTo(layers.hover);
 }
 function drawTopCells(pick) {
   const box = $("topcells").lastElementChild; box.replaceChildren();
   const list = [...shown].filter(([k]) => inArea(Math.floor(k / 10000), k % 10000)).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  if (!list.length) { box.append(el("p", {class: "note", text: "No cell has a recorded detection" + (area ? " inside the chosen area" : "") + " for this month and satellite. That does not mean nothing burned."})); return; }
-  const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Cell centre (0.1° cell)"}), el("th", {class: "num", text: "Detections"})));
-  list.forEach(([k, v]) => t.append(el("tr", {}, el("td", {text: cellName(k)}), el("td", {class: "num", text: pick.k ? fmt1(v) : fmt(v)}))));
+  if (!list.length) { box.append(el("p", {class: "note", text: "No cell has a recorded detection" + (area ? " inside the chosen area" : "") + " for this view and satellite. That does not mean nothing burned."})); return; }
+  const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Cell centre (0.1° cell); focus or select to outline it on the map"}), el("th", {class: "num", text: "Detections"})));
+  list.forEach(([k, v]) => {
+    const b = el("button", {type: "button", class: "linkish", text: cellName(k)});
+    b.addEventListener("focus", () => showCell(k, true)); b.addEventListener("click", () => showCell(k, true));
+    t.append(el("tr", {}, el("td", {}, b), el("td", {class: "num", text: pick.k ? fmt1(v) : fmt(v)})));
+  });
   box.append(t);
-}
-function cellPopup(ll) {
-  if (!regionBounds || !regionBounds.contains(ll)) return;
-  const key = cellOf(ll.lat + 90) * 10000 + cellOf(ll.lng + 180), v = shown.get(key);
-  const x = S.months.find(m => m.m === selected), pick = x && mapSensor(x);
-  if (!pick) return;
-  L.popup().setLatLng(ll).setContent(el("span", {text: "Cell centred on " + cellName(key) + ": " + (v ? (pick.k ? fmt1(v) : fmt(v)) + " detections" : "no detection recorded (not the same as no fire)") + ", " + monthName(selected) + ", " + pick.label + "."})).openOn(map);
 }
 
 function onView() {
@@ -749,8 +851,15 @@ function onView() {
 function updatePointsButton() {
   const btn = $("pts"), ok = map && selected && map.getZoom() >= DETAIL_ZOOM;
   btn.disabled = !ok && !pointsOn;
-  btn.textContent = pointsOn ? "Hide individual detections" : ok ? "Show individual detections" : "Zoom in to show individual detections";
+  btn.textContent = pointsOn ? "Hide individual detections" : !selected ? "Choose a month to show individual detections" : ok ? "Show individual detections" : "Zoom in to show individual detections";
   btn.setAttribute("aria-pressed", String(pointsOn));
+}
+function updateAllYearsButton() { $("allyears").setAttribute("aria-pressed", String(!selected)); }
+function showAllYears() {
+  selected = null; pointsOn = false;
+  document.querySelectorAll(".cal td.sel").forEach(e => { e.classList.remove("sel"); e.firstChild.setAttribute("aria-pressed", "false"); });
+  $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
+  drawMap(); writeHash();
 }
 
 // Read a hotspot year file a piece at a time, handing complete lines (header included) to fn.
@@ -805,8 +914,8 @@ async function drawPoints() {
   for (let k = 0; k < n; k++) {
     const r = here[Math.floor(k * step)];
     L.circleMarker([r[0], r[1]], r[2]
-      ? {renderer: cellRenderer, radius: 4, color: "#14213d", weight: 2, fillColor: "#ffffff", fillOpacity: 1, interactive: false}
-      : {renderer: cellRenderer, radius: 5, color: "#b2182b", weight: 2, dashArray: "2 2", fill: false, interactive: false}).addTo(layers.points);
+      ? {renderer: pointRenderer, radius: 4, color: "#14213d", weight: 2, fillColor: "#ffffff", fillOpacity: 1, interactive: false}
+      : {renderer: pointRenderer, radius: 5, color: "#b2182b", weight: 2, dashArray: "2 2", fill: false, interactive: false}).addTo(layers.points);
     drawn++; if (r[2]) counted++;
   }
   note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view. Zoom in to see them all. "
@@ -921,6 +1030,7 @@ $("mode").addEventListener("change", () => { if (D) { drawCalendar(); if (select
 $("sensor").addEventListener("change", () => { drawMap(); writeHash(); });
 $("pts").addEventListener("click", () => { pointsOn = !pointsOn; updatePointsButton(); drawMap(); if (!pointsOn) onView(); });
 $("whole").addEventListener("click", () => { clearArea(); });
+$("allyears").addEventListener("click", showAllYears);
 $("areaform").addEventListener("submit", e => {
   e.preventDefault();
   const v = ["aw", "as", "ae", "an"].map(id => parseFloat($(id).value));
