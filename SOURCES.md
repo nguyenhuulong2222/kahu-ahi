@@ -29,6 +29,8 @@ From the FIRMS FAQ (https://www.earthdata.nasa.gov/data/tools/firms/faq, "Are th
 - Suomi NPP end of new observations (2 Nov 2026) — https://www.earthdata.nasa.gov/data/alerts-outages/reminder-new-suomi-npp-observations-cease-november-2-2026
 - Transitioning from Suomi NPP VIIRS & OMPS: what FIRMS users need to know — https://www.earthdata.nasa.gov/news/blog/transitioning-from-suomi-npp-viirs-omps-what-firms-users-need-know
 - Transitioning from Suomi NPP to NOAA-20 and NOAA-21 (LANCE) — https://www.earthdata.nasa.gov/news/blog/transitioning-from-suomi-npp-noaa-20-noaa-21-what-lance-users-need-know
+- Dates from which each satellite's fire data are available, and the end of Suomi NPP data (FIRMS FAQ, "For what dates are the fire data available?" and "Are there any missing MODIS fire data?", read 14 Nov 2026): MODIS Terra from 1 November 2000; MODIS Aqua from July 2002 ("starting July 4, 2002"); VIIRS S-NPP "from 20 January 2012 to November 2, 2026"; VIIRS NOAA-20 from 1 April 2018. The same FAQ gives the "2-3 month lag" of standard data. These are the dates in `SAT_FACTS` in `docs/index.html`.
+- Launch dates (read 14 Nov 2026): Terra, 18 Dec 1999 — https://science.nasa.gov/mission/terra/ ; Aqua, 4 May 2002 — https://science.nasa.gov/mission/aqua/ ; Suomi NPP, 28 Oct 2011 — https://science.nasa.gov/mission/suomi-npp/ ; JPSS-1, renamed NOAA-20, NASA release of 18 Nov 2017 — https://www.nasa.gov/news-release/nasa-launches-noaa-weather-satellite-aboard-united-launch-alliance-rocket-to-improve-forecasts/
 - MODIS to VIIRS transition — https://ladsweb.modaps.eosdis.nasa.gov/learn/modis-to-viirs-transition/MODIS-VIIRS_Transition.pdf
 
 ## Challenge and rules

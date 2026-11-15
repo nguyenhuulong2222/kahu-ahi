@@ -348,7 +348,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
         <li><strong>A detection</strong> is one satellite pixel where the satellite saw heat from a fire at the moment it passed over. A pixel is about 1 km across for the older MODIS instrument and 375 m for the newer VIIRS.</li>
         <li>A detection is <strong>not a count of fires and not burned area</strong>. One large fire gives many detections; a small or short fire may give none.</li>
         <li><strong>No detection is not "no fire".</strong> Clouds, smoke and the time of day the satellite passes all hide fires.</li>
-        <li><strong>Why two satellites disagree:</strong> VIIRS (flying since 2012) has smaller pixels than MODIS (since 2000), so it records several times more detections of the same fires.</li>
+        <li><strong>Why two satellites disagree:</strong> VIIRS (fire data since 2012) has smaller pixels than MODIS (since 2000), and it records several times more detections of the same fires.</li>
         <li><strong>MODIS Aqua scale</strong> means counts as the MODIS instrument on the Aqua satellite records them. VIIRS counts are divided by a factor measured in each region, for each calendar month, so the new record can be compared with the old one.</li>
         <li><strong>Counted</strong> detections are those the satellite marked as a likely vegetation fire with normal or high confidence. Volcanoes, gas flares and other steady heat sources are left out.</li>
         <li><strong>Provisional</strong> means near-real-time data: it arrives within hours, has not yet been reprocessed by NASA, and can still change.</li>
@@ -771,6 +771,27 @@ function sensorSpan(s) {
   if (!a && !b) return null;
   return {first: [a, b].filter(Boolean).map(v => v.first).sort()[0], last: [a, b].filter(Boolean).map(v => v.last).sort().pop()};
 }
+// Documented dates, not inferred from the files. Launch: NASA Science mission pages (Terra, Aqua, Suomi NPP) and NASA's
+// release of 18 Nov 2017 (JPSS-1, renamed NOAA-20). First fire data, and the end of Suomi NPP data: FIRMS FAQ,
+// "For what dates are the fire data available?". All are listed in SOURCES.md.
+const SAT_FACTS = {
+  MODIS_TERRA: {launch: "1999-12-18", data: "2000-11-01"},
+  MODIS_AQUA: {launch: "2002-05-04", data: "2002-07-04"},
+  VIIRS_SNPP: {launch: "2011-10-28", data: "2012-01-20", ended: "2026-11-02"},
+  VIIRS_NOAA20: {launch: "2017-11-18", data: "2018-04-01"}
+};
+// Why a satellite has nothing for a date or period (from, to as YYYY-MM-DD), in words that claim no more than the sources do.
+function noDataWhy(s, from, to) {
+  const f = SAT_FACTS[s], sp = sensorSpan(s), name = SENSOR[s];
+  if (!f || !sp) return name + " has no data in this record.";
+  if (to < f.launch) return name + " had not been launched (launch: " + niceDate(f.launch) + "; its fire data start on " + niceDate(f.data) + ").";
+  if (to < f.data) return name + " was in orbit (launched " + niceDate(f.launch) + "), but FIRMS has no fire data from it before " + niceDate(f.data) + ".";
+  if (to < sp.first) return "This record has no " + name + " detection in this region before " + niceDate(sp.first) + ".";
+  if (f.ended && from > f.ended) return name + " stopped delivering new data on " + niceDate(f.ended) + " (NASA FIRMS).";
+  if (from > sp.last) return "No data received yet for this date from " + name + ": the newest rows in this download are from " + niceDate(sp.last) + ".";
+  return name + " has no data in this record for this period.";
+}
+function noDataShort(s, d) { const f = SAT_FACTS[s], sp = sensorSpan(s); return f && d < f.launch ? "not launched" : f && f.ended && d > f.ended ? "stopped" : sp && d > sp.last ? "no data yet" : "no data"; }
 function flyingOn(s, d) { const sp = sensorSpan(s); return !!sp && d >= sp.first && d <= sp.last; }
 
 // ---------- what you are looking at: a few plain sentences for the current selection ----------
@@ -786,7 +807,7 @@ const FEW_DETECTIONS = 10;   // below this many on a day, the page says the day 
 // One sentence for a month on the MODIS Aqua scale, compared with the usual for that calendar month.
 function monthSentence(x, place, medians) {
   const m = +x.m.slice(5), med = (medians || S.medians)[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
-  if (x.h == null) return st === "terra_only_not_harmonized" ? "In " + fullMonth(x.m) + " only the MODIS Terra satellite was flying (" + fmt(x.terra) + " detections). Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + fullMonth(x.m) + ".";
+  if (x.h == null) return st === "terra_only_not_harmonized" ? "In " + fullMonth(x.m) + " only MODIS Terra has fire data (" + fmt(x.terra) + " detections); MODIS Aqua's begin on " + niceDate(SAT_FACTS.MODIS_AQUA.data) + ". Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + fullMonth(x.m) + ".";
   if (isPartial(x.status)) return fullMonth(x.m) + " has " + fmt(x.h) + " detections so far in " + place + " on the MODIS Aqua scale. The month is not complete, so it is not compared with a full " + mn + ".";
   return fullMonth(x.m) + " had " + fmt(x.h) + " detections in " + place + " on the MODIS Aqua scale" + (med > 0 ? ", " + times(x.h, med) + " the usual " + mn + " (" + fmt(med) + (med === 1 ? " detection" : " detections") + ")." : med === 0 ? "; the usual " + mn + " has none." : ".");
 }
@@ -799,7 +820,7 @@ function drawExplain() {
     s.push(cs ? "From " + cs.text + ", the MODIS Aqua satellite recorded " + fmt(cs.years.reduce((t, y) => t + ys[y].total, 0)) + " fire detections in " + place + "." : "There is no complete year of standard data for " + place + ".");
   } else if (lv === "year") {
     const y = ys[selYear], usual = cs ? median(cs.years.map(k => ys[k].total)) : null;
-    if (!y.any) s.push("In " + selYear + " only the MODIS Terra satellite was flying. Its counts are not on the same scale as the rest of the record, so there is no total for the year.");
+    if (!y.any) s.push("In " + selYear + " only MODIS Terra has fire data. Its counts are not on the same scale as the rest of the record, so there is no total for the year.");
     else if (!y.complete) s.push(selYear + " has " + fmt(y.total) + " detections in " + place + ", but it is not a full year of final data, so it is not compared with the usual year.");
     else s.push(selYear + " had " + fmt(y.total) + " detections in " + place + (usual > 0 ? ", " + times(y.total, usual) + " the usual year (the median of " + cs.text + ", " + fmt(usual) + " detections)." : "."));
   } else {
@@ -910,7 +931,7 @@ function drawDrillIn() {
         const mark = viirs && !after && flyingOn(viirs, d) ? c[vi] / k : null;
         if (v != null) tot.push([d, v]);
         return {tick: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "", value: v, mark, sel: d === selDay, cls: after ? "none" : !fly ? "none" : daily.nrt.has(d) ? "prov" : "",
-          say: dayName(d) + ": " + (after ? "after the end of the data" : !fly ? SENSOR[pick.s] + " not flying" : fmt(v) + " " + SENSOR[pick.s] + " detections" + (v === 0 ? " (none recorded, which is not the same as no fire)" : ""))
+          say: dayName(d) + ": " + (after ? "after the end of the data" : !fly ? SENSOR[pick.s] + ": " + noDataShort(pick.s, d) + " in this record" : fmt(v) + " " + SENSOR[pick.s] + " detections" + (v === 0 ? " (none recorded, which is not the same as no fire)" : ""))
             + (mark != null ? "; " + SENSOR[viirs] + " " + fmt(c[vi]) + ", about " + fmt1(mark) + " on the Aqua scale (indicative: tested by month, not by day)" : "") + (after || !fly ? "." : ". Select to see this day on the map."),
           go: after || !fly ? null : () => select({day: d}, {fit: true})};
       })));
@@ -921,7 +942,7 @@ function drawDrillIn() {
         + (area ? " Daily counts are for the whole region; they are not available for a chosen area." : "") + " Select a day to see it on the map.";
       // The same days as a table: what each satellite recorded.
       const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Day"}), ...GRID_SENSORS.map(s => el("th", {class: "num", text: SENSOR[s].replace("VIIRS Suomi NPP", "VIIRS S-NPP") + " (detections)"})), ...(viirs ? [el("th", {class: "num", text: SENSOR[viirs].replace("VIIRS Suomi NPP", "VIIRS S-NPP") + " on the Aqua scale (indicative)"})] : [])));
-      days.filter(d => d <= D.data_through).forEach(d => { const c = dayCounts(d); t.append(el("tr", {}, el("td", {text: dayName(d)}), ...GRID_SENSORS.map((s, i) => el("td", {class: "num", text: flyingOn(s, d) ? fmt(c[i]) : "not flying"})), ...(viirs ? [el("td", {class: "num", text: flyingOn(viirs, d) ? fmt1(c[vi] / k) : "n/a"})] : []))); });
+      days.filter(d => d <= D.data_through).forEach(d => { const c = dayCounts(d); t.append(el("tr", {}, el("td", {text: dayName(d)}), ...GRID_SENSORS.map((s, i) => el("td", {class: "num", text: flyingOn(s, d) ? fmt(c[i]) : noDataShort(s, d)})), ...(viirs ? [el("td", {class: "num", text: flyingOn(viirs, d) ? fmt1(c[vi] / k) : "n/a"})] : []))); });
       kids.push(el("details", {}, el("summary", {text: "Table: what each satellite recorded each day"}), el("div", {class: "calwrap"}, t)));
     }
   }
@@ -1018,7 +1039,7 @@ function drawDetailIn(x) {
   if (x.n20_eq != null && lastStd && x.m > lastStd.slice(0, 7) && asUsedText()) box.append(el("p", {class: "note", id: "detailused", text: (asUsedOk() ? "" : "The converted NOAA-20 value for this month is not reliable. ") + asUsedText(true)}));
   const rows = [["MODIS Terra", x.terra, null], ["MODIS Aqua", x.aqua, x.aqua], ["VIIRS Suomi NPP", x.snpp, x.snpp_eq], ["VIIRS NOAA-20", x.n20, x.n20_eq]];
   const t = el("table", {}, el("tr", {}, el("th", {text: "Satellite"}), el("th", {class: "num", text: "Detections counted"}), el("th", {class: "num", text: "Detections on the Aqua scale"})));
-  rows.forEach(r => t.append(el("tr", {}, el("td", {text: r[0]}), el("td", {class: "num", text: r[1] == null ? "not flying" : fmt(r[1])}), el("td", {class: "num", text: r[2] == null ? "not converted" : r[0] === "VIIRS NOAA-20" && lastStd && x.m > lastStd.slice(0, 7) && !asUsedOk() ? "not reliable" : fmt(r[2])}))));
+  rows.forEach(r => t.append(el("tr", {}, el("td", {text: r[0]}), el("td", {class: "num", text: r[1] == null ? "no data" : fmt(r[1])}), el("td", {class: "num", text: r[2] == null ? "not converted" : r[0] === "VIIRS NOAA-20" && lastStd && x.m > lastStd.slice(0, 7) && !asUsedOk() ? "not reliable" : fmt(r[2])}))));
   box.append(t);
 }
 
@@ -1905,9 +1926,8 @@ function notFlyingText(pick) {
   if (!pick.s) return "No satellite in this record was observing in " + when + ".";
   if (!sp) return SENSOR[pick.s] + " has no record for this region.";
   if (lv === "all") return SENSOR[pick.s] + " has no complete year of final data in this record. Its record here runs from " + niceDate(sp.first) + " to " + niceDate(sp.last) + ".";
-  const end = lv === "day" ? selDay : lv === "month" ? selected + "-31" : selYear + "-12-31";
-  return end < sp.first ? SENSOR[pick.s] + " was not flying yet in " + when + ". Its record here starts on " + niceDate(sp.first) + "."
-    : SENSOR[pick.s] + " was no longer sending data in " + when + ". Its record here ends on " + niceDate(sp.last) + ".";
+  const start = lv === "day" ? selDay : lv === "month" ? selected + "-01" : selYear + "-01-01", end = lv === "day" ? selDay : lv === "month" ? selected + "-31" : selYear + "-12-31";
+  return noDataWhy(pick.s, start, end);
 }
 
 async function drawMap() {
@@ -2179,7 +2199,7 @@ async function openReport(d) {
     const mine = all.filter(x => x.d.date === d.date && x.d.sensor === sat), frp = mine.map(x => +x.d.frp).filter(Number.isFinite);
     const times = [...new Set(mine.map(x => x.d.time))].sort().map(v => v.slice(0, 2) + ":" + v.slice(2));
     if (mine.length) t.append(el("tr", {"data-sat": sat}, el("td", {text: SENSOR[sat]}), el("td", {text: times.join(", ")}), el("td", {class: "num", text: fmt(mine.length)}), el("td", {class: "num", text: fmt(mine.filter(x => x.d.counted).length)}), el("td", {class: "num", text: frp.length ? Math.max(...frp).toLocaleString("en-US", {maximumFractionDigits: 2}) : "not given"}), el("td", {class: "num", text: frp.length ? f1(frp.reduce((a, b) => a + b, 0)) : "not given"})));
-    else t.append(el("tr", {"data-sat": sat}, el("td", {text: SENSOR[sat]}), el("td", {colspan: "5", text: flyingOn(sat, d.date) ? "No detection recorded within " + REPORT_KM + " km. The files do not say whether the satellite passed over or could see the ground, so this is not zero fire." : "Not flying, or no longer sending data, on this date."})));
+    else t.append(el("tr", {"data-sat": sat}, el("td", {text: SENSOR[sat]}), el("td", {colspan: "5", text: flyingOn(sat, d.date) ? "No detection recorded within " + REPORT_KM + " km. The files do not say whether the satellite passed over or could see the ground, so this is not zero fire." : noDataWhy(sat, d.date, d.date)})));
   });
   kids.push(el("h3", {text: "What each satellite recorded within " + REPORT_KM + " km on " + dayName(d.date) + " (UTC date)"}), el("div", {class: "calwrap"}, t));
   // c. how long
@@ -2193,7 +2213,7 @@ async function openReport(d) {
     + " Days between detections are not days without fire: the satellites pass about twice a day and cloud or smoke can hide the ground."
     + (to < addDays(d.date, REPORT_DAYS) ? " The record ends on " + dayName(D.data_through) + ", so later days are not covered." : "")}));
   kids.push(barChart("Detections within " + REPORT_KM + " km each day, " + SENSOR[d.sensor], Array.from({length: n}, (_, i) => { const day = addDays(from, i), off = Math.round((Date.parse(day) - Date.parse(d.date)) / 864e5), v = byDay[day] || 0;
-    return {tick: off % 10 === 0 ? (off > 0 ? "+" + off : String(off)) : "", value: flyingOn(d.sensor, day) ? v : null, sel: off === 0, cls: flyingOn(d.sensor, day) ? "" : "none", say: dayName(day) + ": " + (flyingOn(d.sensor, day) ? v + (v === 1 ? " detection" : " detections") : "satellite not flying")}; })),
+    return {tick: off % 10 === 0 ? (off > 0 ? "+" + off : String(off)) : "", value: flyingOn(d.sensor, day) ? v : null, sel: off === 0, cls: flyingOn(d.sensor, day) ? "" : "none", say: dayName(day) + ": " + (flyingOn(d.sensor, day) ? v + (v === 1 ? " detection" : " detections") : "satellite " + noDataShort(d.sensor, day))}; })),
     el("p", {class: "note", text: "Up: " + SENSOR[d.sensor] + " detections within " + REPORT_KM + " km in a day (counted and not counted). Across: days before (-) and after (+) " + dayName(d.date) + ", which is marked."}));
   // d. context
   const R = regionSeries(), x = R.months.find(v => v.m === d.date.slice(0, 7));
