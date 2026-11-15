@@ -103,6 +103,14 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .statetable{max-height:460px;overflow:auto}.statetable td.num,.statetable th.num{text-align:right}.statetable tr.refused td{color:var(--warn)}
 .mostgrid{display:grid;gap:14px 24px;grid-template-columns:1fr;margin-top:8px}@media(min-width:900px){.mostgrid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}}
 .mostgrid h3{margin:0 0 4px;font-size:1rem}.mostgrid table{width:100%}.mostgrid td.num,.mostgrid th.num{text-align:right}.mostgrid td .note{display:block;font-size:.82rem}
+#previewcard{position:fixed;right:16px;bottom:16px;z-index:2500;width:400px;max-width:calc(100vw - 32px);max-height:min(78vh,640px);overflow:auto;padding:12px 14px;border-radius:8px;background:#fff;color:var(--ink);box-shadow:0 4px 18px rgba(0,0,0,.45);border-top:4px solid #14213d;font:14px/1.4 var(--font)}
+#previewcard[hidden]{display:none}#previewcard h3{margin:0 0 2px;font-size:1.05rem}#previewcard h3:focus{outline:none}#previewcard p{margin:0 0 6px}#previewcard dl{margin:6px 0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px}
+#previewcard dt{color:var(--muted)}#previewcard dd{margin:0;font-variant-numeric:tabular-nums}
+#previewcard .pvbar{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}#previewcard .pvbar button{min-height:40px;padding:6px 10px;font-size:.9rem}
+#previewcard .pvnav{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px}#previewcard .pvnav button{min-height:36px;padding:4px 10px;font-size:.88rem}
+.pvchart{display:flex;align-items:flex-end;gap:1px;height:54px;margin:4px 0 2px;border-bottom:1px solid var(--line)}.pvchart i{flex:1 1 0;min-width:2px;background:#14213d;border-radius:2px 2px 0 0}.pvchart i.top{background:#c2410c}
+@media(max-width:600px){#previewcard{left:0;right:0;bottom:0;width:auto;max-width:none;max-height:70vh;border-radius:12px 12px 0 0}#previewcard .pvbar button{flex:1 1 45%;min-height:44px}}
+#mostareas tr.on td,#mostdays tr.on td{background:#fff3d6}.mostpin.on{background:#f2a900;color:#14213d;transform:scale(1.35);z-index:1000!important}
 .mostpin{background:#14213d;color:#fff;border:2px solid #fff;border-radius:50%;font:700 12px/18px var(--font);text-align:center;box-shadow:0 0 0 1px #000}
 .maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
 .mapshell{margin-top:6px!important}
@@ -503,6 +511,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </footer>
 </div>
 </main>
+<div id="previewcard" role="dialog" aria-labelledby="pv-title" hidden></div>
 
 <script>
 "use strict";
@@ -2022,6 +2031,7 @@ function hotBytes(d) { const i = hotIndex; if (!i) return Infinity; const e = i.
 function listWords(a) { return a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
 function drawMost(pick) {
   const sec = $("most"), box = $("mostbody"), lv = level(), token = ++mostToken;
+  closePreview(true); mostCtx = null;
   if (layers.most) layers.most.clearLayers();
   if (!pick || !pick.s || !daily || (lv === "day" ? !mostDayRows : !pick.flying)) { sec.hidden = true; box.replaceChildren(); return; }
   const period = selLabel(), sat = SENSOR[pick.s], f = v => pick.k ? fmt1(v) : fmt(v), cells = new Map();
@@ -2044,15 +2054,18 @@ function drawMost(pick) {
   const note = el("p", {class: "note", id: "mostnote", role: "status"});
   areas.forEach((a, i) => {
     const t = nearTown(a.lat, a.lon), short = t ? "near " + t.name : a.name;
-    const b = el("button", {type: "button", class: "linkish", text: short, "aria-label": "Area " + (i + 1) + ", " + a.name + ": show on the map" + (lv === "all" ? "" : " and list its detections")});
-    b.addEventListener("click", () => openArea(a, pick, note));
+    const b = el("button", {type: "button", class: "linkish", text: short, "aria-label": "Area " + (i + 1) + ", " + a.name + ": preview"});
+    b.addEventListener("click", () => openPreview("area", i, b));
     a.when = dateHead ? el("span", {class: "when", text: lv === "month" ? "Loading" : ""}) : null;
-    at.append(el("tr", {}, el("td", {text: i + 1}), el("td", {}, b, ...(t && t.townIn ? [el("span", {class: "note", text: t.townIn.trim()})] : []), ...(a.when ? [el("span", {class: "note"}, dateHead + ": ", a.when)] : [])),
-      el("td", {class: "num", text: f(a.count)}), el("td", {class: "num", text: (100 * a.count / total).toFixed(1) + "%"})));
+    a.row = el("tr"); a.note = note; a.rank = i + 1;
+    const lit = on => { if (a.pin && a.pin._icon) a.pin._icon.classList.toggle("on", on || (preview && preview.kind === "area" && preview.i === i)); };
+    a.row.addEventListener("mouseenter", () => lit(true)); a.row.addEventListener("mouseleave", () => lit(false)); b.addEventListener("focus", () => lit(true)); b.addEventListener("blur", () => lit(false));
+    at.append(a.row); a.row.append(...[el("td", {text: i + 1}), el("td", {}, b, ...(t && t.townIn ? [el("span", {class: "note", text: t.townIn.trim()})] : []), ...(a.when ? [el("span", {class: "note"}, dateHead + ": ", a.when)] : [])),
+      el("td", {class: "num", text: f(a.count)}), el("td", {class: "num", text: (100 * a.count / total).toFixed(1) + "%"})]);
     if (map) {
       L.rectangle(a.bounds, {fill: false, color: "#fff", weight: 1.5, dashArray: "4 3", interactive: false}).addTo(layers.most);
-      L.marker([a.bounds[1][0], a.bounds[0][1]], {icon: L.divIcon({className: "mostpin", html: String(i + 1), iconSize: [22, 22], iconAnchor: [11, 11]}), keyboard: false, title: (i + 1) + ". " + a.name})
-        .on("click", () => openArea(a, pick, note)).addTo(layers.most);
+      a.pin = L.marker([a.bounds[1][0], a.bounds[0][1]], {icon: L.divIcon({className: "mostpin", html: String(i + 1), iconSize: [22, 22], iconAnchor: [11, 11]}), keyboard: false, title: (i + 1) + ". " + a.name})
+        .on("click", () => openPreview("area", i, null)).addTo(layers.most);
     }
   });
   const left = el("div", {}, el("h3", {text: lv === "day" ? "Top " + areas.length + " places of the day" : "Top " + areas.length + " areas"}), el("div", {class: "calwrap"}, at), note);
@@ -2064,10 +2077,10 @@ function drawMost(pick) {
     const dt = el("table", {class: "plain", id: "mostdays"}, el("caption", {class: "sr", text: "The " + days.length + " days with the most detections"}),
       el("tr", {}, el("th", {scope: "col", text: "#"}), el("th", {scope: "col", text: "Day (UTC date)"}), el("th", {scope: "col", class: "num", text: "Detections"})));
     days.forEach((x, i) => {
-      const b = el("button", {type: "button", class: "linkish", text: dayName(x.d), "aria-label": "Day " + (i + 1) + ", " + dayName(x.d) + ": show this day on the map and list its detections"});
-      b.addEventListener("click", () => select({day: x.d}, {fit: true}).then(() => { $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); }));
-      x.where = el("span", {class: "where", text: "Loading"});
-      dt.append(el("tr", {}, el("td", {text: i + 1}), el("td", {}, b, el("span", {class: "note"}, "Most that day: ", x.where)), el("td", {class: "num", text: fmt(x.n)})));
+      const b = el("button", {type: "button", class: "linkish", text: dayName(x.d), "aria-label": "Day " + (i + 1) + ", " + dayName(x.d) + ": preview"});
+      b.addEventListener("click", () => openPreview("day", i, b));
+      x.where = el("span", {class: "where", text: "Loading"}); x.rank = i + 1;
+      dt.append(x.row = el("tr", {}, el("td", {text: i + 1}), el("td", {}, b, el("span", {class: "note"}, "Most that day: ", x.where)), el("td", {class: "num", text: fmt(x.n)})));
     });
     right = el("div", {}, el("h3", {text: "Top " + days.length + " days"}), el("div", {class: "calwrap"}, dt),
       el("p", {class: "note", text: "Counted detections of " + sat + " on each day in " + inRegion() + (pick.k ? ", as recorded (the map's cells are converted to the Aqua scale)." : ".")}));
@@ -2090,6 +2103,7 @@ function drawMost(pick) {
     el("p", {class: "note", text: "An area is a square of " + (2 * AREA_R + 1) + " by " + (2 * AREA_R + 1) + " grid cells placed where it holds the most detections; areas do not overlap. Shares are of the " + f(total) + " detections on this map. An area is named after the nearest town in the bundled list to where its detections centre; the county is that town's. The numbered squares on the map are the same areas."
       + (lv === "all" ? " First and last dates are given when a year or a month is selected." : "")}));
   box.replaceChildren(...kids);
+  mostCtx = {token, lv, pick, areas, days, total, period, f};
   // ---- what needs more than the files already loaded: after the first paint ----
   // While playing, nothing more is fetched; the details load when play stops on a period.
   mostLast = [token, lv, pick, areas, days];
@@ -2128,6 +2142,7 @@ async function fillMost(token, lv, pick, areas, days) {
       const cells = await countedOfDay(x.d, pick.s);
       if (stale()) return;
       const a = topAreas(cells, 1)[0];
+      if (a) { a.name = areaName(a); x.area = a; }
       x.where.textContent = a ? areaName(a) + ", " + fmt(a.count) + " of " + fmt(x.n) : "not available";
     }
   } catch (e) {
@@ -2136,18 +2151,17 @@ async function fillMost(token, lv, pick, areas, days) {
     areas.forEach(a => { if (a.when && a.when.textContent === "Loading") a.when.textContent = "could not be loaded"; });
   }
 }
-// Fly to an area and, where the level allows it, list its detections in the table under the map.
+function zoomArea(a) { if (!map) return; const b = L.latLngBounds(a.bounds).pad(.5); if (REDUCE) map.fitBounds(b, {animate: false, maxZoom: 10}); else map.flyToBounds(b, {maxZoom: 10, duration: .8}); }
+// List an area's detections in the table under the map, where the level allows it.
 async function openArea(a, pick, note) {
   const lv = level();
   pausePlay();
-  if (map) { const b = L.latLngBounds(a.bounds).pad(.5); if (REDUCE) map.fitBounds(b, {animate: false, maxZoom: 10}); else map.flyToBounds(b, {maxZoom: 10, duration: .8}); }
-  if (lv === "all") { note.textContent = "Moved the map to area " + a.name + ". Select a year or a month to list the detections there."; return; }
+  if (lv === "all") { note.textContent = "Select a year or a month to list the detections of " + a.name + "."; return; }
   let month = selected, dayOnly = lv === "day" ? selDay : null;
   if (lv === "year") {
     if (!a.busiest) { note.textContent = "Moved the map to " + a.name + "."; return; }
     month = a.busiest;
     await select({month});
-    if (map) map.fitBounds(L.latLngBounds(a.bounds).pad(.5), {animate: false, maxZoom: 10});
   }
   note.textContent = "Loading the detections of this area.";
   let rows;
@@ -2162,6 +2176,147 @@ async function openArea(a, pick, note) {
   note.textContent = "";
   $("detsec").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-det").focus();
 }
+
+// ---------- preview card for one of the top areas or days ----------
+// Opening the card moves nothing: no zoom, no scroll, no table. Only its buttons do. What it needs from a hotspot
+// file is fetched after it is on screen.
+let mostCtx = null, preview = null;
+function closePreview(quiet) {
+  const card = $("previewcard");
+  if (!preview) { card.hidden = true; return; }
+  const p = preview, c = mostCtx;
+  preview = null; card.hidden = true; card.replaceChildren();
+  if (c) [...c.areas, ...c.days].forEach(o => { if (o.row) o.row.classList.remove("on"); if (o.pin && o.pin._icon) o.pin._icon.classList.remove("on"); });
+  if (!quiet && p.opener && document.contains(p.opener)) p.opener.focus({preventScroll: true});
+}
+function pvRows(pairs) { const dl = el("dl"); pairs.forEach(([k, v]) => { if (v != null && v !== "") dl.append(el("dt", {text: k}), typeof v === "string" || typeof v === "number" ? el("dd", {text: v}) : el("dd", {}, v)); }); return dl; }
+function pvChart(values, labels, what) {
+  const hi = Math.max(...values, 0), wrap = el("div");
+  if (!(hi > 0)) return wrap;
+  const top = values.indexOf(hi), bars = el("div", {class: "pvchart", "aria-hidden": "true"});
+  values.forEach((v, i) => bars.append(el("i", {class: i === top ? "top" : "", style: "height:" + (v > 0 ? Math.max(4, 100 * v / hi).toFixed(1) : 0) + "%", title: labels[i] + ": " + fmt(v)})));
+  wrap.append(bars, el("p", {class: "note", text: what + ", " + labels[0] + " to " + labels[labels.length - 1] + ". Highest: " + fmt(hi) + " (" + labels[top] + "), marked."}));
+  return wrap;
+}
+const SAT_SHORT = {MODIS_AQUA: "MODIS Aqua", MODIS_TERRA: "MODIS Terra", VIIRS_SNPP: "VIIRS S-NPP", VIIRS_NOAA20: "VIIRS NOAA-20"};
+// Everything the card says about an area beyond its count: worked out once, from the grid where that is enough.
+function areaDetails(c, a) {
+  if (a.details) return a.details;
+  const pick = c.pick, lv = c.lv, sats = () => Object.fromEntries(GRID_SENSORS.map(s => [s, 0]));
+  const fromRows = (rows, dayOnly) => {
+    const d = {sats: sats(), perDay: {}, frp: null, first: null, last: null};
+    rows.forEach(r => {
+      if (!r[2] || !a.keys.has(keyAt(r[0], r[1])) || (dayOnly && r[4] !== dayOnly)) return;
+      d.sats[r[3]]++;
+      if (r[3] !== pick.s) return;
+      d.perDay[r[4]] = (d.perDay[r[4]] || 0) + 1;
+      const frp = +r[5].split(",")[7]; if (frp > (d.frp || 0)) d.frp = frp;
+    });
+    const ds = Object.keys(d.perDay).map(Number).sort((x, y) => x - y);
+    if (ds.length) { d.first = ds[0]; d.last = ds[ds.length - 1]; d.busiest = ds.slice().sort((x, y) => d.perDay[y] - d.perDay[x] || x - y)[0]; }
+    return d;
+  };
+  a.details = (async () => {
+    if (lv === "month" || lv === "day") {
+      const ym = lv === "day" ? selDay.slice(0, 7) : selected, rows = await monthRows(D.region.id + "/" + ym), d = fromRows(rows, lv === "day" ? +selDay.slice(8) : 0);
+      const day = n => ym + "-" + String(n).padStart(2, "0");
+      const out = {sats: d.sats, frp: d.frp, first: d.first && day(d.first), last: d.last && day(d.last), busiestDay: d.busiest && day(d.busiest), busiestN: d.busiest && d.perDay[d.busiest]};
+      if (lv === "month") { const n = daysIn(ym); out.chart = {values: Array.from({length: n}, (_, i) => d.perDay[i + 1] || 0), labels: Array.from({length: n}, (_, i) => dayName(day(i + 1))), what: SAT_SHORT[pick.s] + " detections in this area each day"}; }
+      else { const times = {}; rows.forEach(r => { if (r[2] && r[3] === pick.s && r[4] === +selDay.slice(8) && a.keys.has(keyAt(r[0], r[1]))) { const t = r[5].split(",")[1]; times[t] = (times[t] || 0) + 1; } }); out.passes = Object.keys(times).sort().map(t => t.slice(0, 2) + ":" + t.slice(2) + " UTC (" + times[t] + ")").join(", "); }
+      return out;
+    }
+    if (lv === "year") {
+      const g = await gridYear(+selYear), by = MONTHS.map(() => 0), st = sats();
+      Object.keys(g.months).forEach(m => Object.values(g.months[m]).forEach(fl => { for (let i = 0; i < fl.length; i += 6) if (a.keys.has((g.origin[0] + fl[i]) * 10000 + g.origin[1] + fl[i + 1])) { GRID_SENSORS.forEach((s, k) => { st[s] += fl[i + 2 + k]; }); by[+m - 1] += fl[i + 2 + pick.i]; } }));
+      const has = by.map((v, i) => v > 0 ? i : -1).filter(i => i >= 0), top = by.indexOf(Math.max(...by));
+      const out = {sats: st, firstMonth: has.length ? MONTH_FULL[has[0]] : null, lastMonth: has.length ? MONTH_FULL[has[has.length - 1]] : null, busiestMonth: has.length ? selYear + "-" + String(top + 1).padStart(2, "0") : null, busiestMonthN: by[top],
+        chart: {values: by, labels: MONTHS.map(m => m + " " + selYear), what: SAT_SHORT[pick.s] + " detections in this area each month"}};
+      // Days and radiative power need the year's hotspot files; large ones are not fetched for a preview.
+      const bytes = hotIndex && hotIndex.years[selYear] ? hotIndex.years[selYear].bytes_gz : Infinity;
+      if (bytes > MOST_MAX_BYTES) { out.daysNote = "The busiest day and the radiative power need this year's detection files (" + (bytes === Infinity ? "not available" : (bytes / 1e6).toFixed(0) + " MB") + "), which are not loaded for a preview. Open the busiest month to see them."; return out; }
+      const perDay = {}; let frp = null;
+      await eachHot(D.region.id, selYear, lines => { for (const line of lines) { if (line[0] === "a") continue; const f = line.split(","); if (f[10] !== "1" || f[4] !== pick.s) continue; const la = +f[2], lo = +f[3]; if (!a.keys.has(keyAt(la, lo)) || !inState(la, lo)) continue; perDay[f[0]] = (perDay[f[0]] || 0) + 1; if (+f[7] > (frp || 0)) frp = +f[7]; } });
+      const ds = Object.keys(perDay).sort();
+      if (ds.length) { out.first = ds[0]; out.last = ds[ds.length - 1]; out.busiestDay = ds.slice().sort((x, y) => perDay[y] - perDay[x] || (x < y ? -1 : 1))[0]; out.busiestN = perDay[out.busiestDay]; out.frp = frp; }
+      return out;
+    }
+    const A = await allYears(), st = sats();
+    for (let i = 0; i < A.cells.length; i += 6) if (a.keys.has((A.origin[0] + A.cells[i]) * 10000 + A.origin[1] + A.cells[i + 1])) GRID_SENSORS.forEach((s, k) => { st[s] += A.cells[i + 2 + k]; });
+    return {sats: st, allYears: true, daysNote: "Dates, the busiest day and the radiative power are given when a year or a month is selected."};
+  })();
+  a.details.catch(() => { a.details = null; });
+  return a.details;
+}
+function openPreview(kind, i, opener) {
+  const c = mostCtx;
+  if (!c) return;
+  const list = kind === "area" ? c.areas : c.days, o = list[i];
+  if (!o) return;
+  const keepOpener = preview && preview.opener;
+  if (preview) closePreview(true);
+  preview = {kind, i, opener: opener || keepOpener || null, token: c.token};
+  const card = $("previewcard"), mine = preview, live = () => preview === mine;
+  if (o.row) o.row.classList.add("on");
+  if (o.pin && o.pin._icon) o.pin._icon.classList.add("on");
+  const nav = el("div", {class: "pvnav"}), prev = el("button", {type: "button", class: "secondary", text: "‹ Previous"}), next = el("button", {type: "button", class: "secondary", text: "Next ›"});
+  prev.disabled = i === 0; next.disabled = i === list.length - 1;
+  prev.addEventListener("click", () => { openPreview(kind, i - 1, null); $("previewcard").querySelector(".pvnav button").focus({preventScroll: true}); });
+  next.addEventListener("click", () => { openPreview(kind, i + 1, null); const b = $("previewcard").querySelectorAll(".pvnav button"); (b[1].disabled ? b[0] : b[1]).focus({preventScroll: true}); });
+  nav.append(prev, el("span", {class: "note", text: (kind === "area" ? "Area " : "Day ") + (i + 1) + " of " + list.length}), next);
+  const title = el("h3", {id: "pv-title", tabindex: "-1"}), body = el("div"), more = el("div", {id: "pv-more"}, el("p", {class: "note", text: "Loading the rest of this card."})), bar = el("div", {class: "pvbar"});
+  const act = (text, fn, id) => { const b = el("button", {type: "button", text, id}); b.addEventListener("click", fn); bar.append(b); return b; };
+  const where = inRegion(), sat = SAT_SHORT[c.pick.s];
+  if (kind === "area") {
+    title.textContent = o.rank + ". " + o.name;
+    body.append(pvRows([["Period", c.period + ", " + D.region.name], ["Detections", c.f(o.count) + " (" + sat + (c.pick.k ? ", on the Aqua scale" : "") + ")"], ["Share of the period", (100 * o.count / c.total).toFixed(1) + "% of the " + c.f(c.total) + " on this map"]]));
+    act("Zoom to this area", () => { pausePlay(); zoomArea(o); $("mapshell").scrollIntoView({block: "nearest", behavior: REDUCE ? "auto" : "smooth"}); }, "pv-zoom");
+    const listBtn = act("List its detections", () => { const a = o, note = o.note; closePreview(true); openArea(a, c.pick, note); }, "pv-list");
+    if (c.lv === "all") { listBtn.disabled = true; listBtn.title = "Select a year or a month first"; }
+    const dayBtn = act("Open the busiest day", () => {}, "pv-day"); dayBtn.disabled = true;
+    areaDetails(c, o).then(d => {
+      if (!live()) return;
+      const satText = GRID_SENSORS.filter(s => d.sats[s] > 0).map(s => SAT_SHORT[s] + " " + fmt(d.sats[s])).join(", ") || "none";
+      const rows = [];
+      if (d.first) rows.push(["First and last day with detections", d.first === d.last ? dayName(d.first) : dayName(d.first) + " to " + dayName(d.last)]);
+      else if (d.firstMonth) rows.push(["First and last month with detections", d.firstMonth === d.lastMonth ? d.firstMonth : d.firstMonth + " to " + d.lastMonth]);
+      if (d.busiestDay && c.lv !== "day") rows.push(["Busiest day in the area", dayName(d.busiestDay) + ", " + fmt(d.busiestN) + (d.busiestN === 1 ? " detection" : " detections")]);
+      if (d.busiestMonth) rows.push(["Busiest month in the area", monthName(d.busiestMonth) + ", " + fmt(d.busiestMonthN)]);
+      if (d.passes) rows.push(["Satellite passes with a detection here", d.passes]);
+      if (d.frp != null) rows.push(["Highest fire radiative power", d.frp + " MW (one " + sat + " pixel)"]);
+      rows.push(["Counted detections by satellite" + (d.allYears ? " (each over its own complete years)" : ""), satText]);
+      more.replaceChildren(pvRows(rows), ...(d.chart ? [pvChart(d.chart.values, d.chart.labels, d.chart.what)] : []), ...(d.daysNote ? [el("p", {class: "note", text: d.daysNote})] : []));
+      const target = c.lv === "day" ? null : d.busiestDay ? {day: d.busiestDay} : d.busiestMonth ? {month: d.busiestMonth} : null;
+      if (target) {
+        dayBtn.textContent = target.day ? "Open the busiest day" : "Open the busiest month"; dayBtn.disabled = false;
+        const go = dayBtn.cloneNode(true); dayBtn.replaceWith(go);
+        go.addEventListener("click", () => { closePreview(true); select(target, {fit: !!target.day}).then(() => { $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); }); });
+      } else if (c.lv === "day") dayBtn.remove();
+      preview.data = Object.assign({rank: o.rank, name: o.name, count: o.count}, d);
+    }).catch(() => { if (live()) more.replaceChildren(el("p", {class: "note", text: "The rest of this card could not be loaded."})); });
+  } else {
+    const m = +o.d.slice(5, 7), usual = c.pick.s === "MODIS_AQUA" ? S.medians[m - 1] : null, n = daysIn(o.d.slice(0, 7));
+    title.textContent = o.rank + ". " + dayName(o.d);
+    const cmp = usual == null ? "Not compared: the usual month is known for MODIS Aqua only." : usual > 0 ? MONTH_FULL[m - 1] + " usually has " + fmt1(usual) + " detections in " + where + " (median of complete years), about " + fmt1(usual / n) + " a day. This day had " + fmt(o.n) + ", " + times(o.n, usual / n) + " that daily average." : "The usual " + MONTH_FULL[m - 1] + " has no detection in " + where + "; this day had " + fmt(o.n) + ".";
+    body.append(pvRows([["Date (UTC)", dayName(o.d)], ["Detections", fmt(o.n) + " (" + sat + ", " + D.region.name + ")"], ["Against the usual", cmp]]));
+    act("Open this day", () => { closePreview(true); select({day: o.d}, {fit: true}).then(() => { $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); }); }, "pv-day");
+    act("List its detections", () => { closePreview(true); select({day: o.d}, {fit: true}).then(() => { $("detsec").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-det").focus(); }); }, "pv-list");
+    const zoomBtn = act("Zoom to this area", () => {}, "pv-zoom"); zoomBtn.disabled = true;
+    const fill = a => {
+      if (!live()) return;
+      more.replaceChildren(pvRows([["Area with the most that day", a ? a.name + ", " + fmt(a.count) + " of " + fmt(o.n) : "Not loaded: it needs a large file. Open the day to see where."]]));
+      if (a) { const z = zoomBtn.cloneNode(true); z.disabled = false; zoomBtn.replaceWith(z); z.addEventListener("click", () => { pausePlay(); zoomArea(a); $("mapshell").scrollIntoView({block: "nearest", behavior: REDUCE ? "auto" : "smooth"}); }); }
+      preview.data = {rank: o.rank, day: o.d, n: o.n, usual, area: a ? {name: a.name, count: a.count} : null};
+    };
+    if (o.area) fill(o.area);
+    else if (hotBytes(o.d) > MOST_MAX_BYTES) fill(null);
+    else countedOfDay(o.d, c.pick.s).then(cells => { const a = topAreas(cells, 1)[0]; if (a) { a.name = areaName(a); o.area = a; } fill(a || null); }).catch(() => { if (live()) more.replaceChildren(el("p", {class: "note", text: "The rest of this card could not be loaded."})); });
+  }
+  act("Close", () => closePreview(false), "pv-close");
+  card.replaceChildren(nav, title, el("p", {class: "note", text: "Most satellite detections, not a ranking of fires by size or damage. Nothing on the page has moved; the buttons below do that."}), body, more, bar);
+  card.hidden = false;
+  title.focus({preventScroll: true});
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && preview) { e.stopPropagation(); closePreview(false); } });
 
 // ---------- go to a year, a month or a date ----------
 // The same selection as the slider, the calendar and the charts; a value outside the record gets a sentence, never a blank map.
