@@ -195,3 +195,69 @@ this pass (its last run, after the second pass, reported 0 differences). "Before
 
 Not verified in this pass: the 147-cell overlap check and the control tour were not repeated (the changes are
 inside the card, the record switch and the calendar section); 1024x768 was not re-shot.
+
+## Fourth pass: selecting shows information and moves nothing
+
+Date: 14 Nov 2026. Behaviour and layout only; no count or data file was touched, so `audit/recompute.py` was not
+run again (last run: 0 differences).
+
+The rule: selecting something shows its information and moves nothing; only a button that says so moves the map.
+
+### What was changed
+
+| Where | Before | Now |
+|---|---|---|
+| A detection on the map | The map flew to zoom 11 and, on a phone, the page scrolled. | The detection is ringed where it is and its card opens. Centre, zoom and scroll stay. |
+| The card's actions | "Back to the whole region", "Close", and "Report ..." at the bottom of the card. | "Zoom in here" first (flies to zoom 11, keeps the zoom if already closer, no animation under reduced motion), then "Report for this place and day" and "Close". After zooming the first button reads "Back to the previous view". |
+| A row of the detections table | Opened the card, flew the map and scrolled the page up to it. | Opens the card and rings the detection; nothing moves. When the map is not on screen (and on a phone) the card is a panel fixed to the window, so it is readable without scrolling. If the detection is outside the current map view the card says "This detection is outside the current map view. The map has not moved." and its first action reads "Show on the map". |
+| A daily bar in "Fire activity over time" | Selected the day and fitted the map to its detections. | Selects the day; the map keeps its view. |
+| The Days button | Went to the busiest day and fitted the map to it. | Goes to the busiest day; the map keeps its view. |
+| The busy-day links in "What you are looking at" | Fitted the map to the day. | Change the day only. |
+| Go to (date field) | Fitted the map to the day. | Changes the day only. |
+| "List its detections" in a day's preview card | Fitted the map as well as listing. | Lists; the map keeps its view. |
+| A grid cell | Its popup could pan the map to fit itself. | The popup opens without panning. |
+| The line "Opened: ..." naming the selected detection | Appeared above the table and pushed the page down by its height (24 px measured on the phone, Vietnam region). | Is under the table, so nothing above the reader's position changes. |
+| The locator inset, the list rows of "burned most", the month row, the calendar, the step buttons, Months, Years, All years | Already moved nothing. | Unchanged; measured below. |
+
+Buttons that still move the map, because they say so: "Zoom in here", "Show on the map", "Back to the previous
+view", "Zoom to this area", "Open the busiest day", "Open this day and fit the map" (renamed from "Open this day"),
+the link "Open this point at zoom 14", and "Whole region" / "Use this area". Choosing a region or a state is
+navigation and fits the map to it. The one exception to "nothing moves" is item 4 of the brief: on desktop, if the
+card would lie over the ringed detection, the map slides sideways by just enough to clear it.
+
+The same sentence is now in the legend ("Select a square or a cell to read about it; the map moves only when you
+press a button that says so."), in "How to read this" ("Select to read, press a button to zoom."), in the notes
+under the table and the charts, and in README ("Select to read, press a button to zoom").
+
+### Measurements
+
+For each kind of click the map's centre (5 decimals), its zoom and the page's scroll position were read before
+and 1.3 s after, at 1440x900 and 390x844, on the whole country, California, Hawaiʻi and the Vietnam region:
+168 steps, reduced motion on, console clean.
+
+| Kind of click | Result in all 8 combinations |
+|---|---|
+| Tap a detection on the map | equal; card open, ring drawn, first action "Zoom in here" |
+| "Zoom in here" | moved; button then reads "Back to the previous view" |
+| "Back to the previous view" | moved back |
+| Esc (closes the card) | equal |
+| Select a table row | equal after the fix (first run: 24 px of scroll on phone, Vietnam region; re-measured in all 8: equal) |
+| Select a row whose detection is outside the view | equal; card says so; first action "Show on the map" |
+| "Show on the map" | moved; the detection is then in view |
+| Daily bar, step button, Go to a date, busy-day link, area row, Months, month row, calendar cell, Days, Years, yearly bar, All years | equal |
+| Select a grid cell | equal. The popup opened in 7 of 8; on the phone, whole country, the tap fell on a blank cell beside the 2-pixel cell aimed at and no popup opened (nothing moved either). |
+| "Zoom to this area" | moved |
+
+Card over its own detection (desktop, whole country): with the detection placed 200 px from the map's right edge,
+where the card lands, selecting it slid the map 218 px sideways, leaving the point 28 px left of the card; zoom
+unchanged. With the detection clear of the card, selecting it changed nothing.
+
+Screenshots: `still_desk_map-card.png`, `still_phone_map-card.png`, `still_desk_row-card.png`,
+`still_phone_row-card.png`, `still_desk_outside-card.png`, `still_phone_outside-card.png`,
+`still_desk_card-not-over-point.png`, `still_desk_cell.png`, `still_phone_cell.png`. They were taken before the
+last two small changes (the "Opened" line moved under the table; the card's three buttons made to fit one line).
+
+Not verified: 1024x768; with motion allowed (the fly animation itself); a real touch device; the 147-cell
+overlap check was not repeated after the card became a fixed panel on phones; other states than California. The
+phone card is a fixed sheet over the lower part of the window (at most 55% of its height), which replaces the
+block under the timeline described in the second pass, because that block could not be seen without scrolling.

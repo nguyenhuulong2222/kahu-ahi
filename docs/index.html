@@ -191,8 +191,8 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .card .note{margin:6px 0 0;font-size:12px}.card button:not(.linkish){min-height:40px}
 #cardsheet{position:absolute;left:8px;right:8px;bottom:calc(var(--tl-h) + 10px);z-index:1100;max-height:62%;overflow:auto;padding:10px 12px;border-radius:8px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);font:13px/1.4 var(--font)}
 #cardsheet{max-height:50%}
-.sheetbar{display:flex;gap:8px;justify-content:space-between;margin-bottom:6px}
-.sheetbar button{min-height:36px;padding:4px 10px}
+.sheetbar{display:flex;flex-wrap:wrap;gap:6px 8px;margin-bottom:6px}.sheetbar button:last-child{margin-left:auto}#card-where{margin:0 0 6px;padding:6px 8px;background:#fff6e5;border-left:4px solid #f2a900;color:var(--ink)}
+.sheetbar button{min-height:36px;padding:4px 7px}@media(min-width:601px){.sheetbar button{font-size:12.5px}}
 /* When the card holds more than it shows, its bottom edge fades the text out under a shadow (class set in cardCue),
    so no line is cut in half and the reader sees there is more. */
 #cardsheet.more::after{content:"";display:block;position:sticky;bottom:-10px;height:34px;margin:-34px -12px -10px;pointer-events:none;background:linear-gradient(rgba(255,255,255,0),#fff 62%),radial-gradient(farthest-side at 50% 100%,rgba(20,33,61,.45),rgba(20,33,61,0)) bottom/100% 10px no-repeat}
@@ -201,8 +201,9 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
   .mapshell.has-card .leaflet-right{right:400px}}
 @media(min-width:601px){.mapshell.has-card #legendpanel{display:none}.mapshell.has-card .leaflet-control-attribution{max-width:calc(100vw - 600px)}
   #layerspanel{width:320px}#layerspanel.collapsed{width:auto}#layersbody select{min-height:36px;padding:4px 8px}#layersbody label.inline{min-height:26px;margin-top:2px}#drawnote,#basehint{margin:2px 0 4px}.mapshell.layers-open .leaflet-bottom.leaflet-left{left:330px}}
-/* Phone: the card is a block under the timeline, not a sheet over the map. */
-@media(max-width:600px){#cardsheet{position:static;max-height:none;margin:0 8px 10px}}
+/* When the map is not on screen, and on a phone, the card is fixed to the window, so reading it scrolls nothing. */
+#cardsheet.floating{position:fixed;left:auto;right:16px;top:auto;bottom:16px;width:380px;max-width:calc(100vw - 32px);max-height:min(70vh,560px);z-index:2400;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+@media(max-width:600px){#cardsheet,#cardsheet.floating{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-width:none;max-height:55vh;margin:0;border-radius:10px 10px 0 0;z-index:2400;box-shadow:0 -3px 14px rgba(0,0,0,.4)}}
 .card .town{font-size:1.02rem}.card .country{margin-top:1px}.card .feature{margin-top:3px}.card .kv .note{margin-top:4px;font-size:11.5px}
 .locator{display:block;margin:4px 0 2px;line-height:0;text-align:right}.placefoot{display:flex;gap:12px;align-items:flex-start;margin-top:4px}.placefoot .note{flex:1 1 0;min-width:0;margin:0!important}.placefoot .locator{flex:0 0 auto;margin:2px 0 0}.card dl .kv:first-child{grid-template-columns:minmax(0,1fr)}
 /* report for one detection, and its one-page print layout */
@@ -430,6 +431,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
         <li><strong>MODIS Aqua scale</strong> means counts as the MODIS instrument on the Aqua satellite records them. VIIRS counts are divided by a factor measured in each region, for each calendar month, so the new record can be compared with the old one.</li>
         <li><strong>Counted</strong> detections are those FIRMS types as a presumed vegetation fire with nominal or high confidence. Recent, near-real-time detections carry no type, so this page leaves out those at places that repeatedly showed non-fire heat before. Volcanoes, gas flares and other steady heat sources are left out.</li>
         <li><strong>Provisional</strong> means near-real-time data: it arrives within hours, has not yet been reprocessed by NASA, and can still change.</li>
+        <li><strong>Select to read, press a button to zoom.</strong> Selecting a detection, a grid cell, a day, a month or a row shows its information and leaves the map where it is. The map moves only when you press a button that says so: "Zoom in here", "Show on the map", "Zoom to this area", "Open the busiest day". Choosing a region or a state fits the map to it.</li>
         <li>This is a history of what satellites saw. It is not an alert or a forecast.</li>
       </ul>
     </div></div>
@@ -439,7 +441,6 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <h2 id="h-det" tabindex="-1">Detections</h2>
     <div class="cols2"><div>
     <p id="detsum" aria-live="polite"></p>
-    <p id="detplace" aria-live="polite" hidden></p>
     <p class="note"><span id="dettime">Local time and UTC are the time of the satellite pass.</span> Radiative power is the fire radiative power FIRMS reports for the pixel, in megawatts.</p>
     </div>
     <div class="howto">
@@ -449,18 +450,19 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     </div>
     <div class="calwrap dettable"><table class="plain" id="dettable"></table></div>
     <div class="areabar"><button type="button" id="detmore" class="secondary" hidden>Show more</button><button type="button" id="detcsv" class="secondary">Download these rows (CSV)</button></div>
+    <p id="detplace" aria-live="polite" style="margin-top:12px" hidden></p>
   </section>
   <section aria-labelledby="h-drill">
     <h2 id="h-drill">Fire activity over time</h2>
     <div class="recordbar" id="record1"></div>
-    <p class="note">This opens on the days of one month. Select a bar to go down a level; use the trail above the chart to go up to the month, the year or all years. The map, the timeline and the calendar follow.</p>
+    <p class="note">This opens on the days of one month. Select a bar to go down a level; use the trail above the chart to go up to the month, the year or all years. The map, the timeline and the calendar show the same period; the map keeps its view.</p>
     <div id="drill" aria-live="polite"></div>
   </section>
 
   <section aria-labelledby="h-cal">
     <h2 id="h-cal">The full record, month by month</h2>
     <div class="calsec">
-    <p id="calhow">How to read it: each row is a year and each box is a month. The number in a box is that month's fire detections on the MODIS Aqua scale; a brighter box means more. Select a box to see that month on the map, or a year to see the whole year.</p>
+    <p id="calhow">How to read it: each row is a year and each box is a month. The number in a box is that month's fire detections on the MODIS Aqua scale; a brighter box means more. Select a box to show that month on the map (the map keeps its view), or a year to see the whole year.</p>
     <div class="controls" id="calmode" style="margin-top:8px;margin-bottom:10px"><div><label for="mode">Colour shows</label>
       <select id="mode"><option value="count">Fire detections</option><option value="anom">Compared with the usual for that month</option></select></div></div>
     <p id="recordsays"></p>
@@ -1065,7 +1067,7 @@ function drawExplain() {
       if (ok && n < FEW_DETECTIONS) {
         // A quiet day is said in words, with one-click jumps to busy ones.
         const peak = Math.max(...S.medians.map(v => v || 0)), quiet = peak > 0 && med != null && med < .25 * peak, year = D.data_through.slice(0, 4);
-        const jump = (text, d) => { const b = el("button", {type: "button", class: "linkish", text: text + (d ? " (" + dayName(d) + ")" : "")}); if (d) b.addEventListener("click", () => select({day: d}, {fit: true})); else b.disabled = true; return b; };
+        const jump = (text, d) => { const b = el("button", {type: "button", class: "linkish", text: text + (d ? " (" + dayName(d) + ")" : "")}); if (d) b.addEventListener("click", () => select({day: d})); else b.disabled = true; return b; };
         s.push(el("p", {}, (n === 0 ? "No detection was recorded" : "Only " + fmt(n) + (n === 1 ? " detection" : " detections")) + " on " + dayName(selDay)
           + (quiet ? "; this is the quiet season here: the usual " + mn + " has " + N(med, "detection") + ", against " + fmt(peak) + " in the usual " + MONTH_FULL[S.medians.indexOf(peak)] + ". " : ". ")
           + "Jump to: ", ...(busiestIn(year) && busiestIn(year) !== selDay ? [jump("Busiest day this year", busiestIn(year)), " or "] : []), jump("Busiest day on record", busiestIn("")), "."));
@@ -1166,13 +1168,13 @@ function drawDrillIn() {
         return {tick: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "", value: v, mark, sel: d === selDay, cls: after ? "none" : !fly ? "none" : daily.nrt.has(d) ? "prov" : "",
           say: dayName(d) + ": " + (after ? "after the end of the data" : !fly ? SENSOR[pick.s] + ": " + noDataShort(pick.s, d) + " in this record" : fmt(v) + " " + SENSOR[pick.s] + (v === 1 ? " detection" : " detections") + (v === 0 ? " (none recorded, which is not the same as no fire)" : ""))
             + (mark != null ? "; " + SENSOR[viirs] + " " + fmt(c[vi]) + ", about " + fmt1(mark) + " on the Aqua scale (indicative: tested by month, not by day)" : "") + (after || !fly ? "." : ". Select to see this day on the map."),
-          go: after || !fly ? null : () => select({day: d}, {fit: true})};
+          go: after || !fly ? null : () => select({day: d})};
       })));
       unit = "Up: fire detections in a day, " + SENSOR[pick.s] + (pick.s === "MODIS_AQUA" ? "" : ", as recorded (not converted)") + ", whole region. Across: day of the month. Outlined bars are provisional days."
         + (viirs ? " Dots: " + SENSOR[viirs] + " converted to the MODIS Aqua scale. They are indicative: the conversion was tested by month, not by day." : "");
       const best = tot.length ? tot.reduce((a, b) => b[1] > a[1] ? b : a) : null;
       sum = monthName(selected) + ": " + (best ? fmt(tot.reduce((t, r) => t + r[1], 0)) + " " + SENSOR[pick.s] + " detections over " + (tot.length === 1 ? "1 day" : tot.length + " days") + ". The most: " + dayName(best[0]) + ", with " + fmt(best[1]) + ". " + (z => z ? z + (z === 1 ? " day" : " days") + " had none recorded, which is not the same as no fire." : "Every day had at least one.")(tot.filter(r => r[1] === 0).length) : SENSOR[pick.s] + " has no record in this month.")
-        + (area ? " Daily counts are for the whole region; they are not available for a chosen area." : "") + " Select a day to see it on the map.";
+        + (area ? " Daily counts are for the whole region; they are not available for a chosen area." : "") + " Select a day to show it on the map; the map keeps its view.";
       // The same days as a table: what each satellite recorded.
       const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Day"}), ...GRID_SENSORS.map(s => el("th", {class: "num", text: SENSOR[s] + " (detections)"})), ...(viirs ? [el("th", {class: "num", text: SENSOR[viirs] + " on the Aqua scale (indicative)"})] : [])));
       days.filter(d => d <= D.data_through).forEach(d => { const c = dayCounts(d); t.append(el("tr", {}, el("td", {text: dayName(d)}), ...GRID_SENSORS.map((s, i) => el("td", {class: "num", text: flyingOn(s, d) ? fmt(c[i]) : noDataShort(s, d)})), ...(viirs ? [el("td", {class: "num", text: flyingOn(viirs, d) ? fmt1(c[vi] / k) : "n/a"})] : []))); });
@@ -1823,6 +1825,7 @@ function setupMap() {
   syncBasemap();
   map.on("zoomend", syncBasemap);
   map.on("moveend", onView);
+  map.on("moveend", () => { if (cardRelabel) cardRelabel(); });
   map.on("click", e => { if (drawing) return; pausePlay(); const r = nearestDetection(e); if (r) openCard(r); else showCell(cellKey(e.latlng), true); });
   let frame = 0;
   map.on("mousemove", e => {
@@ -2300,7 +2303,7 @@ async function openArea(a, pick, note) {
   const list = rows.filter(r => r[3] === pick.s && a.keys.has(keyAt(r[0], r[1])) && (!dayOnly || r[4] === +dayOnly.slice(8))), counted = list.filter(r => r[2]).length, when = dayOnly ? dayName(dayOnly) : monthName(month);
   setTable("cell", list, "Detections " + a.name.replace(/ \(a town in.*$/, "") + ", " + when,
     fmt(list.length) + " " + SENSOR[pick.s] + (list.length === 1 ? " detection" : " detections") + " in this area (about " + AREA_KM + " km across) " + (dayOnly ? "on " : "in ") + when + ": " + fmt(counted) + " counted, " + fmt(list.length - counted) + " not counted."
-      + (lv === "year" ? " " + monthName(month) + " is this area's busiest month of " + month.slice(0, 4) + "." : "") + " Select a time to see that detection on the map.",
+      + (lv === "year" ? " " + monthName(month) + " is this area's busiest month of " + month.slice(0, 4) + "." : "") + " Select a time to open that detection's card and ring it on the map; the map moves only when you press \"Zoom in here\" or \"Show on the map\".",
     "kahu-ahi_" + D.region.id + (STATE ? "_" + STATE.id : "") + "_area_" + a.lat.toFixed(2) + "_" + a.lon.toFixed(2) + "_" + (dayOnly || month) + "_" + pick.s + ".csv");
   tbl.hold = dayOnly || month;
   note.textContent = "";
@@ -2432,8 +2435,8 @@ function openPreview(kind, i, opener) {
     title.textContent = o.rank + ". " + dayName(o.d);
     const cmp = usual == null ? "Not compared: the usual month is known for MODIS Aqua only." : usual > 0 ? MONTH_FULL[m - 1] + " usually has " + N(usual, "detection", fmt1) + " in " + where + " (median of complete years), about " + fmt1(usual / n) + " a day. This day had " + fmt(o.n) + ", " + times(o.n, usual / n) + " that daily average." : "The usual " + MONTH_FULL[m - 1] + " has no detection in " + where + "; this day had " + fmt(o.n) + ".";
     body.append(pvRows([["Date (UTC)", dayName(o.d)], ["Detections", fmt(o.n) + " (" + sat + ", " + D.region.name + ")"], ["Against the usual", cmp]]));
-    act("Open this day", () => { closePreview(true); select({day: o.d}, {fit: true}).then(() => { $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); }); }, "pv-day");
-    act("List its detections", () => { closePreview(true); select({day: o.d}, {fit: true}).then(() => { $("detsec").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-det").focus(); }); }, "pv-list");
+    act("Open this day and fit the map", () => { closePreview(true); select({day: o.d}, {fit: true}).then(() => { $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); }); }, "pv-day");
+    act("List its detections", () => { closePreview(true); select({day: o.d}).then(() => { $("detsec").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-det").focus(); }); }, "pv-list");
     const zoomBtn = act("Zoom to this area", () => {}, "pv-zoom"); zoomBtn.disabled = true; zoomBtn.title = "Loading the rest of this card";
     const fill = a => {
       if (!live()) return;
@@ -2502,7 +2505,7 @@ function gotoDate() {
   if (!v) { gotoMsg((gd.validity && gd.validity.badInput ? "That is not a date. " : "Enter a full date. ") + spanText()); return; }
   if (v < sp.first || v > sp.last) { gotoMsg(dayName(v) + " is outside the record. " + spanText()); return; }
   if (!validDay(v)) { gotoMsg("There is no file for " + dayName(v) + " yet. " + spanText()); return; }
-  gotoMsg(""); select({day: v}, {fit: true});
+  gotoMsg(""); select({day: v});
 }
 
 // ---------- play through time ----------
@@ -2649,9 +2652,9 @@ function setLevel(to) {
       const pick = selYear ? (withData[0] || ms[0]) : (withData[withData.length - 1] || ms[ms.length - 1]);
       if (pick) select({month: pick.m}); }
   } else if (to === "day" && lv !== "day") {
-    // From a month or a year: its busiest day, and the map moves to it. From all years: the most recent day with data.
+    // From a month or a year: its busiest day. From all years: the most recent day with data. The map keeps its view.
     const d = lv === "month" ? busiestIn(selected) || selected + "-01" : lv === "year" ? busiestIn(selYear) : latestDay();
-    if (d) select({day: d}, {fit: lv !== "all"});
+    if (d) select({day: d});
   }
 }
 function updateLevels() {
@@ -2779,6 +2782,7 @@ function drawMapLegend(pick) {
     lg.append(el("span", {}, el("span", {class: "sw", style: "background:#3b4a5f;border:2px dashed #fff;width:16px;height:16px"}), "Not counted (hollow dashed square): low confidence or a non-fire heat source"));
     lg.append(el("span", {text: "Squares show the sensor's footprint at nadir: about 1 km for MODIS, 375 m for VIIRS (drawn at least 5 pixels wide)."}));
   }
+  lg.append(el("span", {class: "legtitle", text: "Select a square or a cell to read about it; the map moves only when you press a button that says so."}));
   if (panelCheck) { panelCheck = false; fitPanels(); }
 }
 
@@ -2803,7 +2807,7 @@ function showCell(key, includeEmpty) {
     L.rectangle([[s, w], [s + .1, w + .1]], {fill: false, color: "#fff", weight: 2, interactive: false}).addTo(layers.hover);
     const go = el("button", {type: "button", text: "Show the detections in this cell"});
     go.addEventListener("click", () => showCellDetections(key, go));
-    L.popup({maxWidth: 280, className: "detpop"}).setLatLng([s + .05, w + .05]).setContent(el("div", {class: "card"}, el("p", {text: cellText(key)}), go)).openOn(map);
+    L.popup({maxWidth: 280, className: "detpop", autoPan: false}).setLatLng([s + .05, w + .05]).setContent(el("div", {class: "card"}, el("p", {text: cellText(key)}), go)).openOn(map);
     return;
   }
   // Open the label below a cell near the top of the map so it is not cut off.
@@ -3144,38 +3148,67 @@ function cardNode(r) {
     row("Data quality", d.quality === "nrt" ? "near-real-time (provisional)" : d.quality),
     row("Counted on this page", countedText(d))),
     imageNode(d, 276, 184, .3),
-    (() => { const b = el("button", {type: "button", text: "Report for this place and day"}); b.addEventListener("click", () => { closeCard(); select({day: d.date}).then(() => openReport(d)); }); return b; })(),
     el("p", {class: "note", text: "Time of the satellite pass, not of the fire's start. The fire is somewhere inside a pixel about " + (d.sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not exactly at this point."}));
 }
 // Opening a detection moves the map to it, rings it, and shows its card beside it: docked on the right on a wide screen,
 // as a sheet along the bottom on a phone. The point is centred in the part of the map the card leaves free.
 let prevView = null;
+// One rule for the page: selecting something shows its information and moves nothing; only a button that says so moves
+// the map. Opening a detection rings it where it is and shows its card. "Zoom in here" (or "Show on the map" when the
+// point is outside the view) moves the map, and then offers the way back.
+let cardRelabel = null;
+function mapOnScreen() { const m = $("map").getBoundingClientRect(); return m.bottom > 160 && m.top < innerHeight - 160; }
+function moveMap(center, zoom) { if (REDUCE) map.setView(center, zoom, {animate: false}); else map.flyTo(center, zoom, {duration: .8}); }
 function openCard(r) {
   if (!map) return;
-  const phone = matchMedia("(max-width: 600px)").matches, sheet = $("cardsheet");
-  if (sheet.hidden) prevView = {c: map.getCenter(), z: map.getZoom()};
-  map.closePopup();
-  const x = el("button", {type: "button", class: "secondary", text: "Close"}), back = el("button", {type: "button", class: "secondary", text: "Back to the whole region"});
+  const phone = matchMedia("(max-width: 600px)").matches, sheet = $("cardsheet"), shell = $("mapshell"), d = det(r), at = [r[0], r[1]];
+  map.closePopup(); prevView = null;
+  // The card sits on the map's right edge when the map is on screen; otherwise (a row chosen far down the page, or a
+  // phone) it is a panel fixed to the window, so it can be read without the page scrolling.
+  const floating = phone || !mapOnScreen();
+  const x = el("button", {type: "button", class: "secondary", text: "Close"}), go = el("button", {type: "button", id: "card-go"}), rep = el("button", {type: "button", class: "secondary", text: "Report for this place and day"});
+  const where = el("p", {class: "note", id: "card-where", role: "status", hidden: true});
+  const label = () => {
+    if (prevView) { go.textContent = "Back to the previous view"; where.hidden = true; return; }
+    const inside = map.getBounds().contains(at);
+    go.textContent = inside ? "Zoom in here" : "Show on the map";
+    where.hidden = inside; where.textContent = inside ? "" : "This detection is outside the current map view. The map has not moved.";
+  };
   x.addEventListener("click", closeCard);
-  back.addEventListener("click", () => { const v = prevView; closeCard(); if (v) map.setView(v.c, v.z, {animate: !REDUCE}); else map.fitBounds(regionBounds, {animate: !REDUCE}); });
-  sheet.replaceChildren(el("div", {class: "sheetbar"}, back, x), cardNode(r)); sheet.hidden = false; sheet.scrollTop = 0; cardCue(); $("mapshell").classList.add("has-card"); if (matchMedia("(max-width: 1180px)").matches) setLayersOpen(false); fitMapPanels();
-  const z = Math.max(11, map.getZoom()), shift = phone ? [0, 0] : [(sheet.offsetWidth + 20) / 2, 0];
-  // Phone: the card is under the timeline; bring the map, the timeline and the top of the card into view together.
-  if (phone) $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"});
-  const target = map.unproject(map.project([r[0], r[1]], z).add(shift), z);
-  if (REDUCE) map.setView(target, z, {animate: false}); else map.flyTo(target, z, {duration: .8});
+  rep.addEventListener("click", () => { closeCard(); select({day: d.date}).then(() => openReport(d)); });
+  go.addEventListener("click", () => {
+    pausePlay();
+    if (prevView) { const v = prevView; prevView = null; moveMap(v.c, v.z); }
+    else {
+      prevView = {c: map.getCenter(), z: map.getZoom()};
+      const z = Math.max(11, map.getZoom()), shift = sheet.classList.contains("floating") ? [0, 0] : [(sheet.offsetWidth + 20) / 2, 0];
+      moveMap(map.unproject(map.project(at, z).add(shift), z), z);
+    }
+    if (!mapOnScreen()) shell.scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"});
+    label();
+  });
+  sheet.replaceChildren(el("div", {class: "sheetbar"}, go, rep, x), where, cardNode(r));
+  sheet.classList.toggle("floating", floating); shell.classList.toggle("has-card", !floating);
+  sheet.hidden = false; sheet.scrollTop = 0; cardCue();
+  if (!floating && matchMedia("(max-width: 1180px)").matches) setLayersOpen(false);
+  fitMapPanels(); label(); cardRelabel = label;
   // The table under the map names the opened detection too.
-  if (tbl) { const d = det(r); $("detplace").hidden = false; fillPlace($("detplace"), d.lat, d.lon, "Opened: " + localText(d, zoneNow(), true) + ", " + pointText(d) + ". "); }
+  if (tbl) { $("detplace").hidden = false; fillPlace($("detplace"), d.lat, d.lon, "Opened: " + localText(d, zoneNow(), true) + ", " + pointText(d) + ". "); }
   layers.pick.clearLayers();
-  L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#111", weight: 5, fill: false, interactive: false}).addTo(layers.pick);
-  L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#f2a900", weight: 3, fill: false, interactive: false}).addTo(layers.pick);
+  L.circleMarker(at, {pane: "pts", radius: 13, color: "#111", weight: 5, fill: false, interactive: false}).addTo(layers.pick);
+  L.circleMarker(at, {pane: "pts", radius: 13, color: "#f2a900", weight: 3, fill: false, interactive: false}).addTo(layers.pick);
+  // A card on the map must not lie over the detection it describes: if it would, the map slides by just enough.
+  if (!floating) {
+    const m = $("map").getBoundingClientRect(), c = sheet.getBoundingClientRect(), pt = map.latLngToContainerPoint(at), edge = c.left - m.left - 28;
+    if (pt.x > edge && pt.x < m.width + 14 && pt.y > c.top - m.top - 20 && pt.y < c.bottom - m.top + 20) map.panBy([Math.ceil(pt.x - edge), 0], {animate: !REDUCE});
+  }
 }
 // The cue at the card's bottom edge is on while there is more below.
 function cardCue() { const s = $("cardsheet"); s.classList.toggle("more", !s.hidden && s.scrollHeight - s.scrollTop - s.clientHeight > 6); }
 $("cardsheet").addEventListener("scroll", cardCue);
 new MutationObserver(cardCue).observe($("cardsheet"), {childList: true, subtree: true, characterData: true});
 $("cardsheet").addEventListener("load", cardCue, true); addEventListener("resize", cardCue);
-function closeCard() { if (!map) return; map.closePopup(); $("mapshell").classList.remove("has-card"); $("cardsheet").hidden = true; $("cardsheet").replaceChildren(); layers.pick.clearLayers(); prevView = null; }
+function closeCard() { if (!map) return; map.closePopup(); cardRelabel = null; $("mapshell").classList.remove("has-card"); $("cardsheet").classList.remove("floating"); $("cardsheet").hidden = true; $("cardsheet").replaceChildren(); layers.pick.clearLayers(); prevView = null; }
 // The drawn detection nearest to a click or tap, if one is within reach.
 let drawnRows = [], drawnSide = 0, fitNext = false;
 function nearestDetection(e) {
@@ -3213,13 +3246,13 @@ function drawTable() {
   t.replaceChildren(el("thead", {}, el("tr", {}, head(local ? "Local time" : "Time (UTC)", "time"), head("Place (nearest town)"), ...(local ? [head("UTC")] : []), head("Latitude"), head("Longitude"), head("Satellite"), head("Confidence"), head("Radiative power (MW)", "frp"), head("Counted"))));
   const body = el("tbody");
   list.slice(0, tbl.limit).forEach(({r, d}) => {
-    const b = el("button", {type: "button", class: "linkish", text: localText(d, zone, false), "aria-label": "Show on the map: " + localText(d, zone, true)});
+    const b = el("button", {type: "button", class: "linkish", text: localText(d, zone, false), "aria-label": "Open the card of this detection: " + localText(d, zone, true)});
     const tr = el("tr", {}, el("td", {}, b), el("td", {text: (nearTown(d.lat, d.lon) || {short: "not available"}).short}), ...(local ? [el("td", {text: utcText(d, tbl.mode !== "day")})] : []), el("td", {class: "num", text: d.lat.toFixed(4)}), el("td", {class: "num", text: d.lon.toFixed(4)}),
       el("td", {text: SENSOR[d.sensor]}), el("td", {text: d.conf === "" ? "not given" : d.conf}), el("td", {class: "num", text: d.frp === "" ? "" : d.frp}), el("td", {text: d.counted ? "Yes" : "No: " + whyNotCounted(d).split(":")[0].replace(/^it lies.*/, "static heat source")}));
     if (tbl.on === r[5]) tr.classList.add("on");
     const show = () => { tbl.on = r[5]; body.querySelectorAll("tr.on").forEach(x => x.classList.remove("on")); tr.classList.add("on"); openCard(r); };
     tr.addEventListener("click", e => { if (e.target !== b) show(); });
-    b.addEventListener("click", () => { show(); $("mapshell").scrollIntoView({block: "nearest", behavior: REDUCE ? "auto" : "smooth"}); });
+    b.addEventListener("click", show);
     body.append(tr);
   });
   t.append(body);
@@ -3248,7 +3281,7 @@ async function showCellDetections(key, button) {
   if (month !== selected) return;
   const inCell = rows.filter(r => r[3] === pick.s && cellOf(r[0] + 90) === row && cellOf(r[1] + 180) === col), counted = inCell.filter(r => r[2]).length;
   setTable("cell", inCell, "Detections in the cell centred on " + cellName(key) + ", " + monthName(month),
-    fmt(inCell.length) + " " + SENSOR[pick.s] + (inCell.length === 1 ? " detection" : " detections") + " in this 0.1° cell in " + monthName(month) + ": " + fmt(counted) + " counted, " + fmt(inCell.length - counted) + " not counted. Select a time to see that detection on the map.",
+    fmt(inCell.length) + " " + SENSOR[pick.s] + (inCell.length === 1 ? " detection" : " detections") + " in this 0.1° cell in " + monthName(month) + ": " + fmt(counted) + " counted, " + fmt(inCell.length - counted) + " not counted. Select a time to open that detection's card and ring it on the map; the map moves only when you press \"Zoom in here\" or \"Show on the map\".",
     "kahu-ahi_" + D.region.id + (STATE ? "_" + STATE.id : "") + "_cell_" + (row / 10 - 90).toFixed(1) + "_" + (col / 10 - 180).toFixed(1) + "_" + month + "_" + pick.s + ".csv");
   map.closePopup();
   $("detsec").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-det").focus();
@@ -3365,7 +3398,7 @@ async function drawPoints() {
   if (!(tbl && tbl.mode === "cell" && tbl.hold && tbl.hold === (day ? selDay : selected)))
   setTable(day ? "day" : "view", list, day ? "Detections on " + dayName(selDay) : "Detections in this view, " + monthName(selected),
     (list.length ? fmt(list.length) + " " + sat + (list.length === 1 ? " detection" : " detections") + (day ? " on " + dayName(selDay) + " (UTC date) across " + inRegion() : " in the part of the map now in view") + ": " + fmt(nc) + " counted, " + fmt(list.length - nc) + " not counted."
-      : "No " + sat + " detection was recorded " + when + (day ? " across " + inRegion() : " in this view") + ". That is not the same as no fire.") + cap + (list.length ? " Select a time to see that detection on the map. The table lists the satellite shown on the map; change it in Layers." : ""),
+      : "No " + sat + " detection was recorded " + when + (day ? " across " + inRegion() : " in this view") + ". That is not the same as no fire.") + cap + (list.length ? " Select a time to open that detection's card and ring it on the map; the map moves only when you press \"Zoom in here\" or \"Show on the map\". The table lists the satellite shown on the map; change it in Layers." : ""),
     "kahu-ahi_" + D.region.id + (STATE ? "_" + STATE.id : "") + "_" + (day ? selDay : selected + "_view") + "_" + pick.s + ".csv");
   note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view " + when + ". Zoom in to see them all. "
       : fmt(drawn) + " " + SENSOR[pick.s] + (drawn === 1 ? " detection" : " detections") + " in this view " + when + ". ") + fmt(counted) + " counted (red squares), " + fmt(drawn - counted) + " not counted (hollow dashed squares: low confidence or a non-fire heat source)."
