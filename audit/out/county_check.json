@@ -1,0 +1,347 @@
+{
+ "sample": 2000,
+ "seed": 20261114,
+ "regions": {
+  "california": {
+   "detections_in_region": 2250666,
+   "counts": {
+    "sampled": 2000,
+    "point located": 1979,
+    "both located": 1977,
+    "US points": 1977,
+    "point and nearest town in different counties/districts": 526,
+    "US points where the printed county or state name differs from the Census county of the point": 526,
+    "point not in any boundary file (sea, or a country without a file)": 21,
+    "card names a different COUNTRY than the point's": 2,
+    "town not in any boundary file": 2
+   },
+   "different_unit_pct_of_both_located": 26.6,
+   "ci95_pct": [
+    24.7,
+    28.6
+   ],
+   "km_to_nearest_town": {
+    "median": 18.1,
+    "p90": 36.9,
+    "max": 119.0
+   },
+   "by_distance": {
+    "under 5 km (both located)": 221,
+    "5 to 20 km (both located)": 865,
+    "20 km and over (both located)": 891,
+    "20 km and over (different)": 375,
+    "5 to 20 km (different)": 145,
+    "under 5 km (different)": 6
+   },
+   "examples": [
+    {
+     "lat": 39.4353,
+     "lon": -122.8002,
+     "date": "2001-08-19",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Potter Valley; Mendocino County, California, United States",
+     "km_to_town": 29.7,
+     "point_is_in": "Lake County, California, United States"
+    },
+    {
+     "lat": 39.6903,
+     "lon": -122.7805,
+     "date": "2003-02-10",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Covelo; Mendocino County, California, United States",
+     "km_to_town": 41.7,
+     "point_is_in": "Glenn County, California, United States"
+    },
+    {
+     "lat": 33.4018,
+     "lon": -116.6453,
+     "date": "2003-07-17",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Anza; Riverside County, California, United States",
+     "km_to_town": 17.2,
+     "point_is_in": "San Diego County, California, United States"
+    },
+    {
+     "lat": 37.5011,
+     "lon": -121.564,
+     "date": "2003-08-29",
+     "sensor": "MODIS_TERRA",
+     "card_says": "East Foothills; Santa Clara County, California, United States",
+     "km_to_town": 26.0,
+     "point_is_in": "Alameda County, California, United States"
+    },
+    {
+     "lat": 39.434,
+     "lon": -121.919,
+     "date": "2003-10-09",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Biggs; Butte County, California, United States",
+     "km_to_town": 17.9,
+     "point_is_in": "Glenn County, California, United States"
+    },
+    {
+     "lat": 36.5209,
+     "lon": -119.4934,
+     "date": "2004-04-13",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Kingsburg; Fresno County, California, United States",
+     "km_to_town": 5.5,
+     "point_is_in": "Tulare County, California, United States"
+    },
+    {
+     "lat": 38.3031,
+     "lon": -115.5183,
+     "date": "2004-07-30",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Pioche; Lincoln County, Nevada, United States",
+     "km_to_town": 102.1,
+     "point_is_in": "Nye County, Nevada, United States"
+    },
+    {
+     "lat": 37.9966,
+     "lon": -119.7782,
+     "date": "2006-08-24",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Yosemite Valley; Mariposa County, California, United States",
+     "km_to_town": 33.4,
+     "point_is_in": "Tuolumne County, California, United States"
+    }
+   ]
+  },
+  "hawaii": {
+   "detections_in_region": 363507,
+   "counts": {
+    "sampled": 2000,
+    "point located": 1950,
+    "both located": 1950,
+    "US points": 1950,
+    "point not in any boundary file (sea, or a country without a file)": 50
+   },
+   "different_unit_pct_of_both_located": 0.0,
+   "ci95_pct": [
+    0.0,
+    0.0
+   ],
+   "km_to_nearest_town": {
+    "median": 7.1,
+    "p90": 16.7,
+    "max": 38.7
+   },
+   "by_distance": {
+    "5 to 20 km (both located)": 1588,
+    "under 5 km (both located)": 273,
+    "20 km and over (both located)": 89
+   },
+   "examples": []
+  },
+  "vietnam": {
+   "detections_in_region": 10464785,
+   "counts": {
+    "sampled": 2000,
+    "point located": 1993,
+    "both located": 1993,
+    "point and nearest town in different counties/districts": 901,
+    "card names a different COUNTRY than the point's": 87,
+    "point not in any boundary file (sea, or a country without a file)": 7
+   },
+   "different_unit_pct_of_both_located": 45.2,
+   "ci95_pct": [
+    43.0,
+    47.4
+   ],
+   "km_to_nearest_town": {
+    "median": 16.2,
+    "p90": 36.2,
+    "max": 128.1
+   },
+   "by_distance": {
+    "5 to 20 km (both located)": 1087,
+    "20 km and over (both located)": 770,
+    "20 km and over (different)": 524,
+    "under 5 km (both located)": 136,
+    "5 to 20 km (different)": 363,
+    "under 5 km (different)": 14
+   },
+   "examples": [
+    {
+     "lat": 16.9345,
+     "lon": 105.5081,
+     "date": "2001-03-17",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Ban Donghen; Savannakhet Province, Laos",
+     "km_to_town": 35.2,
+     "point_is_in": "Atsaphone, Laos"
+    },
+    {
+     "lat": 13.5381,
+     "lon": 105.4851,
+     "date": "2002-01-08",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Anlong Phe; Thala Barivat, Stung Treng, Cambodia",
+     "km_to_town": 13.4,
+     "point_is_in": "Chey Saen, Cambodia"
+    },
+    {
+     "lat": 16.4954,
+     "lon": 105.5954,
+     "date": "2002-02-25",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Ban Donghen; Savannakhet Province, Laos",
+     "km_to_town": 40.6,
+     "point_is_in": "Xonbuly, Laos"
+    },
+    {
+     "lat": 13.0094,
+     "lon": 108.0001,
+     "date": "2003-02-11",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Ea Sup; Huyện Ea Súp, Dak Lak, Vietnam",
+     "km_to_town": 13.9,
+     "point_is_in": "Cu Mgar, Vietnam"
+    },
+    {
+     "lat": 20.6365,
+     "lon": 102.2443,
+     "date": "2003-04-07",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Ban Nambak; Luang Prabang Province, Laos",
+     "km_to_town": 21.7,
+     "point_is_in": "Xay, Laos"
+    },
+    {
+     "lat": 16.3604,
+     "lon": 106.9706,
+     "date": "2003-05-08",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Achiang (1); Salavan Province, Laos",
+     "km_to_town": 10.3,
+     "point_is_in": "Da Krong, Vietnam"
+    },
+    {
+     "lat": 22.9812,
+     "lon": 108.4997,
+     "date": "2003-10-23",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Xingning; Nanning Shi, Guangxi, China",
+     "km_to_town": 14.3,
+     "point_is_in": "Yongningxian, China"
+    },
+    {
+     "lat": 11.2137,
+     "lon": 106.7404,
+     "date": "2004-01-04",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Tan Uyen; Tân Uyên, Ho Chi Minh City (HCMC), Vietnam",
+     "km_to_town": 15.3,
+     "point_is_in": "Phu Giao, Vietnam"
+    }
+   ]
+  },
+  "conus": {
+   "detections_in_region": 14077544,
+   "counts": {
+    "sampled": 2000,
+    "point located": 1997,
+    "both located": 1989,
+    "US points": 1989,
+    "point and nearest town in different counties/districts": 514,
+    "US points where the printed county or state name differs from the Census county of the point": 532,
+    "point not in any boundary file (sea, or a country without a file)": 3,
+    "card names a different COUNTRY than the point's": 8,
+    "town not in any boundary file": 8
+   },
+   "different_unit_pct_of_both_located": 25.8,
+   "ci95_pct": [
+    23.9,
+    27.8
+   ],
+   "km_to_nearest_town": {
+    "median": 13.5,
+    "p90": 39.0,
+    "max": 117.5
+   },
+   "by_distance": {
+    "5 to 20 km (both located)": 990,
+    "under 5 km (both located)": 370,
+    "20 km and over (both located)": 629,
+    "20 km and over (different)": 266,
+    "5 to 20 km (different)": 229,
+    "under 5 km (different)": 19
+   },
+   "examples": [
+    {
+     "lat": 41.8361,
+     "lon": -121.0831,
+     "date": "2001-07-04",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Malin; Klamath County, Oregon, United States",
+     "km_to_town": 33.3,
+     "point_is_in": "Modoc County, California, United States"
+    },
+    {
+     "lat": 37.9827,
+     "lon": -112.1537,
+     "date": "2002-06-08",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Circleville; Piute County, Utah, United States",
+     "km_to_town": 23.4,
+     "point_is_in": "Garfield County, Utah, United States"
+    },
+    {
+     "lat": 33.4312,
+     "lon": -117.5326,
+     "date": "2002-08-21",
+     "sensor": "MODIS_AQUA",
+     "card_says": "San Clemente; Orange County, California, United States",
+     "km_to_town": 7.4,
+     "point_is_in": "San Diego County, California, United States"
+    },
+    {
+     "lat": 35.7667,
+     "lon": -90.9905,
+     "date": "2002-11-23",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Swifton; Jackson County, Arkansas, United States",
+     "km_to_town": 13.9,
+     "point_is_in": "Craighead County, Arkansas, United States"
+    },
+    {
+     "lat": 39.647,
+     "lon": -78.773,
+     "date": "2003-08-18",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Ridgeley; Mineral County, West Virginia, United States",
+     "km_to_town": 0.6,
+     "point_is_in": "Allegany County, Maryland, United States"
+    },
+    {
+     "lat": 44.5992,
+     "lon": -121.7082,
+     "date": "2003-08-24",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Sisters; Deschutes County, Oregon, United States",
+     "km_to_town": 36.5,
+     "point_is_in": "Jefferson County, Oregon, United States"
+    },
+    {
+     "lat": 38.7367,
+     "lon": -122.7614,
+     "date": "2004-09-04",
+     "sensor": "MODIS_AQUA",
+     "card_says": "Cobb; Lake County, California, United States",
+     "km_to_town": 10.1,
+     "point_is_in": "Sonoma County, California, United States"
+    },
+    {
+     "lat": 32.9136,
+     "lon": -80.8999,
+     "date": "2005-02-18",
+     "sensor": "MODIS_TERRA",
+     "card_says": "Varnville; Hampton County, South Carolina, United States",
+     "km_to_town": 18.2,
+     "point_is_in": "Colleton County, South Carolina, United States"
+    }
+   ]
+  }
+ }
+}

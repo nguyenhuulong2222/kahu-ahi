@@ -1,0 +1,50 @@
+[
+ {
+  "region": "california",
+  "what": "monthly count aqua 2026-09",
+  "recomputed": 263,
+  "project": 264,
+  "difference": -1.0,
+  "file": "monthly_series.csv"
+ },
+ {
+  "region": "california",
+  "what": "docs monthly count aqua 2026-09",
+  "recomputed": 263,
+  "project": 264,
+  "difference": -1.0,
+  "file": "docs/data/california.json"
+ },
+ {
+  "region": "conus",
+  "what": "monthly count aqua 2026-09",
+  "recomputed": 2365,
+  "project": 2366,
+  "difference": -1.0,
+  "file": "monthly_series.csv"
+ },
+ {
+  "region": "conus",
+  "what": "monthly count snpp 2026-09",
+  "recomputed": 19210,
+  "project": 19211,
+  "difference": -1.0,
+  "file": "monthly_series.csv"
+ },
+ {
+  "region": "conus",
+  "what": "docs monthly count aqua 2026-09",
+  "recomputed": 2365,
+  "project": 2366,
+  "difference": -1.0,
+  "file": "docs/data/conus.json"
+ },
+ {
+  "region": "conus",
+  "what": "docs monthly count snpp 2026-09",
+  "recomputed": 19210,
+  "project": 19211,
+  "difference": -1.0,
+  "file": "docs/data/conus.json"
+ }
+]
