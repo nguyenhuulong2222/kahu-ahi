@@ -66,6 +66,11 @@ Ideas only. No code copied.
 
 No other repository or project was read for reference.
 
+## State boundaries
+
+- US Census Bureau, Cartographic Boundary Files, States, 1:5,000,000, 2023 (`cb_2023_us_state_5m.zip`) — https://www2.census.gov/geo/tiger/GENZ2023/shp/cb_2023_us_state_5m.zip — listed at https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html . A work of the US government, in the public domain. Downloaded 14 Nov 2026 (HST); sha256 `0f606018e81fe99a204d08aa7ac1f8d00516143ddc95900b79eeecfee65da8c3`. Used for `docs/data/conus_states_geo.json` (the 48 states and DC, coordinates rounded to 4 decimals) and for assigning detections to states.
+- State time zones: the `timezone` field of the GeoNames places already listed below (a state has a local time on the page only when all its places share one zone).
+
 ## Basemap and software
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Pages read when choosing them (14 Nov 2026):

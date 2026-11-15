@@ -133,10 +133,23 @@ Months: 174 paired months per region (February 2012 to July 2026, standard data)
 
 | Region | Role | Bounding box |
 |---|---|---|
-| California | Calibration and validation | lat 32.5–42.0, lon −124.5–−114.0 |
+| California test box (`california`) | First calibration region. A rectangle, not the state: it also takes in parts of Nevada, Arizona and Mexico. No longer in the page's region list; kept in the "Compare regions" table and as the small region of `pipeline/inside.py`. The state of California is one of the states below | lat 32.5–42.0, lon −124.5–−114.0 |
 | Hawaiʻi | Case study of a low-detection region | lat 18.7–22.5, lon −160.6–−154.5 |
 | Vietnam region | Second calibration and validation region | lat 8.4–23.4, lon 102.1–109.5 (also takes in parts of Laos, Cambodia and southern China) |
 | Contiguous United States (`conus`) | Whole-country region | lat 24.4–49.5, lon −125.0–−66.9. Its FIRMS downloads are limited to the United States, so the rectangle holds no detections in Canada or Mexico; Alaska and Hawaiʻi lie outside it |
+
+### The United States, state by state
+
+The page's region list is United States, Hawaiʻi and Vietnam region. With United States selected a second list offers "Whole country" and the 48 states and DC. `pipeline/states.py` does the work:
+
+- **Boundaries.** US Census Bureau cartographic boundary file for states, 1:5,000,000, 2023 (public domain; source and sha256 in `data/manifest.json` and SOURCES.md). Coordinates are rounded to 4 decimals and written to `docs/data/conus_states_geo.json` (1.3 MB), which both the pipeline and the page read.
+- **Assignment.** Every national detection is given to the state whose outline contains its position (even-odd ray casting; not a bounding box). The page repeats the same test on the same numbers, so a state's table, map squares and CSV hold exactly the detections the pipeline counted for it. Of 14,077,544 detections, 27,962 (0.2%; 2,410 of them counted) fall in no state: offshore, or land the simplified coastline cuts off (for example the Lake Michigan shore of Indiana). They are kept under `outside` in the file and stay in the national numbers. Against the Census 1:500,000 file, 3 of 2,000 sampled detections were assigned differently, all three of this kind.
+- **Check.** For every satellite and month, the states plus `outside` must equal the national series, or the step writes nothing. It holds for all 889 values.
+- **Statistics.** Each state goes through `calibrate.calibrate()` unchanged: same counting, same fit, same tests, same acceptance rule, same as-used test. A satellite's months are the national ones, so a month in which a state has no detection is a recorded 0. The result is one file, `docs/data/conus_states.json` (0.8 MB): monthly series per satellite, factors with the number of months behind each, the three errors (as recorded, one whole-year ratio, monthly factors; all years, before and from 2022), the as-used chain, the acceptance decision, and the error when the national factors are used instead of the state's own. A second file, `docs/data/conus_states_daily.json` (3.4 MB), holds each state's counted detections per day; the page needs it for the daily chart, the busiest day and the default day, and loads it only when a state is opened. No hotspot or grid file is duplicated: a state view reads the national ones.
+- **Result.** 37 of 49 are harmonized. 12 are not (Connecticut, Delaware, District of Columbia, Maine, Maryland, Massachusetts, Michigan, New Hampshire, New Jersey, New York, Rhode Island, Vermont): 9 fail both parts of the rule and 3 only the number of months; all are states where MODIS Aqua recorded few fires. Among the 37, the error on years left out runs from 14.0% (Arkansas) to 49.8% (North Dakota). In 15 of the 37 the conversion as used for recent months fails the same rule, and their recent converted values are shown as "not reliable". A refused state never shows a converted value.
+- **National factors in a state.** Every harmonized state but one (Utah, 20.9% against 21.2%) does better with its own factors than with the national ones; the gap is largest in Texas (19.4% against 47.0%), West Virginia and North Dakota. The state of California: 15.7% with its own, 20.7% with the national factors (the test box: 15.2% and 20.0%).
+- **Time.** A state shows local time only when every GeoNames place in it has the same zone (34 states and DC); otherwise UTC, with the reason. This follows the zones GeoNames gives its places, not a boundary file, so a state is called single-zone as far as its listed towns show.
+- **On the page.** A state view fits and outlines the state and dims everything else. The band, calendar, charts, "this month so far", the VIIRS-only switch, the detections table, card, report and downloads use the state. Grid cells are drawn where their centre is in the state, so a border cell's total can include a neighbour's detections; the map's sentence says so. "Choose an area" is offered for the whole country only. The whole-country view has a "By state" map (error in steps, refused states hatched and lettered) and a sortable table; each row opens its state. Old links to `region=california` open the state of California and say what changed.
 
 ### One conversion for a whole country
 
@@ -253,7 +266,8 @@ python3 pipeline/calibrate.py --region data/processed/conus
 python3 pipeline/export.py    --id conus --name "Contiguous United States" --bbox -125.0 24.4 -66.9 49.5 --raw data/raw/usa --hotspots-by-month
 python3 pipeline/grid.py      --id conus --bbox -125.0 24.4 -66.9 49.5 --raw data/raw/usa
 python3 pipeline/places.py    --id conus --bbox -125.0 24.4 -66.9 49.5
-python3 pipeline/inside.py    --large data/processed/conus --small data/processed/california   # California inside the national fit
+python3 pipeline/inside.py    --large data/processed/conus --small data/processed/california   # California test box inside the national fit
+python3 pipeline/states.py    --raw data/raw/usa --bbox -125.0 24.4 -66.9 49.5                   # the 48 states and DC; needs data/raw/census/cb_2023_us_state_5m.zip
 ```
 
 The web app is the static folder `docs/`: `python3 -m http.server -d docs 8000`, then open http://localhost:8000. Besides its own files it requests Leaflet from cdnjs, on a reader's action a place name from Nominatim and a day's image from NASA GIBS or Worldview Snapshots, and basemap tiles: NASA GIBS (Blue Marble with coastline, border and label overlays) up to zoom 8, and from zoom 9 Esri World Imagery with Esri's reference labels (its two libraries load from jsDelivr only then), falling back to OpenStreetMap if Esri is unavailable. No FIRMS or other data API is called from the page.

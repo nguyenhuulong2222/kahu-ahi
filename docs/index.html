@@ -94,6 +94,13 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .mapshell:fullscreen #layersbody,.mapshell.is-full #layersbody{max-height:calc(100vh - var(--tl-h) - 150px)}
 .recordbar{margin:8px 0;padding:8px 12px;background:var(--paper);border-radius:6px}.recordbar fieldset{border:0;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 18px}
 .recordbar legend{float:left;font-weight:600;margin-right:14px;padding:0}.recordbar label{display:inline-flex;gap:6px;align-items:center;min-height:32px}.recordbar p{margin:4px 0 0}
+#statewrap{display:block;margin-top:4px}#statewrap[hidden]{display:none}#statewrap label,.pagehead label[for=region]{display:block}
+.pagehead>div:last-child{flex:0 0 auto}.pagehead>div:last-child select{min-width:210px}
+.statemap svg{display:block;width:100%;height:auto;max-height:460px}.statemap path{stroke:#fff;stroke-width:.6;cursor:pointer}.statemap path:hover{stroke:#14213d;stroke-width:1.6}
+.statemap text{font:700 9px var(--font);fill:#14213d;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:2.5px}
+.stategrid{display:grid;gap:14px 20px;grid-template-columns:1fr}@media(min-width:900px){.stategrid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}}
+.statelegend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.85rem;margin:6px 0 0}.statelegend span.sw2{display:inline-block;width:18px;height:12px;vertical-align:middle;margin-right:5px;border:1px solid #8a94a6}
+.statetable{max-height:460px;overflow:auto}.statetable td.num,.statetable th.num{text-align:right}.statetable tr.refused td{color:var(--warn)}
 .maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
 .mapshell{margin-top:6px!important}
 /* Harmonization result: three figures and a small chart, straight under the map. */
@@ -269,7 +276,9 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <p class="lede">NASA plans to begin shutting down Terra and Aqua in late 2026 or early 2027 and encourages users to move to VIIRS. The record shown is MODIS Aqua; VIIRS, converted to its scale and tested, continues it.</p>
     <p class="headline" id="headline" aria-live="polite"></p></div></div>
   <div><label for="region">Region</label>
-    <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option><option value="conus">Contiguous United States</option></select></div>
+    <select id="region"><option value="conus">United States</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select>
+    <span id="statewrap" hidden><label for="state">State</label>
+    <select id="state"><option value="">Whole country</option></select></span></div>
 </div>
 
 <div class="wrap"><h2 id="h-map" class="maplabel">Where and when satellites saw fire</h2></div>
@@ -328,9 +337,14 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 </section>
 
 <div class="wrap">
+  <p class="banner" id="moved" hidden></p>
   <section id="harm" aria-labelledby="h-harm">
     <h2 id="h-harm">Harmonization result</h2>
     <div id="harmbody"></div>
+  </section>
+  <section id="bystate" aria-labelledby="h-bystate" hidden>
+    <h2 id="h-bystate">By state</h2>
+    <div id="bystatebody"></div>
   </section>
   <section id="report" aria-labelledby="h-report" hidden></section>
   <nav id="monthrow" aria-label="Months of the selected year" hidden></nav>
@@ -500,7 +514,125 @@ const fmt = n => n == null ? "none" : Number(n).toLocaleString("en-US", {maximum
 const fmt1 = n => Number(n).toLocaleString("en-US", {maximumFractionDigits: 1});
 const pct = n => n == null ? "n/a" : n + "%";
 // The region's name as it reads inside a sentence.
-function inRegion() { return D.region.id === "conus" ? "the contiguous United States" : D.region.name; }
+function inRegion() { return D.region.state ? D.region.name : D.region.id === "conus" ? "the contiguous United States" : D.region.name; }
+
+// ---------- the contiguous United States, state by state ----------
+// ST: per-state statistics (pipeline/states.py). GEO: the state polygons. STATE: the selected state, or null for the whole
+// region. A state view swaps the region file for a document of the same shape built from ST, and reads the national grid,
+// hotspot and place files, keeping only what lies in the state's polygon. NAT is the national document.
+let ST = null, GEO = null, STATE = null, NAT = null;
+const stateFiles = {}, BAND = 10;
+function stateFile(name) {
+  if (!stateFiles[name]) stateFiles[name] = fetch("data/" + name).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(e => { delete stateFiles[name]; throw e; });
+  return stateFiles[name];
+}
+// Edges indexed by latitude band, exactly as pipeline/states.py does, so the page and the pipeline agree on every detection.
+function makeState(g) {
+  const bands = new Map();
+  for (const flat of g.rings) {
+    const n = flat.length / 2;
+    for (let a = 0; a < n; a++) {
+      const b = (a + 1) % n, x1 = flat[2 * a], y1 = flat[2 * a + 1], x2 = flat[2 * b], y2 = flat[2 * b + 1];
+      for (let gy = Math.floor(Math.min(y1, y2) * BAND); gy <= Math.floor(Math.max(y1, y2) * BAND); gy++) { let e = bands.get(gy); if (!e) bands.set(gy, e = []); e.push(x1, y1, x2, y2); }
+    }
+  }
+  return {id: g.id, name: g.name, rings: g.rings, bbox: g.bbox, bands, cells: new Map()};
+}
+function inState(lat, lon) {
+  if (!STATE) return true;
+  const b = STATE.bbox;
+  if (lon < b[0] || lon > b[2] || lat < b[1] || lat > b[3]) return false;
+  const e = STATE.bands.get(Math.floor(lat * BAND));
+  if (!e) return false;
+  let hit = false;
+  for (let i = 0; i < e.length; i += 4) { const x1 = e[i], y1 = e[i + 1], x2 = e[i + 2], y2 = e[i + 3]; if ((y1 > lat) !== (y2 > lat) && lon < (x2 - x1) * (lat - y1) / (y2 - y1) + x1) hit = !hit; }
+  return hit;
+}
+// A grid cell is drawn for a state when its centre is in the state.
+function cellInState(key) {
+  if (!STATE) return true;
+  let v = STATE.cells.get(key);
+  if (v === undefined) { v = inState(Math.floor(key / 10000) / 10 - 90 + .05, (key % 10000) / 10 - 180 + .05); STATE.cells.set(key, v); }
+  return v;
+}
+// A state's document, in the shape of a region file.
+function stateDoc(nat, id) {
+  const v = ST.states[id];
+  const months = ST.months.map((m, i) => ({m, terra: v.terra[i], aqua: v.aqua[i], snpp: v.snpp[i], n20: v.n20[i], snpp_eq: v.snpp_eq[i], n20_eq: v.n20_eq[i],
+    h: ST.src[i] === "MODIS_AQUA" ? v.aqua[i] : null, src: ST.src[i], status: ST.status[i]}));
+  return {region: {id: nat.region.id, state: id, name: v.name, bbox: {west: v.bbox[0], south: v.bbox[1], east: v.bbox[2], north: v.bbox[3]}},
+    generated_at: ST.generated_at, data_through: ST.data_through, metric: ST.metric, calibration_accepted: v.calibration_accepted, acceptance_rule: v.acceptance_rule,
+    snpp_to_aqua: v.snpp_to_aqua, noaa20_to_snpp: v.noaa20_to_snpp, as_used: v.as_used, current_month: v.current_month,
+    static_source_mask: nat.static_source_mask, sensors: nat.sensors, months, tz: v.time_zone, with_national: v.with_national_coefficients, aqua_paired: v.aqua_detections_paired_months};
+}
+function fillStateList() {
+  const sel = $("state");
+  if (!ST || sel.options.length > 1) return;
+  Object.keys(ST.states).sort((a, b) => ST.states[a].name.localeCompare(ST.states[b].name)).forEach(id => sel.append(el("option", {value: id, text: ST.states[id].name})));
+}
+// Why a state's conversion was refused, read from its acceptance rule and its numbers.
+function stateFacts(v) {
+  const f = harmFacts(v), e = f.all && f.all.abs_error_pct_of_total, limit = +f.limit, need = +f.need;
+  const overError = e == null || e > limit, fewMonths = f.own < need;
+  return {f, e, own: f.own, overError, fewMonths, nat: v.with_national_coefficients && v.with_national_coefficients.all_years && v.with_national_coefficients.all_years.abs_error_pct_of_total,
+    why: v.calibration_accepted ? "" : [overError ? (e == null ? "no error can be computed (MODIS Aqua recorded no detection in the shared months)" : "error " + pct(e) + ", over the " + limit + "% limit") : "", fewMonths ? "only " + f.own + " of 12 calendar months have enough detections for a factor (" + need + " needed)" : ""].filter(Boolean).join("; ")};
+}
+const ERROR_STEPS = [[10, "#cfe8e6"], [20, "#8fc9c5"], [35, "#3f9e98"], [Infinity, "#0b6e6e"]];   // one hue, light to dark; refused states are hatched instead
+let stateSort = {key: "error", dir: 1};
+function openState(id) { const w = readHash(); w.state = id; w.area = null; w.at = null; w.report = null; $("state").value = id; return load("conus", w); }
+function drawByState() {
+  const sec = $("bystate"), box = $("bystatebody");
+  sec.hidden = !(ST && GEO && D && D.region.id === "conus" && !STATE);
+  if (sec.hidden) { box.replaceChildren(); return; }
+  const rows = Object.keys(ST.states).map(id => Object.assign({id, v: ST.states[id]}, stateFacts(ST.states[id])));
+  const ok = rows.filter(r => r.v.calibration_accepted), no = rows.filter(r => !r.v.calibration_accepted);
+  const both = no.filter(r => r.overError && r.fewMonths).length, onlyErr = no.filter(r => r.overError && !r.fewMonths).length, onlyMonths = no.filter(r => !r.overError && r.fewMonths).length;
+  const limit = rows[0].f.limit, need = rows[0].f.need, unreliable = ok.filter(r => r.v.as_used && !r.v.as_used.accepted).length;
+  const intro = el("p", {id: "statesum", text: "Each state is tested exactly as a region is: its own factors, each year predicted without that year, and the same rule (error at most " + limit + "% and at least " + need + " calendar months with their own factor). "
+    + ok.length + " of " + rows.length + " are harmonized and " + no.length + " are not. Of those " + no.length + ", " + both + " fail on both counts, " + onlyErr + " on the error alone and " + onlyMonths + " on the number of months alone; they are states where MODIS Aqua recorded few fires, so there is too little to fit or test a factor. "
+    + "In " + unreliable + " of the " + ok.length + " harmonized states the conversion as used for recent months (NOAA-20, near-real-time) fails the same rule, and their recent converted values are shown as not reliable."});
+  // map
+  const all = GEO.states, w = Math.min(...all.map(g => g.bbox[0])), e = Math.max(...all.map(g => g.bbox[2])), s0 = Math.min(...all.map(g => g.bbox[1])), n = Math.max(...all.map(g => g.bbox[3]));
+  const kx = Math.cos(37 * Math.PI / 180), sc = 900 / ((e - w) * kx), W = 900, H = Math.ceil((n - s0) * sc), X = lon => ((lon - w) * kx * sc).toFixed(1), Y = lat => ((n - lat) * sc).toFixed(1);
+  const svg = svgEl("svg", {viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Map of the 48 states and DC coloured by the tested error of each state's conversion; states that are not harmonized are hatched. The table beside the map has every number."});
+  svg.append(svgEl("defs", {}, svgEl("pattern", {id: "hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)"}, svgEl("rect", {width: 6, height: 6, fill: "#f3ede3"}), svgEl("line", {x1: 0, y1: 0, x2: 0, y2: 6, stroke: "#8a4b00", "stroke-width": 2}))));
+  const byId = Object.fromEntries(rows.map(r => [r.id, r])), labels = [];
+  all.forEach(g => {
+    const r = byId[g.id], fill = r.v.calibration_accepted ? ERROR_STEPS.find(st => r.e <= st[0])[1] : "url(#hatch)";
+    const d = g.rings.map(f => { let t = ""; for (let i = 0; i < f.length; i += 2) t += (i ? "L" : "M") + X(f[i]) + " " + Y(f[i + 1]); return t + "Z"; }).join("");
+    const path = svgEl("path", {d, fill, "fill-rule": "evenodd"});
+    path.append(svgEl("title", {text: g.name + ": " + (r.v.calibration_accepted ? "error " + pct(r.e) : "not harmonized (" + r.why + ")")}));
+    path.addEventListener("click", () => openState(g.id));
+    svg.append(path);
+    if (!r.v.calibration_accepted) labels.push(svgEl("text", {x: X((g.bbox[0] + g.bbox[2]) / 2), y: Y((g.bbox[1] + g.bbox[3]) / 2), "text-anchor": "middle", "dominant-baseline": "middle", text: g.id}));
+  });
+  svg.append(...labels);
+  const legend = el("div", {class: "statelegend", "aria-hidden": "true"}, el("span", {text: "Error of the state's own conversion, tested on years left out:"}));
+  ERROR_STEPS.forEach((st, i) => legend.append(el("span", {}, el("span", {class: "sw2", style: "background:" + st[1]}), i === 0 ? "up to " + st[0] + "%" : st[0] === Infinity ? "over " + ERROR_STEPS[i - 1][0] + "% to " + limit + "%" : "over " + ERROR_STEPS[i - 1][0] + "% to " + st[0] + "%")));
+  legend.append(el("span", {}, el("span", {class: "sw2", style: "background:repeating-linear-gradient(45deg,#f3ede3 0 3px,#8a4b00 3px 5px)"}), "Not harmonized (hatched, with the state's letters)"));
+  // table
+  const val = r => stateSort.key === "error" ? (r.e == null ? Infinity : r.e) : stateSort.key === "aqua" ? r.v.aqua_detections_paired_months : r.v.name;
+  rows.sort((a, b) => { const x = val(a), y = val(b); return (x < y ? -1 : x > y ? 1 : a.v.name.localeCompare(b.v.name)) * stateSort.dir; });
+  const head = (text, key, num) => {
+    if (!key) return el("th", {scope: "col", class: num ? "num" : "", text});
+    const b = el("button", {type: "button", class: "linkish", text: text + (stateSort.key === key ? (stateSort.dir > 0 ? " ▲" : " ▼") : "")});
+    b.addEventListener("click", () => { stateSort = {key, dir: stateSort.key === key ? -stateSort.dir : key === "aqua" ? -1 : 1}; drawByState(); });
+    return el("th", {scope: "col", class: num ? "num" : "", "aria-sort": stateSort.key === key ? (stateSort.dir > 0 ? "ascending" : "descending") : "none"}, b);
+  };
+  const t = el("table", {class: "plain", id: "statetable"}, el("caption", {class: "sr", text: "The conversion in each state"}),
+    el("thead", {}, el("tr", {}, head("State", "name"), head("Aqua detections", "aqua", 1), head("Error, own factors", "error", 1), head("Error, national factors", null, 1), head("Factor months", null, 1), head("Result"))));
+  const body = el("tbody");
+  rows.forEach(r => {
+    const b = el("button", {type: "button", class: "linkish", text: r.v.name, "aria-label": "Open " + r.v.name});
+    b.addEventListener("click", () => openState(r.id));
+    body.append(el("tr", {class: r.v.calibration_accepted ? "" : "refused", "data-state": r.id}, el("th", {scope: "row"}, b), el("td", {class: "num", text: fmt(r.v.aqua_detections_paired_months)}), el("td", {class: "num", text: r.e == null ? "n/a" : pct(r.e)}),
+      el("td", {class: "num", text: r.nat == null ? "n/a" : pct(r.nat)}), el("td", {class: "num", text: r.own}),
+      el("td", {text: r.v.calibration_accepted ? (r.v.as_used && !r.v.as_used.accepted ? "Harmonized; recent values not reliable" : "Harmonized") : "Not harmonized: " + r.why})));
+  });
+  t.append(body);
+  box.replaceChildren(intro, el("div", {class: "stategrid"}, el("div", {class: "statemap"}, svg, legend), el("div", {class: "calwrap statetable"}, t)),
+    el("p", {class: "note", text: "A state is the Census Bureau's simplified outline (1:5,000,000); a detection belongs to the state whose outline contains its position. " + fmt(ST.rows.outside_every_state) + " of " + fmt(ST.rows.in_a_state + ST.rows.outside_every_state) + " detections in the national files fall in no state (offshore, or land the simplified coastline cuts off); they stay in the national numbers and are in no state's. \"Aqua detections\" are MODIS Aqua's counted detections over the months both satellites have; \"factor months\" is how many of the 12 calendar months have enough of them for a factor of their own. \"National factors\" is the state's error when the country's factors are used instead of its own. Select a state on the map, in the table or in the State list."}));
+}
 const round1 = v => Math.round(v * 10) / 10;
 // Same expression as cell_index() in pipeline/grid.py, applied to lat + 90 and lon + 180.
 const cellOf = d => Math.floor(d * 10 + 1e-6);
@@ -633,6 +765,10 @@ function regionSeries() { return {months: D.months, medians: mediansOf(D.months)
 let loadToken = 0;
 async function load(region, wish) {
   wish = wish || {};
+  // The California test box left the region list; an old link to it opens the state of California and says so.
+  let moved = false;
+  if (region === "california") { region = "conus"; wish = Object.assign({}, wish, {state: "CA", area: null, at: null, report: null}); moved = true; }
+  if ($("region").value !== region) $("region").value = region;
   pausePlay(); closeReport();
   const token = ++loadToken;
   $("banner").replaceChildren(); $("areabanner").replaceChildren(); $("cal").replaceChildren(el("caption", {text: "Loading the record"}));
@@ -640,8 +776,14 @@ async function load(region, wish) {
     const r = await fetch("data/" + region + ".json");
     if (!r.ok) throw new Error(r.status);
     const d = await r.json();
+    if (region === "conus") { try { [ST, GEO] = await Promise.all([stateFile("conus_states.json"), stateFile("conus_states_geo.json")]); } catch (e) { ST = GEO = null; } }
     if (token !== loadToken) return;
-    D = d;
+    D = NAT = d; STATE = null;
+    if (region === "conus" && wish.state && ST && GEO && ST.states[wish.state]) { D = stateDoc(d, wish.state); STATE = makeState(GEO.states.find(g => g.id === wish.state)); }
+    fillStateList(); $("statewrap").hidden = !(region === "conus" && ST); $("state").value = STATE ? STATE.id : "";
+    $("moved").hidden = !moved;
+    $("moved").textContent = moved ? "This link was made for the California test box, a rectangle that also took in parts of Nevada, Arizona and Mexico. The page now shows the state of California, so its numbers differ from the ones that link showed. The test box is still in the \"Compare regions\" table." : "";
+    document.querySelector('section[aria-labelledby="h-area"]').hidden = !!STATE;
   } catch (e) {
     if (token !== loadToken) return;
     $("cal").replaceChildren();
@@ -654,7 +796,7 @@ async function load(region, wish) {
     G = await r.json();
   } catch (e) { G = null; }
   if (token !== loadToken) return;
-  try { daily = await loadDaily(region); } catch (e) { daily = null; }
+  try { daily = STATE ? await loadStateDaily(STATE.id) : await loadDaily(region); } catch (e) { daily = null; }
   try { const r = await fetch("data/places/" + region + ".json"); if (!r.ok) throw new Error(r.status); PLACES = await r.json(); } catch (e) { PLACES = null; }
   nearCacheTown.clear();
   // A large region also carries a check of its conversion against a smaller region inside it (pipeline/inside.py).
@@ -665,10 +807,11 @@ async function load(region, wish) {
   recordMode = wish.record === "viirs" && D.calibration_accepted ? "viirs" : "aqua";
   $("through").textContent = "Data through " + D.data_through + ". Detections of presumed vegetation fire, low-confidence ones removed.";
   if (wish.sensor && [...$("sensor").options].some(o => o.value === wish.sensor)) $("sensor").value = wish.sensor;
-  drawHarm(); drawTrust(); drawCompare(); drawRegionOnMap(); await setupDownload();
+  drawHarm(); drawByState(); drawTrust(); drawCompare(); drawRegionOnMap(); await setupDownload();
   if (token !== loadToken) return;
   // With no time in the link the page opens on the latest day that has a counted detection, so the map is never empty on load.
   applySel(startSel(wish));
+  if (STATE) wish.area = null;
   if (wish.area && !(await setArea(wish.area, true))) wish.area = null;
   if (token !== loadToken) return;
   if (!wish.area) { fillAreaForm(); await refresh(); }
@@ -740,7 +883,11 @@ function markCalendar() {
 async function loadDaily(region) {
   const r = await fetch("data/" + region + "_daily.json");
   if (!r.ok) throw new Error(r.status);
-  const d = await r.json(), t0 = Date.parse(d.start + "T00:00:00Z"), out = {standard: new Map(), nrt: new Map()};
+  return parseDaily(await r.json());
+}
+async function loadStateDaily(id) { return parseDaily((await stateFile("conus_states_daily.json")).states[id]); }
+function parseDaily(d) {
+  const t0 = Date.parse(d.start + "T00:00:00Z"), out = {standard: new Map(), nrt: new Map()};
   ["standard", "nrt"].forEach(q => { const f = d[q] || []; for (let i = 0; i < f.length; i += 5) out[q].set(new Date(t0 + f[i] * 864e5).toISOString().slice(0, 10), f.slice(i + 1, i + 5)); });
   out.dates = [...new Set([...out.standard.keys(), ...out.nrt.keys()])].sort();
   return out;
@@ -1184,7 +1331,7 @@ function drawHarm() {
   const head = $("headline"); head.replaceChildren();
   if (f.all && f.raw) head.append(D.region.name + ": " + (ok
     ? "VIIRS as recorded is off by " + pct(f.raw.abs_error_pct_of_total) + (f.annual ? "; with one whole-year ratio, " + pct(f.annual.abs_error_pct_of_total) : "") + "; with monthly factors, tested on years left out, " + pct(f.all.abs_error_pct_of_total) + ". "
-    : "not harmonized. The conversion failed its test (off by " + pct(f.all.abs_error_pct_of_total) + "), so only MODIS Aqua is shown. "), el("a", {href: "#h-harm", text: "See the result"}));
+    : "not harmonized (" + stateFacts(D).why + "), so only MODIS Aqua is shown. "), el("a", {href: "#h-harm", text: "See the result"}));
   if (!f.all || !f.raw) { box.append(el("p", {class: "note", text: "Not enough months with both MODIS Aqua and VIIRS to test a conversion in " + inRegion() + "."})); return; }
   const fig = (label, big, sub, cls) => el("div", {class: "fig" + (cls ? " " + cls : "")}, el("dt", {text: label}), el("dd", {}, el("div", {class: "big", text: big}), sub ? el("div", {class: "sub", text: sub}) : ""));
   const figs = el("dl", {class: "figs"});
@@ -1209,9 +1356,11 @@ function regionDoc(id) {
 }
 let compareToken = 0;
 async function drawCompare() {
-  const box = $("compare"), token = ++compareToken, ids = [...$("region").options].map(o => o.value);
+  const box = $("compare"), token = ++compareToken, ids = [...$("region").options].map(o => o.value).concat("california");
+  const BOX = "California test box (first calibration region)", nameOf = d => d.region.id === "california" ? BOX : d.region.name;
   box.replaceChildren(el("p", {class: "note", text: "Loading the other regions' results."}));
-  const docs = await Promise.all(ids.map(id => (id === D.region.id ? Promise.resolve(D) : regionDoc(id)).catch(() => null)));
+  const docs = await Promise.all(ids.map(id => (NAT && id === NAT.region.id ? Promise.resolve(NAT) : regionDoc(id)).catch(() => null)));
+  if (STATE) { docs.unshift(D); ids.unshift(STATE.id); }
   const large = Object.keys(HAS_INSIDE)[0];
   let inside = null;
   try { const r = await fetch("data/" + large + "_inside.json"); if (r.ok) inside = await r.json(); } catch (e) { inside = null; }
@@ -1221,9 +1370,9 @@ async function drawCompare() {
   let split = null, first = null;
   docs.forEach((d, i) => {
     if (!d) { t.append(el("tr", {}, el("th", {scope: "row", text: ids[i]}), el("td", {colspan: 9, text: "This region's file could not be loaded."}))); return; }
-    const f = harmFacts(d), file = "data/" + d.region.id + ".json", u = d.noaa20_to_snpp.leave_one_year_out.uncalibrated.all_years;
+    const here = STATE ? d === D : d.region.id === D.region.id, f = harmFacts(d), file = d.region.state ? "data/conus_states.json" : "data/" + d.region.id + ".json", u = d.noaa20_to_snpp.leave_one_year_out.uncalibrated.all_years;
     split = split || f.split; first = first || f.first;
-    t.append(el("tr", {class: d.region.id === D.region.id ? "here" : ""}, el("th", {scope: "row", text: d.region.name + (d.region.id === D.region.id ? " (shown)" : "")}),
+    t.append(el("tr", {class: here ? "here" : ""}, el("th", {scope: "row", text: nameOf(d) + (d.region.state ? " (state)" : "") + (here ? " (shown)" : "")}),
       num(f.all && f.all.months, file), num(d.snpp_to_aqua.coefficients.annual_k, file), num(f.raw && f.raw.abs_error_pct_of_total, file, "%"), num(f.annual && f.annual.abs_error_pct_of_total, file, "%"), num(f.all && f.all.abs_error_pct_of_total, file, "%"),
       num(f.before && f.before.abs_error_pct_of_total, file, "%"), num(f.after && f.after.abs_error_pct_of_total, file, "%"), num(u && u.abs_error_pct_of_total, file, "%"),
       el("td", {text: d.calibration_accepted ? "Harmonized" : "Not harmonized: fails the test"})));
@@ -1232,11 +1381,13 @@ async function drawCompare() {
   if (inside) {
     const file = "data/" + large + "_inside.json", o = inside.small_with_large_k, own = inside.small_with_own_k, bk = Object.keys(o).find(k => /^before_/.test(k)), ak = Object.keys(o).find(k => /_onward$/.test(k));
     const small = docs.find(d => d && d.region.id === inside.small), big = docs.find(d => d && d.region.id === inside.large);
-    const sName = small ? small.region.name : inside.small, bName = big ? big.region.name : inside.large;
+    const sName = small ? nameOf(small) : inside.small, bName = big ? big.region.name : inside.large;
     t.append(el("tr", {}, el("th", {scope: "row", text: sName + ", with the factors of " + bName}), num(o.all_years.months, file), num(inside.annual_k.large, file), el("td", {class: "num", text: ""}), el("td", {class: "num", text: ""}),
       num(o.all_years.abs_error_pct_of_total, file, "%"), num(o[bk] && o[bk].abs_error_pct_of_total, file, "%"), num(o[ak] && o[ak].abs_error_pct_of_total, file, "%"), el("td", {class: "num", text: ""}), el("td", {text: "Comparison only; not shown on the page"})));
     kids.push(el("p", {text: sName + " inside the larger fit: "}, el("a", {href: file, text: pct(o.all_years.abs_error_pct_of_total)}), " with the factors of " + bName + ", against ", el("a", {href: file, text: pct(own.all_years.abs_error_pct_of_total)}), " with its own. A conversion fitted over a larger area costs accuracy in the smaller one. " + sName + " lies inside " + bName + " and its detections are part of the larger fit, so the first figure is a lower bound, and the table holds three independent areas, not four."));
   }
+  const boxDoc = docs.find(d => d && d.region.id === "california"), bb = boxDoc && boxDoc.region.bbox;
+  if (bb) kids.push(el("p", {id: "boxnote", text: "The California test box is the rectangle this project was first calibrated on (" + bb.south + "° to " + bb.north + "° north, " + Math.abs(bb.west) + "° to " + Math.abs(bb.east) + "° west). It is not the state: it also takes in parts of Nevada, Arizona and Mexico. The state of California is in the State list under United States, and its numbers differ."}));
   kids.push(el("p", {class: "note", text: "Percentages are the error as a share of all the detections MODIS Aqua recorded, each year predicted from a conversion built without it." + (split ? " Earlier years are " + first + " to " + (split - 1) + ", later years " + split + " onward." : "") + " NOAA-20 in place of S-NPP is the difference when NOAA-20 is used with no further conversion. Each number links to the file it is read from."}));
   box.replaceChildren(...kids);
 }
@@ -1280,7 +1431,15 @@ function drawTrust() {
   const mk = D.static_source_mask;
   if (mk && mk.non_veg_caught_pct != null) box.append(el("p", {class: "note", text: "Near-real-time files do not say whether a detection is a fire, a volcano or an industrial source. Places that repeatedly showed non-fire heat in the standard record are left out of provisional months. Checked against that same record, this removes " + pct(mk.non_veg_caught_pct) + " of non-fire detections and wrongly removes " + pct(mk.veg_wrongly_masked_pct) + " of fire detections."}));
   if (D.calibration_accepted) box.append(el("p", {class: "note", text: "All of these numbers are for the whole of " + inRegion() + ". None of them were measured for a smaller area chosen on the map."}));
-  if (HAS_INSIDE[D.region.id]) drawMixed(box);
+  if (HAS_INSIDE[D.region.id] && !STATE) drawMixed(box);
+  if (STATE && D.with_national && D.with_national.all_years && a) box.append(el("p", {id: "natfactors", text: "With the national factors instead of its own, " + D.region.name + "'s conversion is off by " + pct(D.with_national.all_years.abs_error_pct_of_total) + " on years left out, against " + pct(a.abs_error_pct_of_total) + " with its own."}));
+  // How much data stands behind each monthly factor.
+  const bm = K.by_month, ft = el("table", {class: "plain", id: "factortable", style: "margin-top:8px"}, el("caption", {class: "sr", text: "The factor for each calendar month and the months of data behind it"}),
+    el("tr", {}, el("th", {scope: "col", text: "Calendar month"}), el("th", {scope: "col", class: "num", text: "Factor"}), el("th", {scope: "col", class: "num", text: "Months of data behind it"}), el("th", {scope: "col", text: "Note"})));
+  Object.keys(bm).forEach(m => ft.append(el("tr", {}, el("th", {scope: "row", text: MONTH_FULL[+m - 1]}), el("td", {class: "num", text: bm[m].k == null ? "none" : bm[m].k}), el("td", {class: "num", text: bm[m].years}),
+    el("td", {text: bm[m].uses_annual_fallback ? "Too few MODIS Aqua detections for its own factor; the whole-year ratio (" + K.annual_k + ") is used" : ""}))));
+  box.append(el("h3", {text: "How much data is behind each factor"}), el("p", {class: "note", text: "Each factor is fitted on one month from each year both satellites have. A month in which MODIS Aqua recorded too few detections over all those years gets no factor of its own (the rule is in the README). Few detections make a factor uncertain however many months there are"
+    + (D.aqua_paired != null ? ": in " + D.region.name + " MODIS Aqua recorded " + fmt(D.aqua_paired) + " counted detections over the " + a.months + " shared months." : ".")}), el("div", {class: "calwrap"}, ft));
 }
 
 // ---------- area of interest ----------
@@ -1388,7 +1547,7 @@ function drawAreaBanner() {
 
 // ---------- URL hash: region, month, map satellite, area ----------
 function readHash() {
-  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor"), at: p.get("at"), view: p.get("view"), report: p.get("report"), record: p.get("record")};
+  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor"), at: p.get("at"), view: p.get("view"), report: p.get("report"), record: p.get("record"), state: p.get("state")};
   const a = (p.get("area") || "").split(",").map(Number);
   if (a.length === 4 && a.every(Number.isFinite)) w.area = {w: a[0], s: a[1], e: a[2], n: a[3]};
   return w;
@@ -1402,6 +1561,7 @@ function wishSel(w) { return w.day ? {day: w.day} : w.month ? {month: w.month} :
 function writeHash() {
   if (!D) return;
   const p = new URLSearchParams({region: D.region.id}), lv = level();
+  if (STATE) p.set("state", STATE.id);
   if (lv === "all") p.set("view", "all");
   if (lv === "year") p.set("year", selYear);
   if (lv === "month") p.set("month", selected);
@@ -1414,8 +1574,9 @@ function writeHash() {
 }
 function applyHash() {
   const w = readHash();
-  if (w.region && w.region !== (D && D.region.id) && [...$("region").options].some(o => o.value === w.region)) { $("region").value = w.region; load(w.region, w); return; }
+  if (w.region && w.region !== (D && D.region.id) && (w.region === "california" || [...$("region").options].some(o => o.value === w.region))) { load(w.region, w); return; }
   if (!D) return;
+  if (D.region.id === "conus" && (w.state || "") !== (STATE ? STATE.id : "") && (!w.state || (ST && ST.states[w.state]))) { load("conus", w); return; }
   { const want = w.record === "viirs" && D.calibration_accepted ? "viirs" : "aqua"; if (want !== recordMode) { recordMode = want; drawCalendar(); } }
   if (w.sensor && w.sensor !== $("sensor").value && [...$("sensor").options].some(o => o.value === w.sensor)) $("sensor").value = w.sensor;
   const then = () => select(startSel(w)).then(() => { goAt(wishAt(w)); const r = wishReport(w); if (r && selDay === r.date && reportKeyOf(r) !== reportKey) openReport(r); });
@@ -1829,11 +1990,14 @@ function drawRegionOnMap() {
   closeCard(); drawnRows = []; if (tbl) hideTable();
   ["mask", "box", "points", "area", "hover", "pick"].forEach(k => layers[k].clearLayers());
   // Outside the region box is dimmed slightly: nothing is shown there.
-  L.polygon([[[-85, -360], [85, -360], [85, 360], [-85, 360]], [[R.s, R.w], [R.n, R.w], [R.n, R.e], [R.s, R.e]]],
-    {stroke: false, fillColor: "#000", fillOpacity: .22, interactive: false}).addTo(layers.mask);
+  // A state is its outline, not its box: everything outside the outline is dimmed more strongly.
+  const rings = STATE ? STATE.rings.map(f => { const r = []; for (let i = 0; i < f.length; i += 2) r.push([f[i + 1], f[i]]); return r; }) : [[[R.s, R.w], [R.n, R.w], [R.n, R.e], [R.s, R.e]]];
+  L.polygon([[[-85, -360], [85, -360], [85, 360], [-85, 360]], ...rings],
+    {stroke: false, fillColor: "#000", fillOpacity: STATE ? .5 : .22, interactive: false}).addTo(layers.mask);
   // A white outline on a dark halo reads on both the satellite basemap and the street map.
-  L.rectangle(regionBounds, {fill: false, color: "#000", opacity: .55, weight: 5, interactive: false}).addTo(layers.box);
-  L.rectangle(regionBounds, {fill: false, color: "#fff", weight: 2, interactive: false}).addTo(layers.box);
+  const outline = o => STATE ? L.polygon(rings.map(r => [r]), o) : L.rectangle(regionBounds, o);
+  outline({fill: false, color: "#000", opacity: .55, weight: 5, interactive: false}).addTo(layers.box);
+  outline({fill: false, color: "#fff", weight: 2, interactive: false}).addTo(layers.box);
   map.fitBounds(regionBounds, {animate: false, paddingTopLeft: [8, 8], paddingBottomRight: [8, 34]});
   { const a = map.latLngToContainerPoint(regionBounds.getNorthWest()), b = map.latLngToContainerPoint(regionBounds.getSouthEast()); boxRect = {l: a.x, t: a.y, r: b.x, b: b.y}; panelCheck = true; }
   syncBasemap();
@@ -1991,6 +2155,7 @@ async function drawMap() {
   let total = 0, cells = 0, areaTotal = 0, areaCells = 0;
   const perStep = MAP_RAMP.map(() => 0), inView = [], steps = MAP_RAMP.map(() => []);
   shown.forEach((n, key) => {
+    if (!cellInState(key)) { shown.delete(key); return; }
     const row = Math.floor(key / 10000), col = key % 10000, v = pick.k ? n / pick.k : n, st = mapStep(v, pick.max);
     shown.set(key, v);
     total += v; cells++;
@@ -2000,13 +2165,14 @@ async function drawMap() {
   });
   cellLayer.setCells(steps);
   shownInfo = {pick, name, when: lv === "month" ? name : lv === "year" ? name + " total" : "total over " + pick.span};
-  const where = area ? "inside the chosen area" : "across " + inRegion();
+  const where = area ? "inside the chosen area" : STATE ? "whose centre is in " + inRegion() : "across " + inRegion();
   const [t, c] = area ? [areaTotal, areaCells] : [total, cells];
   const f = v => pick.k ? fmt1(v) : fmt(v);
   sum.textContent = name + ", " + pick.label + ": " + f(t) + (t === 1 ? " detection in " : " detections in ") + fmt(c) + (c === 1 ? " cell " : " cells ") + where
     + (area ? " (" + f(total) + " in the whole region)" : "")
     + (lv === "all" ? ", summed over " + pick.span + "." : ".")
     + (x && isPartial(x.status) ? " The month is not complete." : "") + (x && baseStatus(x.status) === "provisional_nrt" ? " Provisional data." : "")
+    + (STATE ? " A cell on the border also holds detections from the neighbouring state, so this total can differ a little from the state's own count in the calendar, which goes by each detection's position." : "")
     + " Blank cells mean no detection was recorded, not that nothing burned: when each place could be observed is unknown.";
   if (t === 0) setEmpty(nothing);
   // For totals over a year or more, say how many of the coloured cells are in the faintest step.
@@ -2104,7 +2270,10 @@ const TIMEZONE = {california: "America/Los_Angeles", hawaii: "Pacific/Honolulu",
 // The contiguous United States spans four time zones. Telling which one a point is in needs time-zone boundaries,
 // which this page does not carry, and guessing from longitude would be wrong near every boundary. So that region shows UTC only.
 const NO_LOCAL = "Not shown for this region. It spans four time zones, and this page carries no time-zone boundaries to tell which one a point is in, so times are given in UTC only.";
-function hasLocal() { return TIMEZONE[D.region.id] !== "UTC"; }
+// A state has a local time only when all its towns share one zone (pipeline/states.py, from GeoNames).
+function zoneNow() { return D.region.state ? (D.tz || "UTC") : TIMEZONE[D.region.id]; }
+function hasLocal() { return zoneNow() !== "UTC"; }
+function noLocal() { return D.region.state ? "Not shown for " + D.region.name + ". Its towns do not all share one time zone (GeoNames), and this page carries no time-zone boundaries to tell which one a point is in, so times are given in UTC only." : NO_LOCAL; }
 const PLATFORM = {MODIS_AQUA: "Aqua satellite, MODIS sensor", MODIS_TERRA: "Terra satellite, MODIS sensor", VIIRS_SNPP: "Suomi NPP satellite, VIIRS sensor", VIIRS_NOAA20: "NOAA-20 satellite, VIIRS sensor"};
 const FIRMS_TYPE = {"1": "an active volcano", "2": "another static land source", "3": "an offshore source"};
 // The fields of one row of the hotspot CSV (columns as written by pipeline/export.py).
@@ -2168,7 +2337,7 @@ function closeReport() { reportKey = null; $("report").hidden = true; $("report"
 async function openReport(d) {
   // The report measures from the position as its address gives it (4 decimals), so a reopened report has the same numbers.
   d = Object.assign({}, d, {lat: +d.lat.toFixed(4), lon: +d.lon.toFixed(4)});
-  const box = $("report"), region = D.region.id, zone = TIMEZONE[region], key = reportKeyOf(d);
+  const box = $("report"), region = D.region.id, zone = zoneNow(), key = reportKeyOf(d);
   reportKey = key; writeHash();
   document.body.classList.add("has-report");
   box.hidden = false;
@@ -2191,7 +2360,7 @@ async function openReport(d) {
   kids.push(el("h3", {text: "Where and when"}), el("dl", {class: "card"},
     kv("Place", place),
     kv("Latitude, longitude", pointText(full) + ", or " + dmsText(full.lat, full.lon) + " (centre of a satellite pixel " + pix + " across, larger at the edge of the swath; the fire is somewhere inside it)"),
-    kv("Satellite pass, local time", hasLocal() ? localText(full, zone, true) : NO_LOCAL),
+    kv("Satellite pass, local time", hasLocal() ? localText(full, zone, true) : noLocal()),
     kv("Satellite pass, UTC", utcText(full, true)),
     kv("Seen by", PLATFORM[d.sensor] || d.sensor),
     ...(me ? [kv("Confidence, as given by FIRMS", confidenceText(full.conf)), kv("Fire radiative power", full.frp === "" ? "not given" : full.frp + " MW"), kv("Counted on this page", countedText(full))] : [])));
@@ -2390,7 +2559,7 @@ function placeRow(lat, lon, sensor) {
     el("div", {class: "note", text: "The place is the centre of a satellite pixel about " + (sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not the exact spot of the fire. Towns: GeoNames, CC BY 4.0. Named features: © OpenStreetMap contributors, via Nominatim."})];
 }
 function cardNode(r) {
-  const d = det(r), zone = TIMEZONE[D.region.id], row = (k, ...v) => el("div", {class: "kv"}, el("dt", {text: k}), el("dd", {}, ...v));
+  const d = det(r), zone = zoneNow(), row = (k, ...v) => el("div", {class: "kv"}, el("dt", {text: k}), el("dd", {}, ...v));
   const copy = el("button", {type: "button", class: "linkish", text: "Copy"});
   copy.addEventListener("click", () => {
     const done = ok => { copy.textContent = ok ? "Copied" : "Copy failed: select the numbers"; };
@@ -2399,7 +2568,7 @@ function cardNode(r) {
   const here = el("a", {href: "#" + new URLSearchParams({region: D.region.id, day: d.date, at: d.lat.toFixed(4) + "," + d.lon.toFixed(4)}).toString(), text: "Open this point at zoom 14"});
   return el("div", {class: "card"}, el("h3", {text: "One detection"}), el("dl", {},
     row("Place", ...placeRow(d.lat, d.lon, d.sensor)),
-    row("Satellite pass, local time", hasLocal() ? localText(d, zone, true) : NO_LOCAL),
+    row("Satellite pass, local time", hasLocal() ? localText(d, zone, true) : noLocal()),
     row("Satellite pass, UTC", utcText(d, true)),
     row("Latitude, longitude", el("span", {class: "pt4", text: pointText(d)}), " ", copy, el("br"), el("span", {class: "dms", text: dmsText(d.lat, d.lon)}), el("br"), here),
     row("Seen by", PLATFORM[d.sensor] || d.sensor),
@@ -2428,7 +2597,7 @@ function openCard(r) {
   const target = map.unproject(map.project([r[0], r[1]], z).add(shift), z);
   if (REDUCE) map.setView(target, z, {animate: false}); else map.flyTo(target, z, {duration: .8});
   // The table under the map names the opened detection too.
-  if (tbl) { const d = det(r); $("detplace").hidden = false; fillPlace($("detplace"), d.lat, d.lon, "Opened: " + localText(d, TIMEZONE[D.region.id], true) + ", " + pointText(d) + ". "); }
+  if (tbl) { const d = det(r); $("detplace").hidden = false; fillPlace($("detplace"), d.lat, d.lon, "Opened: " + localText(d, zoneNow(), true) + ", " + pointText(d) + ". "); }
   layers.pick.clearLayers();
   L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#111", weight: 5, fill: false, interactive: false}).addTo(layers.pick);
   L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#f2a900", weight: 3, fill: false, interactive: false}).addTo(layers.pick);
@@ -2454,9 +2623,9 @@ function setTable(mode, rows, title, sum, csvName) {
   drawTable();
 }
 function drawTable() {
-  const sec = $("detsec"), zone = TIMEZONE[D.region.id], local = hasLocal();
+  const sec = $("detsec"), zone = zoneNow(), local = hasLocal();
   sec.hidden = false;
-  $("dettime").textContent = local ? "Local time and UTC are the time of the satellite pass." : "Times are the time of the satellite pass, in UTC. Local time is not shown for this region: it spans four time zones, and this page carries no time-zone boundaries to tell which one a point is in.";
+  $("dettime").textContent = local ? "Local time and UTC are the time of the satellite pass." : "Times are the time of the satellite pass, in UTC. Local time: " + noLocal().charAt(0).toLowerCase() + noLocal().slice(1);
   $("h-det").textContent = tbl.title; $("detsum").textContent = tbl.sum;
   const list = tbl.rows.map(r => ({r, d: det(r)}));
   const frp = x => x.d.frp === "" ? -1 : +x.d.frp, when = x => x.d.date + x.d.time;
@@ -2489,7 +2658,7 @@ function drawTable() {
 }
 function downloadTable() {
   if (!tbl) return;
-  const zone = TIMEZONE[D.region.id], lines = ["acq_date,acq_time,latitude,longitude,sensor,quality,confidence,frp,daynight,type,counted,local_time,time_zone,nearest_town,km_to_nearest_town,direction_from_town,town_is_in"];
+  const zone = zoneNow(), lines = ["acq_date,acq_time,latitude,longitude,sensor,quality,confidence,frp,daynight,type,counted,local_time,time_zone,nearest_town,km_to_nearest_town,direction_from_town,town_is_in"];
   const q = v => '"' + String(v).replace(/"/g, '""') + '"';
   [...tbl.rows].sort((a, b) => (a[5] < b[5] ? -1 : a[5] > b[5] ? 1 : 0)).forEach(r => { const t = nearTown(r[0], r[1]);
     lines.push(r[5] + "," + q(localText(det(r), zone, true)) + "," + zone + "," + (t ? q(t.name) + "," + t.km.toFixed(1) + "," + t.dir + "," + q(t.townAdmin) : ",,,")); });
@@ -2507,7 +2676,7 @@ async function showCellDetections(key, button) {
   const inCell = rows.filter(r => r[3] === pick.s && cellOf(r[0] + 90) === row && cellOf(r[1] + 180) === col), counted = inCell.filter(r => r[2]).length;
   setTable("cell", inCell, "Detections in the cell centred on " + cellName(key) + ", " + monthName(month),
     fmt(inCell.length) + " " + SENSOR[pick.s] + (inCell.length === 1 ? " detection" : " detections") + " in this 0.1° cell in " + monthName(month) + ": " + fmt(counted) + " counted, " + fmt(inCell.length - counted) + " not counted. Select a time to see that detection on the map.",
-    "kahu-ahi_" + D.region.id + "_cell_" + (row / 10 - 90).toFixed(1) + "_" + (col / 10 - 180).toFixed(1) + "_" + month + "_" + pick.s + ".csv");
+    "kahu-ahi_" + D.region.id + (STATE ? "_" + STATE.id : "") + "_cell_" + (row / 10 - 90).toFixed(1) + "_" + (col / 10 - 180).toFixed(1) + "_" + month + "_" + pick.s + ".csv");
   map.closePopup();
   $("detsec").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-det").focus();
 }
@@ -2559,13 +2728,14 @@ async function eachHot(region, year, fn, m0, m1) {
 }
 
 // Load the selected month's hotspot rows: [lat, lon, counted, sensor, day of month, the CSV line]. Year files are sorted by date, so reading stops after the month.
-async function monthRows(key) {
+async function monthRows(key0) {
+  const key = key0 + "/" + (STATE ? STATE.id : "");
   if (pointCache.key === key) return pointCache.rows;
-  const [region, ym] = key.split("/"), rows = [];
+  const [region, ym] = key0.split("/"), rows = [];
   await eachHot(region, ym.slice(0, 4), lines => {
     for (const line of lines) {
       const m = line.slice(0, 7);
-      if (m === ym) { const f = line.split(","); rows.push([+f[2], +f[3], f[10] === "1", f[4], +f[0].slice(8, 10), line]); }
+      if (m === ym) { const f = line.split(","); if (inState(+f[2], +f[3])) rows.push([+f[2], +f[3], f[10] === "1", f[4], +f[0].slice(8, 10), line]); }
       else if (m > ym && m[0] !== "a") return false;   // past the month ("acq_date" is the header)
     }
   }, ym.slice(5), ym.slice(5));
@@ -2591,7 +2761,7 @@ async function drawPoints() {
   if (!pick.s || (day ? !flyingOn(pick.s, selDay) : !pick.flying)) { noTable(); return; }
   let rows;
   try {
-    if (pointCache.key !== D.region.id + "/" + selected) note.textContent = "Loading the detections for " + monthName(selected) + ".";
+    if (pointCache.key !== D.region.id + "/" + selected + "/" + (STATE ? STATE.id : "")) note.textContent = "Loading the detections for " + monthName(selected) + ".";
     rows = await monthRows(D.region.id + "/" + selected);
   } catch (e) { if (token === pointToken) note.textContent = "The detections for this " + (day ? "day" : "month") + " could not be loaded."; return; }
   if (token !== pointToken) return;
@@ -2619,7 +2789,7 @@ async function drawPoints() {
   setTable(day ? "day" : "view", list, day ? "Detections on " + dayName(selDay) : "Detections in this view, " + monthName(selected),
     (list.length ? fmt(list.length) + " " + sat + (list.length === 1 ? " detection" : " detections") + (day ? " on " + dayName(selDay) + " (UTC date) across " + inRegion() : " in the part of the map now in view") + ": " + fmt(nc) + " counted, " + fmt(list.length - nc) + " not counted."
       : "No " + sat + " detection was recorded " + when + (day ? " across " + inRegion() : " in this view") + ". That is not the same as no fire.") + cap + (list.length ? " Select a time to see that detection on the map. The table lists the satellite shown on the map; change it in Layers." : ""),
-    "kahu-ahi_" + D.region.id + "_" + (day ? selDay : selected + "_view") + "_" + pick.s + ".csv");
+    "kahu-ahi_" + D.region.id + (STATE ? "_" + STATE.id : "") + "_" + (day ? selDay : selected + "_view") + "_" + pick.s + ".csv");
   note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view " + when + ". Zoom in to see them all. "
       : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view " + when + ". ") + fmt(counted) + " counted (red squares), " + fmt(drawn - counted) + " not counted (hollow dashed squares: low confidence or a non-fire heat source)."
     : "No " + SENSOR[pick.s] + " detection was recorded in this view " + when + ". That does not mean nothing burned.")
@@ -2671,18 +2841,22 @@ function chosenYears() { const a = +$("y0").value, b = +$("y1").value; return Ob
 function describeDownload() {
   $("dlintro").textContent = area
     ? "Every detection inside the chosen area (" + areaText(area) + "), from all four satellites, with the flag that says whether it was counted above."
+    : STATE ? "Every detection in " + STATE.name + ", from all four satellites, with the flag that says whether it was counted above."
     : "Every detection inside the region, from all four satellites, with the flag that says whether it was counted above.";
   if (!hotIndex) return;
   const ys = chosenYears(), rows = ys.reduce((s, y) => s + hotIndex.years[y].rows, 0);
   $("dlnote").textContent = area
     ? "Only rows inside the chosen area are kept, out of " + fmt(rows) + " in the whole region for these years."
+    : STATE ? "Only rows in " + STATE.name + " are kept, out of " + fmt(rows) + " in the national files for these years. The national files are read in full, which can take a while."
     : fmt(rows) + " detections, about " + Math.max(1, Math.round(rows * 62 / 1e6)) + " MB as a CSV file.";
 }
 // Keep a CSV row when its point falls in a grid cell of the chosen area: the same cells the calendar counts.
 function keepRow(line) {
-  if (!area) return true;
+  if (!area && !STATE) return true;
   const f = line.split(",", 4);
-  return f.length === 4 && inArea(cellOf(+f[2] + 90), cellOf(+f[3] + 180));
+  if (f.length !== 4) return false;
+  if (STATE) return inState(+f[2], +f[3]);
+  return inArea(cellOf(+f[2] + 90), cellOf(+f[3] + 180));
 }
 async function download() {
   const ys = chosenYears(), btn = $("dl"); btn.disabled = true;
@@ -2694,14 +2868,14 @@ async function download() {
       let first = true;
       await eachHot(D.region.id, ys[i], lines => {
         if (first) { if (i === 0) parts.push(lines[0] + "\n"); lines = lines.slice(1); first = false; }
-        const keep = area ? lines.filter(keepRow) : lines;
+        const keep = area || STATE ? lines.filter(keepRow) : lines;
         if (keep.length) { parts.push(keep.join("\n") + "\n"); kept += keep.length; }
       });
     }
-    const tag = area ? "_area_" + [area.w, area.s, area.e, area.n].map(v => v.toFixed(1)).join("_") : "";
+    const tag = STATE ? "_" + STATE.id : area ? "_area_" + [area.w, area.s, area.e, area.n].map(v => v.toFixed(1)).join("_") : "";
     const a = el("a", {href: URL.createObjectURL(new Blob(parts, {type: "text/csv"})), download: "kahu-ahi_" + D.region.id + tag + "_hotspots_" + ys[0] + (ys.length > 1 ? "-" + ys[ys.length - 1] : "") + ".csv"});
     document.body.append(a); a.click(); a.remove();
-    $("dlnote").textContent = "Downloaded " + ys.length + (ys.length > 1 ? " years" : " year") + (area ? ", " + fmt(kept) + " detections inside the chosen area." : ".");
+    $("dlnote").textContent = "Downloaded " + ys.length + (ys.length > 1 ? " years" : " year") + (area ? ", " + fmt(kept) + " detections inside the chosen area." : STATE ? ", " + fmt(kept) + " detections in " + STATE.name + "." : ".");
   } catch (e) {
     $("dlnote").textContent = "The download could not be prepared in this browser. Try a shorter range of years, or a current version of Chrome, Edge, Firefox or Safari.";
   }
@@ -2719,13 +2893,14 @@ function downloadMonthly() {
       x.snpp_eq, x.n20_eq, v && v.period, v && v.e && v.e.abs_error_pct_of_total, v && v.e && v.e.bias_pct, where].map(q).join(",");
   }));
   const a = el("a", {href: URL.createObjectURL(new Blob([lines.join("\n") + "\n"], {type: "text/csv"})),
-    download: "kahu-ahi_" + D.region.id + (area ? "_area_" + where.replace(/ /g, "_") : "") + "_monthly.csv"});
+    download: "kahu-ahi_" + D.region.id + (STATE ? "_" + STATE.id : "") + (area ? "_area_" + where.replace(/ /g, "_") : "") + "_monthly.csv"});
   document.body.append(a); a.click(); a.remove();
 }
 
 // ---------- wiring ----------
 $("dlmonthly").addEventListener("click", () => { if (D) downloadMonthly(); });
 $("region").addEventListener("change", e => load(e.target.value));
+$("state").addEventListener("change", e => openState(e.target.value));
 $("mode").addEventListener("change", () => { if (D) { drawCalendar(); select(curSel()); } });
 $("sensor").addEventListener("change", () => { if (D) select(curSel()); });
 ["toauto", "toauto2"].forEach(id => $(id).addEventListener("click", () => { $("sensor").value = "auto"; if (D) select(curSel()); $("map").focus(); }));
@@ -2751,7 +2926,7 @@ window.addEventListener("hashchange", applyHash);
 setupMap();
 const wish = readHash();
 if (wish.region && [...$("region").options].some(o => o.value === wish.region)) $("region").value = wish.region;
-load($("region").value, wish);
+load(wish.region === "california" ? "california" : $("region").value, wish);
 </script>
 </body>
 </html>
