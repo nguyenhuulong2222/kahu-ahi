@@ -427,5 +427,42 @@
       "sha256_of": "the downloaded .zip",
       "rows": 8850
     }
-  ]
+  ],
+  "gazetteer": {
+    "source": "GeoNames",
+    "source_url": "https://download.geonames.org/export/dump/",
+    "licence": "Creative Commons Attribution 4.0",
+    "extract": "cities500",
+    "files": [
+      {
+        "file": "cities500.zip",
+        "sha256": "4f7cc85d0236ceabcec74692fd36e03e30fe6c7bfca72241528fb7e1710c0320",
+        "bytes": 13927559,
+        "downloaded": "2026-11-15"
+      },
+      {
+        "file": "admin1CodesASCII.txt",
+        "sha256": "2e4867f5397acb056ea26377601b57af37cb4c81399770225018e9e439e91ad3",
+        "bytes": 151571,
+        "downloaded": "2026-11-15"
+      },
+      {
+        "file": "admin2Codes.txt",
+        "sha256": "67492a022984623460aaaec97f4d1d49e74356c8b5730be9fe23e736223b71dc",
+        "bytes": 2371387,
+        "downloaded": "2026-11-15"
+      },
+      {
+        "file": "countryInfo.txt",
+        "sha256": "79f8f59ea01cbb40438bf1856dd6c2ff201f03f8fc72d0530b2646aaf603ef04",
+        "bytes": 32112,
+        "downloaded": "2026-11-15"
+      }
+    ],
+    "places_per_region": {
+      "california": 1524,
+      "hawaii": 254,
+      "vietnam": 1941
+    }
+  }
 }
