@@ -1,4 +1,4 @@
-// Draws the title, challenge and end cards, the caption strips and (with "storyboard") the contact sheet, as PNG files,
+// Draws the title, challenge and end cards, the caption strips (each with the site address in small type at the right) and (with "storyboard") the contact sheet, as PNG files,
 // with the page's own mark (docs/kahu-ahi-mark.svg), colours and font stack. Text only: no photograph, no logo.
 //
 //   node demo/cards.mjs               cards and captions -> demo/build/
@@ -25,8 +25,9 @@ h1{font-size:112px;line-height:1;margin:0;font-weight:700;letter-spacing:-.01em}
 .big{font-size:68px;line-height:1.12;font-weight:700;margin:0 0 54px;white-space:nowrap}
 .quote{font-size:46px;line-height:1.3;max-width:1450px;margin:0 0 22px;border-left:10px solid #8a4b00;background:#fff6e5;padding:26px 36px;text-align:left}
 .addr{font-size:50px;font-weight:700;margin:8px 0}.addr.second{font-weight:600;font-size:42px}
-.cap{width:${W}px;height:${BAND}px;background:#0e1730;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 70px}
-.cap p{margin:0;font-size:${CAPTION_PX}px;line-height:1.22;font-weight:600;text-wrap:balance}`;
+.cap{width:${W}px;height:${BAND}px;background:#0e1730;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 70px 30px}
+.cap{position:relative}.cap .site{position:absolute;right:26px;bottom:6px;line-height:1;font-size:22px;font-weight:600;color:#c9d2e3;letter-spacing:.01em}
+.cap p{margin:0;font-size:${CAPTION_PX}px;line-height:1.16;font-weight:600;text-wrap:balance}`;
 const page_ = body => `<!doctype html><meta charset="utf-8"><style>${CSS}</style>${body}`;
 
 const browser = await chromium.launch();
@@ -55,9 +56,10 @@ if (process.argv[2] === "storyboard") {
     await page.screenshot({path: path.join(BUILD, name + ".png"), clip: {x: 0, y: 0, width: W, height: H}});
   }
   for (const [i, text] of script.captions.entries()) {
-    await page.setContent(page_(`<div class="cap"><p>${esc(text)}</p></div>`));
-    const fit = await page.evaluate(() => { const p = document.querySelector(".cap p"), r = p.getBoundingClientRect(); return {h: r.height, lines: Math.round(r.height / parseFloat(getComputedStyle(p).lineHeight)), px: parseFloat(getComputedStyle(p).fontSize)}; });
-    if (fit.h > BAND - 12 || fit.px < 44) throw new Error("caption " + (i + 1) + " does not fit the band: " + JSON.stringify(fit));
+    await page.setContent(page_(`<div class="cap"><p>${esc(text)}</p><span class="site">${esc(script.site)}</span></div>`));
+    const fit = await page.evaluate(() => { const p = document.querySelector(".cap p"), r = p.getBoundingClientRect(); const site = document.querySelector(".cap .site").getBoundingClientRect(); return {h: r.height, clash: r.bottom > site.top - 1, lines: Math.round(r.height / parseFloat(getComputedStyle(p).lineHeight)), px: parseFloat(getComputedStyle(p).fontSize)}; });
+    if (fit.clash) throw new Error("caption " + (i + 1) + " runs into the site address");
+    if (fit.h > BAND - 30 || fit.px < 44) throw new Error("caption " + (i + 1) + " does not fit the band: " + JSON.stringify(fit));
     await page.screenshot({path: path.join(BUILD, "cap_" + (i + 1) + ".png"), clip: {x: 0, y: 0, width: W, height: BAND}});
     console.log("caption " + (i + 1) + ": " + fit.lines + " line(s) at " + fit.px + " px");
   }

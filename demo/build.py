@@ -7,7 +7,7 @@ Steps, in order (each stops the build when it fails):
   3. voice      silence trimmed, sped up without a pitch change if it is up to 8% too long, loudness normalised;
                 the sentences are found from the pauses and each scene is timed to its sentence
   4. cards      title, challenge and end cards and the caption strips, drawn by the browser (cards.mjs)
-  5. record     the page scenes, recorded with Playwright from the local page (record.mjs)
+  5. record     the page scenes, recorded with Playwright from the local page at 1.5 times its size (record.mjs)
   6. assemble   ffmpeg: 1920x1080, 30 fps, H.264 yuv420p, AAC, faststart; captions burned in below the picture
   7. check      duration, size and loudness measured; one frame a second to demo/frames/; demo/storyboard.png
 
@@ -155,20 +155,6 @@ def served():
         return False
 
 
-def marker_gone(video):
-    """Seconds into a recording at which the magenta square in the corner goes away."""
-    rate = 50
-    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(video), "-vf", f"fps={rate},crop=32:32:16:16,scale=1:1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], capture_output=True).stdout
-    seen = False
-    for i in range(len(raw) // 3):
-        r, g, b = raw[3 * i:3 * i + 3]
-        magenta = r > 180 and g < 90 and b > 180
-        if seen and not magenta:
-            return i / rate
-        seen = seen or magenta
-    sys.exit(f"No marker found in {video}; record that scene again.")
-
-
 def assemble(timing, script):
     S = {s["n"]: s for s in timing["scenes"]}
     total, end_at = timing["total"], timing["end_card_at"]
@@ -188,24 +174,14 @@ def assemble(timing, script):
     n_in = len(inputs) // 8
     labels = []
     for n in SCENES:
-        video, meta = BUILD / f"scene{n}.webm", json.loads((BUILD / f"scene{n}.json").read_text())
+        video, meta = BUILD / f"scene{n}.mp4", json.loads((BUILD / f"scene{n}.json").read_text())
         if meta["console_errors"]:
             sys.exit(f"Scene {n} was recorded with console errors: {meta['console_errors']}")
-        t0 = marker_gone(video)
+        if abs(meta["seconds"] - need[n]) > 0.02:
+            sys.exit(f"Scene {n} was recorded for {meta['seconds']:.2f} s but the voice now needs {need[n]:.2f} s; record it again.")
         inputs.extend(["-i", video])
-        frames, parts, left = round(need[n] * FPS), [], need[n]
-        for a, b in meta["parts"]:
-            if left <= 0:
-                break
-            b = min(b, a + left + 2 / FPS)
-            left -= b - a
-            parts.append((t0 + a, t0 + b))
-        if left > 0.05:
-            sys.exit(f"Scene {n} is {left:.2f} s short; record it again.")
-        chains.append(f"[{n_in}:v]fps={FPS},split={len(parts)}" + "".join(f"[s{n}p{i}]" for i in range(len(parts))))
-        for i, (a, b) in enumerate(parts):
-            chains.append(f"[s{n}p{i}]trim=start={a:.3f}:end={b:.3f},setpts=PTS-STARTPTS[s{n}q{i}]")
-        chains.append("".join(f"[s{n}q{i}]" for i in range(len(parts))) + f"concat=n={len(parts)}:v=1:a=0,tpad=stop_mode=clone:stop_duration=1,trim=end_frame={frames},setpts=PTS-STARTPTS,format=yuv420p[s{n}]")
+        frames = round(need[n] * FPS)
+        chains.append(f"[{n_in}:v]fps={FPS},setsar=1,tpad=stop_mode=clone:stop_duration=1,trim=end_frame={frames},setpts=PTS-STARTPTS,scale=in_range=full:out_range=tv,format=yuv420p[s{n}]")
         labels.append(f"[s{n}]")
         n_in += 1
     inputs.extend(["-i", BUILD / "voice.wav"])

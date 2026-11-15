@@ -14,5 +14,5 @@
     "Every detection has its place, its time, and NASA's image of that day.",
     "When MODIS ends, the record continues."
   ],
-  "scene_state": {"not_harmonized": "NY", "day_state": "CA", "day": "2021-08-18", "play_from": "2021-05"}
+  "scene_state": {"not_harmonized": "NY", "day_state": "CA", "day": "2021-08-18", "play_from": "2021-05", "play_view": [41.5, -113, 5]}
 }
