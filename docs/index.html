@@ -107,7 +107,11 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
 .mapshell{margin-top:6px!important}
 /* Harmonization result: three figures and a small chart, straight under the map. */
-#harm{margin-top:12px;padding:14px 20px}#most{margin-top:12px;padding:14px 20px}#most h2{font-size:1.15rem}
+#harm{margin-top:12px;padding:14px 20px}#most{margin-top:12px;padding:14px 20px}#most h2,#harm h2{font-size:1.15rem}
+/* Wide screens: the harmonization result and the busiest places side by side under the timeline, each in one column inside. */
+.pair2{display:grid;grid-template-columns:minmax(0,1fr);gap:0 16px}
+@media(min-width:1100px){.widewrap{max-width:1400px}.pair2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .pair2 .harmgrid,.pair2 .mostgrid{grid-template-columns:minmax(0,1fr)}.pair2>section:only-child,.pair2>section[hidden]+section{grid-column:1/-1}}
 .harmgrid{display:grid;gap:12px 20px;grid-template-columns:1fr;margin-top:6px}
 @media(min-width:900px){.harmgrid{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}}
 .figs{display:grid;gap:10px 16px;grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
@@ -179,7 +183,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
   body.has-report main{padding:0}body.has-report .wrap{max-width:none;padding:0}
   body.has-report .reporttwo{grid-template-columns:200pt 1fr;gap:0 14pt}
   body.has-report #report .card{max-width:none}
-  body.has-report .pagehead,body.has-report .maplabel,body.has-report .mapshell,body.has-report #monthrow,body.has-report .wrap>section:not(#report),body.has-report .two,body.has-report footer,body.has-report .noprint{display:none!important}
+  body.has-report .pair2,body.has-report #moved,body.has-report .pagehead,body.has-report .maplabel,body.has-report .mapshell,body.has-report #monthrow,body.has-report .wrap>section:not(#report),body.has-report .two,body.has-report footer,body.has-report .noprint{display:none!important}
   body.has-report #report{border:0;margin:0;padding:0}
   body.has-report #report h2{font-size:13pt;margin:0}body.has-report #report h3{font-size:10pt;margin:4pt 0 2pt}
   body.has-report #report p{margin:0 0 3pt;max-width:none}body.has-report #report .note{font-size:8pt}
@@ -353,16 +357,20 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </div>
 </section>
 
-<div class="wrap">
+<div class="wrap widewrap">
   <p class="banner" id="moved" hidden></p>
-  <section id="most" aria-labelledby="h-most" hidden>
-    <h2 id="h-most">Where and when it burned most</h2>
-    <div id="mostbody"></div>
-  </section>
+  <div class="pair2">
   <section id="harm" aria-labelledby="h-harm">
     <h2 id="h-harm">Harmonization result</h2>
     <div id="harmbody"></div>
   </section>
+  <section id="most" aria-labelledby="h-most" hidden>
+    <h2 id="h-most">Where and when it burned most</h2>
+    <div id="mostbody"></div>
+  </section>
+  </div>
+</div>
+<div class="wrap">
   <section id="bystate" aria-labelledby="h-bystate" hidden>
     <h2 id="h-bystate">By state</h2>
     <div id="bystatebody"></div>
@@ -376,7 +384,6 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <p id="mapsum" class="note" aria-live="polite">Loading the map.</p>
     <p class="note" id="mapview" aria-live="polite"></p>
     <p class="note" id="basenote" aria-live="polite"></p>
-    <details id="topcells"><summary>Places with the most detections in this view</summary><div></div></details>
     <div class="howto">
       <h3>How to read this</h3>
       <ul>
@@ -2406,7 +2413,7 @@ async function drawMap() {
     const text = notFlyingText(pick);
     sum.textContent = name + ": " + text;
     setEmpty(text, $("sensor").value !== "auto");
-    layers.points.clearLayers(); drawnRows = []; if (tbl) hideTable(); drawMapLegend(pick); drawTopCells(pick); drawMost(null); viewNote(); return;
+    layers.points.clearLayers(); drawnRows = []; if (tbl) hideTable(); drawMapLegend(pick); drawMost(null); viewNote(); return;
   }
   const nothing = SENSOR[pick.s] + " has data for this period but recorded no detection in " + inRegion() + (lv === "day" ? " on " : " in ") + name + ". That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
   if (lv === "day") {
@@ -2414,7 +2421,7 @@ async function drawMap() {
     sum.textContent = name + ", " + pick.label + ": " + (n == null ? "the daily counts could not be loaded." : fmt(n) + (n === 1 ? " detection" : " detections") + " counted across " + inRegion() + ".")
       + " Each detection is drawn as a square. Places with no square had no detection recorded, which is not the same as no fire.";
     if (n === 0) setEmpty(nothing);
-    drawMapLegend(pick); drawTopCells(pick); viewNote();
+    drawMapLegend(pick); viewNote();
     mostDayRows = null; mostKey = ""; drawMost(null);
     return drawPoints();
   }
@@ -2454,7 +2461,7 @@ async function drawMap() {
   const low = legendSteps(pick.max, !!pick.k)[0];
   cellNote = (lv === "all" || lv === "year") && c > 0 ? {share: Math.round(100 * perStep[MAP_RAMP.indexOf(low.c)] / c), cells: c, range: low.text, half: median(inView), period: lv === "all" ? pick.span : "the whole of " + selYear} : null;
   drawExplain();
-  drawMapLegend(pick); drawTopCells(pick); viewNote();
+  drawMapLegend(pick); viewNote();
   mostKey = ""; drawMost(pick);
   return drawPoints();
 }
@@ -2507,19 +2514,6 @@ function showCell(key, includeEmpty) {
   const below = map.latLngToContainerPoint([s + .1, w]).y < 110;
   L.rectangle([[s, w], [s + .1, w + .1]], {fill: false, color: "#fff", weight: 2, interactive: false})
     .bindTooltip(cellText(key), {permanent: true, direction: below ? "bottom" : "top", offset: [0, below ? 4 : -4], className: "celltip"}).addTo(layers.hover);
-}
-function drawTopCells(pick) {
-  const box = $("topcells").lastElementChild; box.replaceChildren();
-  if (level() === "day") { box.append(el("p", {class: "note", text: "A single day is drawn as individual detections, not as cells. Choose the month to see its cells."})); return; }
-  const list = [...shown].filter(([k]) => inArea(Math.floor(k / 10000), k % 10000)).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  if (!list.length) { box.append(el("p", {class: "note", text: "No cell has a recorded detection" + (area ? " inside the chosen area" : "") + " for this view and satellite. That does not mean nothing burned."})); return; }
-  const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Cell centre (0.1° cell); focus or select to outline it on the map"}), el("th", {class: "num", text: "Detections"})));
-  list.forEach(([k, v]) => {
-    const b = el("button", {type: "button", class: "linkish", text: cellName(k)});
-    b.addEventListener("focus", () => showCell(k, true)); b.addEventListener("click", () => showCell(k, true));
-    t.append(el("tr", {}, el("td", {}, b), el("td", {class: "num", text: pick.k ? fmt1(v) : fmt(v)})));
-  });
-  box.append(t);
 }
 
 function viewNote() {
