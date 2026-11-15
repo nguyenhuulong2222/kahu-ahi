@@ -106,7 +106,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #explain p{font-size:1.08rem;margin:0 0 6px}
 /* one detection: card on the map and table under it */
 .detpop .leaflet-popup-content{margin:10px 12px;font:13px/1.4 var(--font)}
-.card h3{margin:0 0 6px;font-size:1rem}.card .place{margin:0 0 6px}.place .note{font-size:12px}.card dl{margin:0}.card p{margin:0 0 8px}
+.card h3{margin:0 0 6px;font-size:1rem}.card .place{margin:0 0 6px}.place .note,.feature .note,#detplace .note{font-size:12px}.card dl{margin:0}.card p{margin:0 0 8px}
 .card .kv{display:grid;grid-template-columns:42% 1fr;gap:2px 8px;padding:3px 0;border-top:1px solid var(--line)}
 .card dt{color:var(--muted)}.card dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .card .note{margin:6px 0 0;font-size:12px}.card button:not(.linkish){min-height:40px}
@@ -403,7 +403,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </section>
 
   <footer>
-    <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; street map above zoom 8 and the GIBS overlays © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS). Daily satellite images: NASA GIBS and NASA Worldview Snapshots. Place names: <a href="https://nominatim.org">Nominatim</a>, © OpenStreetMap contributors. Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p>
+    <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; street map above zoom 8 and the GIBS overlays © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS). Daily satellite images: NASA GIBS and NASA Worldview Snapshots. Town names: <a href="https://www.geonames.org">GeoNames</a>, CC BY 4.0. Named features: <a href="https://nominatim.org">Nominatim</a>, © OpenStreetMap contributors. Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p>
   </footer>
 </div>
 </main>
@@ -511,6 +511,8 @@ async function load(region, wish) {
   } catch (e) { G = null; }
   if (token !== loadToken) return;
   try { daily = await loadDaily(region); } catch (e) { daily = null; }
+  try { const r = await fetch("data/places/" + region + ".json"); if (!r.ok) throw new Error(r.status); PLACES = await r.json(); } catch (e) { PLACES = null; }
+  nearCacheTown.clear();
   if (token !== loadToken) return;
   area = null; S = regionSeries(); pointsOn = false; applySel({});
   $("through").textContent = "Data through " + D.data_through + ". Detections of presumed vegetation fire, low-confidence ones removed.";
@@ -1780,7 +1782,7 @@ async function openReport(d) {
   const place = el("span"); fillPlace(place, d.lat, d.lon);
   kids.push(el("h3", {text: "Where and when"}), el("dl", {class: "card"},
     kv("Place", place),
-    kv("Latitude, longitude", pointText(full) + " (centre of a satellite pixel " + pix + " across, larger at the edge of the swath)"),
+    kv("Latitude, longitude", pointText(full) + ", or " + dmsText(full.lat, full.lon) + " (centre of a satellite pixel " + pix + " across, larger at the edge of the swath; the fire is somewhere inside it)"),
     kv("Satellite pass, local time", localText(full, zone, true)),
     kv("Satellite pass, UTC", utcText(full, true)),
     kv("Seen by", PLATFORM[d.sensor] || d.sensor),
@@ -1830,7 +1832,7 @@ async function openReport(d) {
   close.addEventListener("click", () => { closeReport(); writeHash(); });
   kids.push(el("p", {class: "note", id: "reportaddr"}, "Address of this report: ", el("a", {href: location.href, text: location.href}), ". The CSV holds every detection within " + REPORT_KM + " km in the " + REPORT_DAYS + " days before and after, from all four satellites."),
     el("div", {class: "areabar noprint"}, print, csv, close),
-    el("p", {class: "note", text: "Fire data: NASA FIRMS. Image: NASA GIBS / Worldview. Place name: © OpenStreetMap contributors, via Nominatim. Kahu Ahi, not endorsed by NASA."}));
+    el("p", {class: "note", text: "Fire data: NASA FIRMS. Image: NASA GIBS / Worldview. Towns: GeoNames, CC BY 4.0. Named features: © OpenStreetMap contributors, via Nominatim. Kahu Ahi, not endorsed by NASA."}));
   box.replaceChildren(...kids);
 }
 
@@ -1842,15 +1844,16 @@ const NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse";
 const PLACE_WAIT_MS = 3000, PLACE_GAP_MS = 1100;
 const placeCache = new Map();
 let placeChain = Promise.resolve(), placeLast = 0;
+// What Nominatim's finest zoom returns near the pixel centre: natural features and parks, a road or track, a hamlet or locality.
+// House numbers, shops and buildings are left out. "" when nothing finer than the county comes back.
+const FEATURE_KEYS = ["natural", "peak", "water", "waterway", "forest", "wood", "nature_reserve", "protected_area", "park", "leisure", "tourism", "landuse",
+  "road", "hamlet", "isolated_dwelling", "locality", "croft", "farm", "village", "neighbourhood", "quarter", "suburb", "city_district", "town"];
 function placeText(j) {
-  const a = (j && j.address) || {}, nd = (j && j.namedetails) || {}, parts = [];
-  const near = a.village || a.town || a.city || a.hamlet || a.municipality || a.suburb || a.neighbourhood || null;
-  // English names; the local name follows in brackets where Nominatim gives one that differs (the nearest place only).
-  const local = near && j.name === near && nd.name && nd.name !== near ? " (" + nd.name + ")" : "";
-  [near && near + local, a.county || a.district || a.city_district, a.state || a.province || a.region, a.country].forEach(v => { if (v && !parts.some(q => q.split(" (")[0] === v)) parts.push(v); });
-  return parts.length ? (near ? "Near " : "In ") + parts.join(", ") : null;
+  const a = (j && j.address) || {}, parts = [];
+  FEATURE_KEYS.forEach(k => { if (a[k] && !parts.includes(a[k]) && parts.length < 3) parts.push(a[k]); });
+  return parts.join("; ");
 }
-// Resolves to a place description, or to null when the lookup fails. Never rejects.
+// Resolves to the named features ("" when there are none), or to null when the lookup fails. Never rejects.
 function placeName(lat, lon) {
   const key = lat.toFixed(4) + "," + lon.toFixed(4);
   if (!NOMINATIM_URL) return Promise.resolve(null);
@@ -1861,7 +1864,7 @@ function placeName(lat, lon) {
       placeLast = Date.now();
       const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 10000);
       try {
-        const r = await fetch(NOMINATIM_URL + "?" + new URLSearchParams({format: "jsonv2", lat: lat.toFixed(5), lon: lon.toFixed(5), zoom: "14", addressdetails: "1", namedetails: "1", "accept-language": "en"}), {signal: stop.signal});
+        const r = await fetch(NOMINATIM_URL + "?" + new URLSearchParams({format: "jsonv2", lat: lat.toFixed(5), lon: lon.toFixed(5), zoom: "18", addressdetails: "1", "accept-language": "en"}), {signal: stop.signal});
         if (!r.ok) throw new Error(r.status);
         return placeText(await r.json());
       } catch (e) { placeCache.delete(key); return null; }
@@ -1871,15 +1874,44 @@ function placeName(lat, lon) {
   }
   return placeCache.get(key);
 }
-// Fill a line with the place name when it arrives. The card never waits for it: after 3 s it says the name is unavailable.
+// ---------- nearest named town, worked out in the browser from the region's GeoNames list (pipeline/places.py) ----------
+let PLACES = null;
+const nearCacheTown = new Map(), COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+// {name, km, dir, text, short} for the populated place nearest to a point, or null without the list. Never needs the network.
+function nearTown(lat, lon) {
+  if (!PLACES || !PLACES.places.length) return null;
+  const key = lat.toFixed(4) + "," + lon.toFixed(4);
+  if (nearCacheTown.has(key)) return nearCacheTown.get(key);
+  const k = Math.cos(lat * Math.PI / 180);
+  let best = null, bd = Infinity;
+  for (const p of PLACES.places) { const dy = p[2] - lat, dx = (p[3] - lon) * k, d = dx * dx + dy * dy; if (d < bd) { bd = d; best = p; } }
+  const km = kmBetween(best[2], best[3], lat, lon), r = Math.PI / 180;
+  // Compass direction from the town to the detection (initial bearing), to the nearest of eight points.
+  const y = Math.sin((lon - best[3]) * r) * Math.cos(lat * r), x = Math.cos(best[2] * r) * Math.sin(lat * r) - Math.sin(best[2] * r) * Math.cos(lat * r) * Math.cos((lon - best[3]) * r);
+  const dir = COMPASS[Math.round(((Math.atan2(y, x) / r + 360) % 360) / 45) % 8];
+  const name = best[0] + (best[1] ? " (" + best[1] + ")" : ""), shown = km < 100 ? Math.round(km) : Math.round(km / 10) * 10;
+  const short = km < 1 ? "In " + best[0] : fmt(shown) + " km " + dir + " of " + best[0];
+  const out = {name: best[0], km, dir: km < 1 ? "" : dir, short, text: (km < 1 ? "In " + name : fmt(shown) + " km " + dir + " of " + name) + (PLACES.admin[best[5]] ? ", " + PLACES.admin[best[5]] : "")};
+  nearCacheTown.set(key, out);
+  return out;
+}
+function dmsText(lat, lon) {
+  const one = (v, pos, neg) => { const a = Math.abs(v); let d = Math.floor(a), m = Math.floor((a - d) * 60), s = Math.round(((a - d) * 60 - m) * 60); if (s === 60) { s = 0; m++; } if (m === 60) { m = 0; d++; } return d + "°" + String(m).padStart(2, "0") + "′" + String(s).padStart(2, "0") + "″" + (v >= 0 ? pos : neg); };
+  return one(lat, "N", "S") + " " + one(lon, "E", "W");
+}
+// The place of a detection in two lines. Line 1, the nearest town, is immediate and never needs the network.
+// Line 2, the nearest named feature, comes from the one Nominatim lookup; after 3 s or on failure it says it is unavailable.
 function fillPlace(node, lat, lon, lead) {
+  const town = nearTown(lat, lon), feature = el("span", {class: "feature", text: " Looking up the nearest named feature."});
+  node.replaceChildren(lead || "", el("strong", {text: town ? town.text : "The list of towns for this region could not be loaded."}),
+    el("span", {class: "note", text: " The place is the centre of the satellite pixel, not the exact spot of the fire. Towns: GeoNames, CC BY 4.0."}), el("br"), feature);
   let done = false;
-  node.textContent = (lead || "") + "Looking up the place name.";
-  const late = setTimeout(() => { if (!done) node.textContent = (lead || "") + "Place name unavailable right now; the coordinates are given instead."; }, PLACE_WAIT_MS);
+  const late = setTimeout(() => { if (!done) feature.textContent = "Nearest named feature unavailable right now."; }, PLACE_WAIT_MS);
   placeName(lat, lon).then(t => {
     done = true; clearTimeout(late);
-    if (!t) { node.textContent = (lead || "") + "Place name unavailable; the coordinates are given instead."; return; }
-    node.replaceChildren(lead || "", el("strong", {text: t}), el("span", {class: "note", text: " This is where the centre of the pixel falls. Place names © OpenStreetMap contributors, via Nominatim."}));
+    if (t === null) feature.textContent = "Nearest named feature unavailable.";
+    else if (!t) feature.replaceChildren();   // nothing finer than the county: line 1 stands alone
+    else feature.replaceChildren("Nearest named feature: ", el("strong", {text: t}), el("span", {class: "note", text: " (© OpenStreetMap contributors, via Nominatim)"}));
   });
 }
 
@@ -1933,7 +1965,7 @@ function cardNode(r) {
   return el("div", {class: "card"}, el("h3", {text: "One detection"}), place, el("dl", {},
     row("Satellite pass, local time", localText(d, zone, true)),
     row("Satellite pass, UTC", utcText(d, true)),
-    row("Latitude, longitude", el("span", {class: "pt4", text: pointText(d)}), " ", copy, el("br"), here),
+    row("Latitude, longitude", el("span", {class: "pt4", text: pointText(d)}), " ", copy, el("br"), el("span", {class: "dms", text: dmsText(d.lat, d.lon)}), el("br"), here),
     row("Seen by", PLATFORM[d.sensor] || d.sensor),
     row("Day or night pass", d.dn === "D" ? "Day" : d.dn === "N" ? "Night" : "not given"),
     row("Confidence, as given by FIRMS", confidenceText(d.conf)),
@@ -1994,11 +2026,11 @@ function drawTable() {
     return el("th", {scope: "col", "aria-sort": tbl.key === key ? (tbl.dir > 0 ? "ascending" : "descending") : "none"}, b);
   };
   const t = $("dettable");
-  t.replaceChildren(el("thead", {}, el("tr", {}, head("Local time", "time"), head("UTC"), head("Latitude"), head("Longitude"), head("Satellite"), head("Confidence"), head("Radiative power (MW)", "frp"), head("Counted"))));
+  t.replaceChildren(el("thead", {}, el("tr", {}, head("Local time", "time"), head("UTC"), head("Latitude"), head("Longitude"), head("Place (nearest town)"), head("Satellite"), head("Confidence"), head("Radiative power (MW)", "frp"), head("Counted"))));
   const body = el("tbody");
   list.slice(0, tbl.limit).forEach(({r, d}) => {
     const b = el("button", {type: "button", class: "linkish", text: localText(d, zone, false), "aria-label": "Show on the map: " + localText(d, zone, true)});
-    const tr = el("tr", {}, el("td", {}, b), el("td", {text: utcText(d, tbl.mode !== "day")}), el("td", {class: "num", text: d.lat.toFixed(4)}), el("td", {class: "num", text: d.lon.toFixed(4)}),
+    const tr = el("tr", {}, el("td", {}, b), el("td", {text: utcText(d, tbl.mode !== "day")}), el("td", {class: "num", text: d.lat.toFixed(4)}), el("td", {class: "num", text: d.lon.toFixed(4)}), el("td", {text: (nearTown(d.lat, d.lon) || {short: "not available"}).short}),
       el("td", {text: SENSOR[d.sensor].replace("VIIRS Suomi NPP", "VIIRS S-NPP")}), el("td", {text: d.conf === "" ? "not given" : d.conf}), el("td", {class: "num", text: d.frp === "" ? "" : d.frp}), el("td", {text: d.counted ? "Yes" : "No: " + whyNotCounted(d).split(":")[0].replace(/^it lies.*/, "static heat source")}));
     if (tbl.on === r[5]) tr.classList.add("on");
     const show = () => { tbl.on = r[5]; body.querySelectorAll("tr.on").forEach(x => x.classList.remove("on")); tr.classList.add("on"); openCard(r, true); };
@@ -2015,8 +2047,10 @@ function drawTable() {
 }
 function downloadTable() {
   if (!tbl) return;
-  const zone = TIMEZONE[D.region.id], lines = ["acq_date,acq_time,latitude,longitude,sensor,quality,confidence,frp,daynight,type,counted,local_time,time_zone"];
-  [...tbl.rows].sort((a, b) => (a[5] < b[5] ? -1 : a[5] > b[5] ? 1 : 0)).forEach(r => lines.push(r[5] + ',"' + localText(det(r), zone, true) + '",' + zone));
+  const zone = TIMEZONE[D.region.id], lines = ["acq_date,acq_time,latitude,longitude,sensor,quality,confidence,frp,daynight,type,counted,local_time,time_zone,nearest_place,distance_km,direction"];
+  const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+  [...tbl.rows].sort((a, b) => (a[5] < b[5] ? -1 : a[5] > b[5] ? 1 : 0)).forEach(r => { const t = nearTown(r[0], r[1]);
+    lines.push(r[5] + "," + q(localText(det(r), zone, true)) + "," + zone + "," + (t ? q(t.name) + "," + t.km.toFixed(1) + "," + t.dir : ",,")); });
   const a = el("a", {href: URL.createObjectURL(new Blob([lines.join("\n") + "\n"], {type: "text/csv"})), download: tbl.csvName});
   document.body.append(a); a.click(); a.remove();
 }
