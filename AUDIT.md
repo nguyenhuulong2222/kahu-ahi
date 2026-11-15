@@ -307,3 +307,27 @@ Found in order: Leaflet, esri-leaflet and esri-leaflet-vector are pinned with in
 - The county estimate near boundaries in the Vietnam region, for the reasons given in B1.
 - Git history for secrets removed in earlier commits.
 - Accessibility with a screen reader.
+
+## Alaska (added 14 Nov 2026, after the audit above)
+
+Alaska was added as a region cut from the US country downloads with the state's Census outline (README, "Alaska").
+`audit/recompute.py` was extended to it: the box, then its own point-in-polygon over `docs/data/alaska_geo.json`
+(the `StateFinder` written for the states, apart from `pipeline/states.py`).
+
+- **Rows.** 1,059,429 rows inside the outline and 262 inside the box but outside it; both equal the numbers in
+  `docs/data/alaska.json`. 654 rows of the download lie at latitude 50° or more and west of 170° W or east of 0°:
+  the part of the state the box leaves out. The region does not cover them and the page says so.
+- **Numbers.** 889 monthly values in `monthly_series.csv`, 889 in `docs/data/alaska.json`, the coefficients, the
+  error tables and the month-to-date figures: 0 differences.
+- **Other regions.** The same run: California test box, Hawaiʻi, Vietnam region, contiguous United States and the
+  49 states, 0 differences. Their files in `data/processed/` and `docs/data/` were not rewritten (sha256 of all 546
+  files before and after: equal).
+- **Territories.** The three downloads hold 15,501,395 rows: 14,077,544 in the lower-48 box, 1,060,345 at latitude
+  50° or more, 363,506 around Hawaiʻi, and none anywhere else. No row is near Puerto Rico and the U.S. Virgin Islands,
+  Guam and the Northern Mariana Islands, or American Samoa. One Hawaiʻi row (26.06° N, 173.96° W, 10 Aug 2019) is in
+  the Northwestern Hawaiian Islands, outside the Hawaiʻi region's box.
+- **Not checked by the audit.** That the satellites' dates for Alaska should be those of the whole download (the
+  rule the states already use) is a choice, not a recomputation: without it the region's last detection (30 Oct 2026)
+  would be read as the end of the data and MODIS Aqua's last (20 Aug 2026) as Aqua having stopped. The audit's own
+  month range is fixed and does not depend on it.
+

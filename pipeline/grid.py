@@ -61,11 +61,11 @@ def cell_index(lat, lon):
     return (math.floor((lat + 90) * CELLS_PER_DEG + 1e-6), math.floor((lon + 180) * CELLS_PER_DEG + 1e-6))
 
 
-def build(bbox, raw_dir, mtd_month, mtd_last_day):
+def build(bbox, raw_dir, mtd_month, mtd_last_day, outline=None):
     """year -> month -> quality -> (row, col) -> [aqua, terra, snpp, n20]; and the same for month-to-date."""
     grid = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [0, 0, 0, 0]))))
     mtd = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [0, 0, 0, 0])))
-    for row, lat, lon, sensor, quality, _, counted in detections(bbox, raw_dir):
+    for row, lat, lon, sensor, quality, _, counted in detections(bbox, raw_dir, outline):
         if not counted or sensor not in SENSORS:
             continue
         date = row["acq_date"].strip()
@@ -211,6 +211,7 @@ def main():
     ap.add_argument("--raw", type=Path, default=Path("data/raw"))
     ap.add_argument("--processed", type=Path, default=None)
     ap.add_argument("--out", type=Path, default=Path("docs/data"))
+    ap.add_argument("--outline", type=Path, default=None, help="outline file from pipeline/outline.py: keep only rows inside it")
     args = ap.parse_args()
     processed = args.processed or Path("data/processed") / args.id
 
@@ -220,7 +221,7 @@ def main():
         first_day, last_day = (int(d) for d in current["days"].split("-"))
         mtd_info = {"month": current["month"], "days": [first_day, last_day]}
     grid, mtd = build(tuple(args.bbox), args.raw, str(int(current["month"][5:])) if current else None,
-                      mtd_info["days"][1] if mtd_info else 0)
+                      mtd_info["days"][1] if mtd_info else 0, args.outline)
 
     problems = check_against_series(grid, processed / "monthly_series.csv")
     if current:

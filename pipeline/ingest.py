@@ -116,8 +116,13 @@ def sha256_of(path):
     return h.hexdigest()
 
 
-def ingest(raw_dir, out_dir, bbox):
+def ingest(raw_dir, out_dir, bbox, outline=None):
     west, south, east, north = bbox
+    inside = outside_outline = None
+    spans = {}   # (sensor, quality) -> [first date, last date] over the whole download, used with an outline
+    if outline:
+        from outline import predicate
+        inside, outside_outline = predicate(outline), 0
     # (date, sensor, quality) -> counters
     n_all = Counter()
     n_veg = Counter()
@@ -181,7 +186,13 @@ def ingest(raw_dir, out_dir, bbox):
                 if sensor is None:
                     entry["rows_skipped"] += 1
                     continue
+                if inside:
+                    sp = spans.setdefault((sensor, entry["quality"]), [date, date])
+                    sp[0], sp[1] = min(sp[0], date), max(sp[1], date)
                 if not (west <= lon <= east and south <= lat <= north):
+                    continue
+                if inside and not inside(lat, lon):
+                    outside_outline += 1
                     continue
                 entry["rows_in_bbox"] += 1
                 key = (date, sensor, entry["quality"])
@@ -217,6 +228,14 @@ def ingest(raw_dir, out_dir, bbox):
     if early_aqua:
         report["problems"].append(f"{len(early_aqua)} day(s) of MODIS_AQUA before {AQUA_FIRST_DATE}: satellite split is wrong")
 
+    rows_in_region = sum(n_all.values())
+    if outline:
+        # A state cut from a country download: the satellites' dates are those of the whole download, as in
+        # pipeline/states.py, so a month in which the state has no detection is a recorded 0, not the end of the data.
+        for (sensor, quality), (first, last) in spans.items():
+            for d in (first, last):
+                n_all[(d, sensor, quality)] += 0
+
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "daily_counts.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -231,6 +250,10 @@ def ingest(raw_dir, out_dir, bbox):
         "non_veg_caught_pct": round(100 * check["non_veg_masked"] / check["non_veg_rows"], 1) if check["non_veg_rows"] else None,
         "veg_wrongly_masked_pct": round(100 * check["veg_masked"] / check["veg_rows"], 1) if check["veg_rows"] else None,
     }
+    if outline:
+        report["outline"] = {"satellite_dates": "a zero row on the first and last date each satellite and quality has in the whole download",
+                             "file": str(outline), "rule": "a row is in the region when it is inside the box and inside a polygon of this file",
+                             "rows_in_region": rows_in_region, "rows_in_box_outside_outline": outside_outline}
     dates = [k[0] for k in n_all]
     report["data_through"] = max(dates) if dates else None
     report["sensors"] = {}
@@ -249,8 +272,11 @@ def main():
     ap.add_argument("--raw", type=Path, default=Path("data/raw"))
     ap.add_argument("--out", type=Path, default=Path("data/processed"))
     ap.add_argument("--bbox", type=float, nargs=4, default=DEFAULT_BBOX, metavar=("W", "S", "E", "N"))
+    ap.add_argument("--outline", type=Path, default=None, help="outline file from pipeline/outline.py: keep only rows inside it")
     args = ap.parse_args()
-    report = ingest(args.raw, args.out, tuple(args.bbox))
+    report = ingest(args.raw, args.out, tuple(args.bbox), args.outline)
+    if args.outline:
+        print(f"outline {args.outline}: {report['outline']['rows_in_region']:,} rows in the region, {report['outline']['rows_in_box_outside_outline']:,} inside the box but outside the outline (not in the region)")
     print(f"data through: {report['data_through']}")
     for name, s in sorted(report["sensors"].items()):
         print(f"  {name:28s} {s['rows']:>10,d} rows  {s['first']} -> {s['last']}")
