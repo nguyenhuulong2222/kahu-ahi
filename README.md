@@ -140,7 +140,7 @@ Months: 174 paired months per region (February 2012 to July 2026, standard data)
 
 ### The United States, state by state
 
-The page's region list is United States, Hawaiʻi and Vietnam region. With United States selected a second list offers "Whole country" and the 48 states and DC. `pipeline/states.py` does the work:
+The page's region list is Contiguous United States, Hawaiʻi and Vietnam region. With Contiguous United States selected a second list offers "Whole country" and the 48 states and DC. `pipeline/states.py` does the work:
 
 - **Boundaries.** US Census Bureau cartographic boundary file for states, 1:5,000,000, 2023 (public domain; source and sha256 in `data/manifest.json` and SOURCES.md). Coordinates are rounded to 4 decimals and written to `docs/data/conus_states_geo.json` (1.3 MB), which both the pipeline and the page read.
 - **Assignment.** Every national detection is given to the state whose outline contains its position (even-odd ray casting; not a bounding box). The page repeats the same test on the same numbers, so a state's table, map squares and CSV hold exactly the detections the pipeline counted for it. Of 14,077,544 detections, 27,962 (0.2%; 2,410 of them counted) fall in no state: offshore, or land the simplified coastline cuts off (for example the Lake Michigan shore of Indiana). They are kept under `outside` in the file and stay in the national numbers. Against the Census 1:500,000 file, 3 of 2,000 sampled detections were assigned differently, all three of this kind.
@@ -300,8 +300,9 @@ The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location
   - *Top areas.* An area is a square of 7 by 7 grid cells (about 77 km) placed where it holds the most detections; the next area is found the same way among the cells that are left, so areas never overlap. Each has its count, its share of the detections on the map, and its first and last day with detections (a month) or first and last month (a year); for all years no dates are given. It is named after the nearest town in the bundled list to where its detections centre, worded as the town's county. The same areas are numbered on the map.
   - *Top days* by counted detections, from the daily counts, each with the area that held most of that day's detections.
   - *One sentence on the season:* the fewest calendar months that together hold at least half of a year's (or all years') detections; for a month, the share of its listed busiest days.
-  - For a single day the list is the top places of that day.
+  - For a single day the list is the areas of that day.
   - **How many are listed.** "Show: 5 | 10 | 20" sets the length of both lists (10 by default for the whole United States, 5 elsewhere; a choice is kept while the page is open). The numbered markers and the preview card's Previous and Next follow it. Under the areas one line gives the share of the period's detections that the listed areas hold together and how many lie outside the list, for example 36.2% for the top 20 areas of the United States in 2021. Markers get smaller as the list grows, and numbers that would overlap at the current zoom are drawn as one marker ("5+3": area 5 and three more) that opens the first of them; zooming in separates them.
+  - **The control never promises what the data cannot give.** A heading says "Top 5 areas" only when there are more than five; otherwise it says what is listed ("All 3 areas with detections in Aug 2021", "The only area with detections on 7 Jan 2024"). A choice that would list exactly what a smaller one lists is switched off and the line beside it says why ("Only 3 areas and 5 days have detections in this period, so 10 or 20 would list the same."); the pressed choice is the smallest one that gives the lists on screen. The same rule holds for the step buttons of the timeline (off at the start and the end of the record, with the reason) and for Previous and Next in the preview card.
   - **Review before anything moves.** Selecting an area or a day in the lists, or a numbered marker on the map, opens a preview card and does nothing else: no zoom, no scroll, no table. For an area the card gives its rank and name, the period, detections and share, first and last day with detections, the busiest day with its count, the highest fire radiative power, the counted detections of each satellite there, and a small bar chart (each day of a month, or each month of a year). For a day it gives the date, its detections, the area with the most that day, and how the day compares with the usual daily average of that calendar month. Only the card's buttons move the page: "Zoom to this area", "List its detections" (opens the table and scrolls to it), "Open the busiest day" (or "Open this day"), and "Close"; Previous and Next step through the five without closing it. The row of the open card is highlighted and so is its marker; pointing at or focusing a row highlights its marker; Esc closes the card and returns focus. On a phone the card is a sheet at the bottom of the screen with the same buttons.
   - The card appears at once with what the grid and the daily counts already give; days, radiative power and the chart come from the hotspot file and fill in after it opens. For a year they are loaded only when the year's files are 12 MB or less (otherwise the card gives months and offers "Open the busiest month"); for all years the card gives counts per satellite only and says that dates need a year or a month. Both lists are tables, so a keyboard and a screen reader reach the same information.
   - Areas and days come from files the view already has (grid, daily counts, places). Dates inside a month and the busiest area of a day need a hotspot file; it is fetched after the first paint with a "Loading" state, never while playing, and not at all when it would exceed 12 MB (the Vietnam region's year files over all years), in which case the row says to select the day.
@@ -310,8 +311,31 @@ The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location
 - **One satellite instead of the harmonized view** is named in a one-line chip beside the Layers button ("VIIRS NOAA-20, as recorded · Back to harmonized"), which can be dismissed. It says more only when a link set the satellite. Changing region or state returns to the harmonized view.
 - **Going straight to a date.** Beside the slider a "Go to" control fits the level: a Year list, a Year and a Month list, or a Date field (a native date input limited to the record's first and last day, so a date can be typed or picked). It drives the same selection as the slider, the calendar and the charts, and pauses play. A date that is not a date, or lies outside the record, gets a sentence beside the control ("The record for this state runs from … to …") and the map stays where it was. The current value stays available as text for screen readers and in the large label shown while playing. On a phone the control has its own row of the timeline; the map keeps its height.
 - **Finding a month or a day.** The timeline has a Days | Months | Years | All years switch. Days goes to the busiest day of the selected month or year, or from All years to the most recent day with data; Months goes to the selected year's first month with data, or from All years to the latest month. When a year is selected, its twelve months are a row of buttons under the map.
-- **Satellite.** The harmonized view is the default. When a link or the Layers panel sets another satellite, the map says so ("Showing VIIRS S-NPP as recorded, not converted") with a button back.
+- **Satellite.** The harmonized view is the default. When a link or the Layers panel sets another satellite, the map says so ("Showing VIIRS Suomi NPP as recorded, not converted") with a button back.
 - **Empty states** are in words on the map, from documented dates rather than from the files: "had not been launched" (with the launch date), "in orbit, but FIRMS has no fire data from it before ...", "no data received yet for this date" after the last row of a download, and "stopped delivering new data" only for Suomi NPP, which FIRMS states. Each is kept apart from "has data for this period but recorded no detection", which is never called no fire. A button leads back to the harmonized view.
+
+### Words the page uses
+
+One name for one thing, on the page, in the CSV files and here. `QA.md` records the pass that checked it.
+
+| Word | Meaning |
+|---|---|
+| Contiguous United States | The 48 states and DC; the name in the region list, the headings and the data file. Alaska and Hawaiʻi are outside it. |
+| Hawaiʻi, Vietnam region | The two other regions. "Vietnam region" is a rectangle that also holds parts of neighbouring countries. |
+| MODIS Aqua, MODIS Terra, VIIRS Suomi NPP, VIIRS NOAA-20 | The four satellites, always written this way on the page. "S-NPP" appears only in this file's method notes and in data field names. |
+| detection | One hot spot in a FIRMS file. Never "fire": one fire gives many detections or none. |
+| counted | A detection that enters the totals: presumed vegetation fire, low confidence removed. The others are "not counted" and drawn hollow. |
+| as recorded | A satellite's own count, not converted. |
+| converted | A VIIRS count divided by the month's factor, so it is on the MODIS Aqua scale. Shown with one decimal. |
+| harmonized | The record on the MODIS Aqua scale: Aqua's own counts, continued by converted VIIRS. |
+| not harmonized | The acceptance rule was not met, so VIIRS is not converted and only MODIS Aqua is shown. |
+| not reliable | The conversion met the acceptance rule, but its error as it is used today is over the same limit. |
+| provisional | Near-real-time data, replaced later by standard data. |
+| cell | A 0.1° square of the map grid. |
+| area | A square of 7 by 7 cells (about 77 km) placed where it holds the most detections; the unit of "Where and when it burned most". |
+| place | A named town from the bundled GeoNames list, used to say where a detection or an area is. |
+
+Numbers: counts with thousands separators (1,263,668); converted values and percentages with one decimal (563.8%, 772.0%); the limit of the acceptance rule as it is defined (50%); dates as 14 Nov 2026, UTC unless a local time is given beside it; exactly one is singular ("1 detection").
 
 ### Map display
 
