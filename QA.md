@@ -484,3 +484,66 @@ Not checked: the same scan in a state view, Alaska, Hawaiʻi or the Vietnam regi
 scan cannot see a grid whose second column is empty, so those were judged from the eight section screenshots in
 `qa/rev3/` only. Console: no errors.
 
+## Eleventh pass: linked views (branch `feat/linked-views`, not on main)
+
+Problem: selecting a month in the calendar changed a chart in another section, off screen; selecting a day changed
+the map, also off screen. No count, factor or data file is changed; the change is in `docs/index.html` only.
+
+What changed
+
+- **Calendar and days together.** The chart of the selected period (days of a month, months of a year, or all
+  years) is now inside the calendar section. At 1100 px and wider it is in the calendar's right column, directly
+  under the selected month's numbers, and that block stays in the window while the calendar scrolls past. Below
+  1100 px the order is calendar, its colour key, the chart, then the month's numbers. There is one chart on the page:
+  "Fire activity over time" now follows the calendar and keeps the trail, the summary sentence, how to read the
+  chart and the daily table. The trail is also above the chart. The record switch moved up beside the calendar's
+  introduction, and the long note about the region's rectangle moved under the calendar.
+- **Where you are.** While the map is scrolled out of view a bar is fixed to the top of the window: region or state,
+  the selected period, the satellite, a locator (the outline of the lower 48, a state or Alaska, or the region box
+  for California, Hawaiʻi and the Vietnam region, with the selection's detections as red dots and a chosen area
+  outlined), the timeline's own previous and next steps, and "Show on map". It goes away when the map is on screen
+  or expanded.
+- **Pulse.** A change of the selected period while the bar is up makes it flash once (0.7 s); under reduced motion
+  nothing animates. The locator and the text change either way.
+- "Show on map", and the cards' "Show on the map", now bring the map exactly to the top of the window.
+
+Checked with Playwright (`qa/lv2.mjs`, screenshots in `qa/linked/`), 5 views x 3 sizes = 15 runs: lower 48,
+California (state), Hawaiʻi, Alaska, Vietnam region at 1440x900, 1024x768 and 390x844. In every run:
+
+| Check | Result |
+|---|---|
+| Bar hidden while the map is on screen | 15 of 15 |
+| Select a month in the calendar: the chart has one bar per day of that month | 15 of 15 (30 or 31 bars) |
+| ... the chart is beside the calendar and wholly in the window, no scrolling | 5 of 5 at 1440; at 1024 and 390 it is under the calendar, as specified, and was not in the window |
+| ... the calendar did not move in the window, map centre and zoom unchanged | 15 of 15 |
+| One chart on the page | 15 of 15 |
+| Select a day in that chart: day in the address, bar marked, calendar and map unmoved | 15 of 15 |
+| ... the bar flashes once and its locator changes | 15 of 15; reduced motion: 0 animations |
+| Bar's next and previous steps: day changes and returns, nothing moves | 15 of 15 |
+| Select a year: 12 bars; "All years" in the trail: 27 bars; nothing moves | 15 of 15 |
+| Bar height: one row (52 px) at 1440 and 1024, two rows (96 px) at 390; no button cut; page not wider than the window | 15 of 15 |
+| Detection card opened from the table while the bar is up: clear of the bar | 15 of 15 |
+| Area card opened from "burned most" while the bar is up: clear of the bar | 10 of 10 at 1024 and 390; at 1440 the map is still on screen there, so there is no bar |
+| "Show on map": map top at 0, bar gone, map view unchanged, focus on the map's heading | 15 of 15 |
+| Console | clean in all 15 |
+
+"Nothing moves" is measured as the position in the window of the thing that was pressed (the calendar, or the list
+for a card), not the page's scroll offset: sections above the calendar change height with the selection (the
+detections table appears for a day) and Chromium keeps what is in view where it is.
+
+Not checked, or known limits
+
+- Safari and Firefox. Safari has no scroll anchoring, so when a section above the calendar changes height there the
+  calendar may shift in the window; this was already so before this branch for the old chart.
+- Below 1100 px the calendar is taller than the window, so a month selected near its top has its chart below the
+  fold; the bar's text, locator and flash are what show the change there.
+- Windows shorter than about 880 px at 1100 px and wider: the month block (numbers and chart, about 565 px) is in
+  view only once the calendar's top is near the top of the window.
+- The locator for California (region), Hawaiʻi and the Vietnam region is the region box, not a coastline: the page
+  has no outline for them. At most 500 dots are drawn, evenly sampled.
+- The flash was confirmed by the running animation, not by eye in a recording.
+- `demo/record.mjs` scene 7 expects the chart inside "Fire activity over time"; it has not been updated for this
+  branch. The submitted video and `main` are untouched.
+- Print, the report view, a chosen area's locator rectangle and the VIIRS-only record with the new layout were not
+  looked at.
+

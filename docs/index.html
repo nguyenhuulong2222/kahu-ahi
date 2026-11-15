@@ -141,12 +141,14 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
   /* Text that stood alone in the left half of a full-width card takes the columns of the block under it. */
   section.drillsec{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0 40px;align-items:start}section.drillsec>h2,section.drillsec>#drill{grid-column:1/-1}section.drillsec>.recordbar{grid-column:1;margin-bottom:0}section.drillsec>.recordbar p{max-width:none}section.drillsec>p.note{grid-column:2;margin:8px 0 0}
   #bystatebody{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:0 20px;align-items:start}#bystatebody>*{grid-column:1/-1}#bystatebody>#statesum{grid-column:1;max-width:none}#bystatebody>p.note{grid-column:2;grid-row:1;max-width:none}
-  #drill{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0 40px;align-items:start}#drill>*{grid-column:2}#drill>.crumbs,#drill>h3,#drill>details{grid-column:1/-1}#drill>.chart{grid-column:1;grid-row:3/span 8}
   /* Calendar: how to read and the colour control, then the calendar with everything about the record and the selected
      month beside it, starting level with the calendar's top. The last row takes any slack, so nothing is spread out. */
-  .calsec{display:grid;grid-template-columns:minmax(0,780px) minmax(0,1fr);grid-template-rows:auto auto auto auto auto auto auto 1fr auto;gap:0 40px;align-items:start}
-  .calsec>*{grid-column:1}#calhow{grid-row:1}#calmode{grid-row:2;margin-bottom:10px}#banner{grid-row:3}#areabanner{grid-row:4}#calbox{grid-row:5/span 4;margin-top:0}.calsec>#legend{grid-row:9}
-  #recordsays,#record2,#calnote,#detail{grid-column:2}#recordsays{grid-row:5}#record2{grid-row:6;margin-top:0}#calnote{grid-row:7}#detail{grid-row:8}
+  .calsec{display:grid;grid-template-columns:minmax(0,780px) minmax(0,1fr);grid-template-rows:auto auto auto auto auto auto 1fr auto auto;gap:0 40px;align-items:start}
+  .calsec>*{grid-column:1}#calhow{grid-row:1}#calmode{grid-row:2;margin-bottom:10px}#banner{grid-row:3}#areabanner{grid-row:4}#calbox{grid-row:5/span 3;margin-top:0}.calsec>#legend{grid-row:8}.calsec>#calnote{grid-row:9;grid-column:1/-1;margin-top:10px}
+  /* Beside the calendar: the record switch, then the selected month's numbers and the chart of the selected period.
+     That block stays in the window while the calendar scrolls past, so a box selected anywhere in it has its days beside it. */
+  .calsec>.calrec,#calnow{grid-column:2}.calsec>.calrec{grid-row:1/span 2}.calrec>#recordsays{margin-top:0}.calrec>#record2{margin:0}
+  #calnow{grid-row:3/span 5;align-self:start;margin-top:10px;position:sticky;top:calc(var(--hb,0px) + 8px);display:flex;flex-direction:column}#calnow>#detail{order:1;margin-top:0;border-top:0;padding-top:0;min-height:0}#calnow>#detail p{margin:0 0 6px}#calnow>#detail td,#calnow>#detail th{padding:2px 12px 2px 0;font-size:.9rem}#calnow>#calchart{order:2;margin-top:6px;border-top:1px solid var(--line);padding-top:4px}
   #compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px;align-items:start}#compare>*{grid-column:1/-1}#compare>p{grid-column:auto}}
 @media(min-width:1100px){.widewrap{max-width:1400px}.pair2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
   .pair2 .harmgrid,.pair2 .mostgrid{grid-template-columns:minmax(0,1fr)}.pair2>section:only-child,.pair2>section[hidden]+section{grid-column:1/-1}}
@@ -271,7 +273,21 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #dettable tbody tr{cursor:pointer}#dettable tbody tr:hover{background:var(--paper)}#dettable tr.on{background:#fff1cc}
 /* charts: years, months, days */
 .crumbs{font-size:.95rem;margin:8px 0}
-#drill h3{font-size:1.05rem;margin:10px 0 0}
+#drill h3,#calchart h3{font-size:1.05rem;margin:10px 0 0}
+#calchart{margin-top:14px}#calchart .plot,#calchart .yaxis{height:120px}#calchart .crumbs{margin:6px 0 0}#calchart p.note{margin:6px 0 0}
+/* Where you are, while the map is out of view: one slim row at the top of the window (two at most on a phone). */
+html{scroll-padding-top:calc(var(--hb,0px) + 8px)}
+#herebar{position:fixed;left:0;right:0;top:0;z-index:1500;display:flex;align-items:center;gap:6px 14px;padding:6px 16px;background:#14213d;color:#fff;font-size:.92rem;line-height:1.25;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+#herebar[hidden]{display:none}
+#hb-loc{flex:none;display:flex}#hb-loc svg{display:block;border-radius:3px;background:#eef1f4}
+#herebar .hb-text{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#herebar .hb-text>span::before{content:" \00b7 ";color:#9fb0cc}
+#herebar .hb-btns{flex:none;display:flex;gap:6px}
+#herebar button{min-height:36px;padding:4px 12px;font-size:.9rem;white-space:nowrap}#herebar button.secondary{background:#fff;color:var(--ink);border-color:#fff}#herebar button:disabled{opacity:.5;cursor:default}
+#herebar #hb-map{background:#ffb000;border-color:#ffb000;color:#14213d}
+@media(max-width:600px){#herebar{flex-wrap:wrap;padding:6px 10px;gap:4px 8px}#herebar .hb-text{flex:1 1 0;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:.85rem}#herebar .hb-btns{flex:1 1 100%}#herebar .hb-btns button{flex:1 1 0;min-height:40px;padding:4px 6px}}
+@media(prefers-reduced-motion:no-preference){#herebar.pulse{animation:hbpulse .7s ease-out 1}}
+@keyframes hbpulse{0%{background:#ffb000;box-shadow:0 0 0 0 rgba(255,176,0,.9)}100%{background:#14213d;box-shadow:0 2px 10px rgba(0,0,0,.35)}}
 .chart{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;margin-top:10px}
 .yaxis{display:flex;flex-direction:column;justify-content:space-between;text-align:right;font-size:.75rem;color:var(--muted);height:190px;font-variant-numeric:tabular-nums}
 .plot{display:flex;align-items:stretch;gap:2px;height:190px;border-left:1px solid var(--muted);border-bottom:1px solid var(--muted);background:linear-gradient(var(--line),var(--line)) 0 0/100% 1px no-repeat,linear-gradient(var(--line),var(--line)) 0 50%/100% 1px no-repeat}
@@ -355,6 +371,11 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 </head>
 <body>
 <main>
+<div id="herebar" role="region" aria-label="What is selected, while the map is out of view" hidden>
+  <span id="hb-loc"></span>
+  <span class="hb-text"><strong id="hb-where"></strong><span id="hb-when"></span><span id="hb-sat"></span></span>
+  <span class="hb-btns"><button type="button" id="hb-prev" class="secondary"></button><button type="button" id="hb-next" class="secondary"></button><button type="button" id="hb-map">Show on map</button></span>
+</div>
 <div class="wrap pagehead">
   <div class="brand"><img class="mark" src="kahu-ahi-mark.svg" alt="" aria-hidden="true" width="42" height="54">
     <div><h1>Kahu Ahi: one fire record across MODIS and VIIRS</h1>
@@ -491,28 +512,31 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <div class="areabar"><button type="button" id="detmore" class="secondary" hidden>Show more</button><button type="button" id="detcsv" class="secondary">Download these rows (CSV)</button></div>
     <p id="detplace" aria-live="polite" style="margin-top:12px" hidden></p>
   </section>
-  <section aria-labelledby="h-drill" class="drillsec">
-    <h2 id="h-drill">Fire activity over time</h2>
-    <div class="recordbar" id="record1"></div>
-    <p class="note">This opens on the days of one month. Select a bar to go down a level; use the trail above the chart to go up to the month, the year or all years. The map, the timeline and the calendar show the same period; the map keeps its view.</p>
-    <div id="drill" aria-live="polite"></div>
-  </section>
-
   <section aria-labelledby="h-cal">
     <h2 id="h-cal">The full record, month by month</h2>
     <div class="calsec">
-    <p id="calhow">How to read it: each row is a year and each box is a month. The number in a box is that month's fire detections on the MODIS Aqua scale; a brighter box means more. Select a box to show that month on the map (the map keeps its view), or a year to see the whole year.</p>
+    <p id="calhow">How to read it: each row is a year and each box is a month. The number in a box is that month's fire detections on the MODIS Aqua scale; a brighter box means more. Select a box to show that month on the map (the map keeps its view) and its days in the chart beside the calendar, or a year to see the whole year.</p>
     <div class="controls" id="calmode" style="margin-top:8px;margin-bottom:10px"><div><label for="mode">Colour shows</label>
       <select id="mode"><option value="count">Fire detections</option><option value="anom">Compared with the usual for that month</option></select></div></div>
-    <p id="recordsays"></p>
-    <div class="recordbar" id="record2"></div>
-    <p class="note" id="calnote"></p>
+    <div class="calrec"><p id="recordsays"></p>
+    <div class="recordbar" id="record2"></div></div>
     <div id="banner"></div>
     <div id="areabanner"></div>
     <div class="calwrap" id="calbox"><table class="cal" id="cal"></table></div>
     <div class="legend" id="legend"></div>
-    <div id="detail" aria-live="polite"><p class="note">Select a month to see what each satellite recorded.</p></div>
+    <div class="calnow" id="calnow">
+      <div id="calchart"></div>
+      <div id="detail" aria-live="polite"><p class="note">Select a month to see what each satellite recorded.</p></div>
     </div>
+    <p class="note" id="calnote"></p>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-drill" class="drillsec">
+    <h2 id="h-drill">Fire activity over time</h2>
+    <div class="recordbar" id="record1"></div>
+    <p class="note">The chart of the selected period is beside the calendar above (under it on a narrow screen). Select a bar there to go down a level; use the trail to go up to the month, the year or all years. The map, the timeline and the calendar show the same period; the map keeps its view.</p>
+    <div id="drill" aria-live="polite"></div>
   </section>
 
   <div class="two">
@@ -1195,16 +1219,20 @@ function barChart(title, bars) {
 function drawDrill() { withRecord(drawDrillIn); }
 function drawDrillIn() {
   const box = $("drill"), lv = level(), ys = yearStats(), cs = completeSpan(ys);
-  // breadcrumb
-  const crumbs = el("nav", {class: "crumbs", "aria-label": "Time level"}), link = (text, sel, here) => {
-    if (crumbs.childNodes.length) crumbs.append(el("span", {"aria-hidden": "true", text: " › "}));
-    if (here) crumbs.append(el("strong", {"aria-current": "true", text: text}));
-    else { const b = el("button", {type: "button", class: "linkish", text: text}); b.addEventListener("click", () => select(sel)); crumbs.append(b); }
+  // The trail of levels: once above the summary and table, once above the chart beside the calendar.
+  const trail = label => {
+    const crumbs = el("nav", {class: "crumbs", "aria-label": label}), link = (text, sel, here) => {
+      if (crumbs.childNodes.length) crumbs.append(el("span", {"aria-hidden": "true", text: " › "}));
+      if (here) crumbs.append(el("strong", {"aria-current": "true", text: text}));
+      else { const b = el("button", {type: "button", class: "linkish", text: text}); b.addEventListener("click", () => select(sel)); crumbs.append(b); }
+    };
+    link("All years", {}, lv === "all");
+    if (selYear) link(selYear, {year: selYear}, lv === "year");
+    if (selected) link(MONTHS[+selected.slice(5) - 1], {month: selected}, lv === "month");
+    if (selDay) link(+selDay.slice(8) + " " + MONTHS[+selDay.slice(5, 7) - 1], {day: selDay}, true);
+    return crumbs;
   };
-  link("All years", {}, lv === "all");
-  if (selYear) link(selYear, {year: selYear}, lv === "year");
-  if (selected) link(MONTHS[+selected.slice(5) - 1], {month: selected}, lv === "month");
-  if (selDay) link(+selDay.slice(8) + " " + MONTHS[+selDay.slice(5, 7) - 1], {day: selDay}, true);
+  const crumbs = trail("Time level");
   const kids = [crumbs], where = D.region.name + (area ? ", chosen area" : "");
   let sum = "", unit = "";
   if (lv === "all") {
@@ -1258,9 +1286,14 @@ function drawDrillIn() {
       kids.push(el("details", {}, el("summary", {text: "Table: what each satellite recorded each day"}), el("div", {class: "calwrap"}, t)));
     }
   }
-  kids.splice(lv === "month" || lv === "day" ? kids.length - (kids[kids.length - 1].tagName === "DETAILS" ? 1 : 0) : kids.length, 0,
-    el("p", {class: "note", id: "drillvalue", text: "Point at a bar, or move to it with the Tab key, to read its value."}), el("p", {class: "note", text: unit}), el("p", {id: "drillsum", text: sum}));
-  box.replaceChildren(...kids);
+  // The chart goes beside the calendar (under it on a narrow screen), with its trail, its readout and how to read it.
+  // "Fire activity over time" keeps the trail, the summary and the table: there is one chart on the page, not two.
+  const table = kids[kids.length - 1].tagName === "DETAILS" ? kids.pop() : null, side = kids.slice(1), drawn = side.some(k => k.classList.contains("chart"));
+  // The region is in the section's heading, so the chart's own heading says only what the bars are.
+  if (side[0] && side[0].tagName === "H3") side[0].textContent = lv === "all" ? "Detections each year" : lv === "year" ? "Detections each month of " + selYear : "Detections each day of " + monthName(selected) + (area ? " (whole region)" : "");
+  $("calchart").replaceChildren(trail("Time level, above the chart"), ...side,
+    ...(drawn ? [el("p", {class: "note", id: "drillvalue", text: "Point at a bar, or move to it with the Tab key, to read its value."})] : []));
+  box.replaceChildren(crumbs, el("p", {id: "drillsum", text: sum}), ...(drawn ? [el("p", {class: "note", text: "How to read the chart. " + unit})] : []), ...(table ? [table] : []));
 }
 
 // ---------- calendar ----------
@@ -2771,7 +2804,9 @@ function notFlyingText(pick) {
   return noDataWhy(pick.s, start, end);
 }
 
-async function drawMap() {
+// Every draw of the map ends by bringing the "where you are" bar up to date.
+function drawMap() { return drawMapIn().then(r => { drawHere(); return r; }, e => { drawHere(); throw e; }); }
+async function drawMapIn() {
   if (!map || !D) return;
   const token = ++drawToken, sum = $("mapsum"), lv = level();
   cellLayer.setCells([]); layers.hover.clearLayers(); shown = new Map(); shownInfo = null; setEmpty(null); cellNote = null;
@@ -2803,6 +2838,7 @@ async function drawMap() {
     }
   } catch (e) { if (token === drawToken) sum.textContent = "The map data for " + name + " could not be loaded."; return; }
   if (token !== drawToken) return;
+  herePick = pick;
   map.getPane("cells").style.opacity = pointsOn || lv === "day" ? 0 : 1;
   if (!pick.flying) {
     const text = notFlyingText(pick);
@@ -2862,6 +2898,82 @@ async function drawMap() {
   mostKey = ""; drawMost(pick);
   return drawPoints();
 }
+
+// ---------- where you are, while the map is out of view ----------
+// A slim bar at the top of the window: the region or state, the selected period and satellite, a small locator of what
+// is selected, the steps of the current level and the way back to the map. It is there only while the map is scrolled
+// out of view, and it moves nothing itself: the steps change the selection, "Show on map" scrolls to the map.
+let herePick = null, hereKey = "", hereShown = false;
+const HERE_OUTLINE = {};
+// The outline of the region or state as one SVG path in a w by h box, thinned to what a locator this small can show.
+function hereOutline(R, w, h) {
+  const key = D.region.id + "/" + (STATE ? STATE.id : "") + "/" + w + "x" + h;
+  if (key in HERE_OUTLINE) return HERE_OUTLINE[key];
+  const rings = STATE ? STATE.rings : REGION_RINGS ? REGION_RINGS : D.region.id === "conus" && GEO ? GEO.states.flatMap(g => g.rings) : null;
+  if (!rings) return HERE_OUTLINE[key] = "";
+  const X = lon => (lon - R.w) / (R.e - R.w) * w, Y = lat => (R.n - lat) / (R.n - R.s) * h;
+  let d = "";
+  for (const f of rings) {
+    const n = f.length / 2, step = Math.max(1, Math.floor(n / 60));
+    let part = "", px = null, py = null, pts = 0;
+    for (let i = 0; i < n; i += step) {
+      const x = Math.min(w, Math.max(0, X(f[2 * i]))), y = Math.min(h, Math.max(0, Y(f[2 * i + 1])));
+      if (px !== null && Math.abs(x - px) < .6 && Math.abs(y - py) < .6) continue;
+      part += (pts ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1); px = x; py = y; pts++;
+    }
+    if (pts >= 3) d += part + "Z";
+  }
+  return HERE_OUTLINE[key] = d;
+}
+function drawHere() {
+  if (!D) return;
+  const lv = level(), pick = herePick || {}, R = regionBox();
+  $("hb-where").textContent = D.region.name + (area ? ", chosen area" : "");
+  $("hb-when").textContent = selLabel();
+  const sat = pick.s ? SENSOR[pick.s] + (pick.k ? ", corrected to the MODIS Aqua scale" : "") : "no satellite in this record";
+  $("hb-sat").textContent = pick.s ? SENSOR[pick.s] + (pick.k ? " (corrected)" : "") : "no satellite"; $("hb-sat").title = sat;
+  // The steps are the timeline's own, with its words and its limits.
+  [["hb-prev", "tl-pm", "‹ "], ["hb-next", "tl-nm", ""]].forEach(([id, from, lead]) => {
+    const b = $(id), t = $(from), w = t.querySelector(".tl-word").textContent;
+    b.textContent = id === "hb-prev" ? "‹ " + w : w + " ›"; b.disabled = t.disabled; b.title = t.title; b.setAttribute("aria-label", t.getAttribute("aria-label"));
+  });
+  // Locator: the region box, its outline where the page has one, and what is selected inside it.
+  const k = Math.cos((R.s + R.n) / 2 * Math.PI / 180), ratio = (R.n - R.s) / ((R.e - R.w) * k), h = 36, w = Math.max(24, Math.min(84, Math.round(h / ratio)));
+  const X = lon => (lon - R.w) / (R.e - R.w) * w, Y = lat => (R.n - lat) / (R.n - R.s) * h, inside = (x, y) => x >= 0 && x <= w && y >= 0 && y <= h;
+  let pts = [];
+  if (pick.flying !== false) {
+    if (lv === "day") (mostDayRows || []).forEach(r => pts.push([X(r[1]), Y(r[0])]));
+    else shown.forEach((v, key) => { const row = Math.floor(key / 10000), col = key % 10000; if (inArea(row, col)) pts.push([X(col / 10 - 180 + .05), Y(row / 10 - 90 + .05)]); });
+  }
+  const n = pts.length, cap = 500, stride = Math.max(1, Math.ceil(n / cap));
+  let dots = "";
+  for (let i = 0; i < n; i += stride) { const [x, y] = pts[i]; if (inside(x, y)) dots += "M" + (x - .9).toFixed(1) + " " + (y - .9).toFixed(1) + "h1.8v1.8h-1.8z"; }
+  const outline = hereOutline(R, w, h);
+  const box = area ? '<rect x="' + X(area.w).toFixed(1) + '" y="' + Y(area.n).toFixed(1) + '" width="' + Math.max(2, X(area.e) - X(area.w)).toFixed(1) + '" height="' + Math.max(2, Y(area.s) - Y(area.n)).toFixed(1) + '" fill="none" stroke="#14213d" stroke-width="1.5"/>' : "";
+  const what = n ? (lv === "day" ? fmt(n) + (n === 1 ? " detection" : " detections") + " on " + selLabel() : fmt(n) + (n === 1 ? " grid cell" : " grid cells") + " with a detection in " + selLabel()) : "no detection recorded in " + selLabel() + ", which is not the same as no fire";
+  $("hb-loc").innerHTML = '<svg width="' + (w + 4) + '" height="' + (h + 4) + '" viewBox="-2 -2 ' + (w + 4) + " " + (h + 4) + '" role="img" aria-label="Locator: ' + D.region.name.replace(/"/g, "") + (area ? ", the chosen area outlined" : "") + ", " + what + '">'
+    + (outline ? '<path d="' + outline + '" fill="#fff" stroke="#55627a" stroke-width=".6" fill-rule="evenodd"/>' : '<rect x="0" y="0" width="' + w + '" height="' + h + '" fill="#fff" stroke="#55627a" stroke-width="1"/>')
+    + (dots ? '<path d="' + dots + '" fill="#e31a1c"/>' : "") + box + "</svg>";
+  $("hb-loc").title = what.charAt(0).toUpperCase() + what.slice(1);
+  // A change of period while the bar is up makes it pulse once, so the reader sees that something changed.
+  const key = D.region.id + "/" + (STATE ? STATE.id : "") + "/" + (selDay || selected || selYear || "all");
+  if (hereShown && hereKey && key !== hereKey) { const b = $("herebar"); b.classList.remove("pulse"); void b.offsetWidth; b.classList.add("pulse"); }
+  hereKey = key;
+}
+function placeHere() {
+  const shell = $("mapshell"), bar = $("herebar"), full = shell.classList.contains("is-full") || !!document.fullscreenElement;
+  const on = !!D && !!map && !full && shell.getBoundingClientRect().bottom <= 0;
+  if (on !== hereShown) { hereShown = on; bar.hidden = !on; bar.classList.remove("pulse"); }
+  document.documentElement.style.setProperty("--hb", on ? bar.offsetHeight + "px" : "0px");
+}
+{ let wait = 0; const later = () => { if (wait) return; wait = requestAnimationFrame(() => { wait = 0; placeHere(); }); }; addEventListener("scroll", later, {passive: true}); addEventListener("resize", later); }
+$("hb-prev").addEventListener("click", () => $("tl-pm").click());
+$("hb-next").addEventListener("click", () => $("tl-nm").click());
+$("hb-map").addEventListener("click", () => {
+  scrollToMap();
+  // The bar goes away once the map is in view, so focus moves to the map's heading rather than being lost with the button.
+  const head = $("h-map"); head.setAttribute("tabindex", "-1"); head.focus({preventScroll: true});
+});
 
 function drawMapLegend(pick) {
   const lg = $("maplegend"); lg.replaceChildren();
@@ -3277,6 +3389,8 @@ let prevView = null;
 // the map. Opening a detection rings it where it is and shows its card. "Zoom in here" (or "Show on the map" when the
 // point is outside the view) moves the map, and then offers the way back.
 let cardRelabel = null;
+// Bring the map to the top of the window. Not scrollIntoView: that would stop short by the height of the bar, which goes away.
+function scrollToMap() { scrollTo({top: Math.round($("mapshell").getBoundingClientRect().top + scrollY), behavior: REDUCE ? "auto" : "smooth"}); }
 function mapOnScreen() { const m = $("map").getBoundingClientRect(); return m.bottom > 160 && m.top < innerHeight - 160; }
 function moveMap(center, zoom) { if (REDUCE) map.setView(center, zoom, {animate: false}); else map.flyTo(center, zoom, {duration: .8}); }
 function openCard(r) {
@@ -3301,7 +3415,7 @@ function openCard(r) {
       const z = Math.max(11, map.getZoom()), shift = sheet.classList.contains("floating") ? [0, 0] : [(sheet.offsetWidth + 20) / 2, 0];
       moveMap(map.unproject(map.project(at, z).add(shift), z), z);
     }
-    if (!mapOnScreen()) shell.scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"});
+    if (!mapOnScreen()) scrollToMap();
     label();
   });
   sheet.replaceChildren(el("div", {class: "sheetbar"}, go, rep, x), where, cardNode(r));
