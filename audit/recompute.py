@@ -44,7 +44,8 @@ ASSUMPTIONS = [
     "Sensor from the file: MODIS rows by the `satellite` column (README says `satellite = A`/`T`; the files say Aqua/Terra, both accepted); "
     "VIIRS S-NPP from the SV-C2 download, NOAA-20 from the J1V-C2 download.",
     "Standard = the fire_archive_* member, near-real-time = the fire_nrt_* member of each zip.",
-    "Mask cell = (floor(lat/0.02), floor(lon/0.02)). README gives the cell size and the threshold (3) but not the origin or rounding.",
+    "Mask cell = (int((lat + 90) / 0.02), int((lon + 180) / 0.02)), as README states since the audit's fixes (the first audit assumed floor(lat / 0.02) and differed by one detection in three months).",
+    "As used: NOAA-20 standard against Aqua standard, April 2018 to July 2026; each year predicted from coefficients fitted without it, with the Suomi NPP coefficients and with NOAA-20's own; NOAA-20's own are adopted when their error (to one decimal, as published) is lower; near-real-time months are those where NOAA-20 is near-real-time and complete (README, 'The conversion as it is used').",
     "Mask counts every archive row with type 1, 2 or 3, any sensor, any confidence, anywhere in the files of that raw folder "
     "(README: 'built from every file in data/raw/'; it does not say whether low-confidence rows count).",
     "Low confidence: MODIS confidence < 30 (numeric), VIIRS confidence 'l' (README).",
@@ -88,7 +89,8 @@ def low_conf(sensor, conf):
 
 
 def cell(lat, lon):
-    return (math.floor(lat / 0.02), math.floor(lon / 0.02))
+    # README now states the rule (it did not at the first audit, when floor(lat / 0.02) was assumed).
+    return (int((lat + 90) / 0.02), int((lon + 180) / 0.02))
 
 
 def read_set(spec):
@@ -251,6 +253,25 @@ def analyse(S, region, mask, label="main"):
     fwd_k, fwd_a, _, _ = fit([p for p in pairs if p[0] <= 2018])
     def fwd(lo, hi):
         return err([(d, n / (fwd_k[m] if fwd_k[m] is not None else fwd_a)) for y, m, n, d in pairs if lo <= y <= hi])
+    # the conversion as used (README, "The conversion as it is used")
+    n20_aqua = [(int(m[:4]), int(m[5:]), val("noaa20", m), val("aqua", m)) for m in month_range(N20_FIRST, LAST)]
+    def cross(train, test):
+        rows = []
+        for year in sorted({p[0] for p in test}):
+            kk, aa, _, _ = fit([p for p in train if p[0] != year])
+            for yy, mm, n, d in test:
+                if yy == year:
+                    c = kk[mm] if kk[mm] is not None else aa
+                    if c:
+                        rows.append((yy, mm, d, n / c))
+        return rows
+    def periods(rows):
+        return {"all_years": err([(o, p) for _, _, o, p in rows]), f"before_{SPLIT}": err([(o, p) for y_, _, o, p in rows if y_ < SPLIT]),
+                f"{SPLIT}_onward": err([(o, p) for y_, _, o, p in rows if y_ >= SPLIT])}
+    used_snpp, used_own = periods(cross(pairs, n20_aqua)), periods(cross(n20_aqua, n20_aqua))
+    own_k, own_annual, _, _ = fit(n20_aqua)
+    adopt = used_own["all_years"]["abs_error_pct_of_total"] < used_snpp["all_years"]["abs_error_pct_of_total"]
+    kn, an = (own_k, own_annual) if adopt else (k, annual)
     # month to date
     last = S["last_date"]
     y, mo, dd = int(last[:4]), int(last[5:7]), int(last[8:]) - 1
@@ -258,7 +279,7 @@ def analyse(S, region, mask, label="main"):
     def mtd(sensor, year, quality):
         return sum(days[(sensor, f"{year}-{mo:02d}-{d:02d}")][quality] for d in range(1, dd + 1))
     base = [mtd("aqua", yy, "standard") for yy in range(2002, y)]
-    kc = k[mo] if k[mo] is not None else annual
+    kc = kn[mo] if kn[mo] is not None else an
     raw_n20 = mtd("noaa20", y, "nrt")
     aqua_now = mtd("aqua", y, "nrt")
     # The conversion as it is actually used: NOAA-20 near-real-time / k(m) against Aqua near-real-time, complete NRT months
@@ -266,10 +287,10 @@ def analyse(S, region, mask, label="main"):
     for m in month_range("2026-08", cur):
         if m == cur:
             continue
-        a, n = val("aqua", m, "nrt"), val("noaa20", m, "nrt")
-        if (m in present[("aqua", "nrt")]) and (m in present[("noaa20", "nrt")]):
-            c = k[int(m[5:])] or annual
-            used.append({"month": m, "aqua_nrt": a, "noaa20_nrt": n, "noaa20_on_aqua_scale": round(n / c, 1) if c else None,
+        a, n = val("aqua", m, "nrt") + val("aqua", m, "standard"), val("noaa20", m, "nrt")
+        if m in present[("noaa20", "nrt")]:
+            c = kn[int(m[5:])] or an
+            used.append({"month": m, "aqua_nrt": a, "noaa20_nrt": n, "noaa20_on_aqua_scale": round(n / c, 1) if c else None, "noaa20_on_aqua_scale_unrounded": n / c if c else None,
                          "pct_diff": round(100 * (n / c - a) / a, 1) if a and c else None})
     return {
         "label": label, "data_through": last,
@@ -285,7 +306,12 @@ def analyse(S, region, mask, label="main"):
                           "noaa20_on_aqua_scale": round(raw_n20 / kc, 1) if kc else None, "k_used": round(kc, 3) if kc else None,
                           "baseline_years": len(base), "baseline_median": median(base), "baseline_min": min(base), "baseline_max": max(base),
                           "years_below_current": sum(1 for b in base if kc and b < raw_n20 / kc)},
+        "calibration_would_be_accepted": bool(L["monthly_k"]["all_years"]["abs_error_pct_of_total"] <= 50 and sum(1 for v in k.values() if v is not None) >= 9),
         "conversion_as_used_nrt_months": used,
+        "as_used": {"paired_months": len(n20_aqua), "with_snpp_coefficients": used_snpp, "with_noaa20_coefficients": used_own,
+                    "adopted": "noaa20_coefficients" if adopt else "snpp_coefficients",
+                    "noaa20_k_by_month": {m: (round(own_k[m], 3) if own_k[m] is not None else None) for m in own_k},
+                    "nrt_error": err([(u["aqua_nrt"], u["noaa20_on_aqua_scale_unrounded"]) for u in used]) if used else None},
         "nrt_rows_not_low_confidence": {s: v[0] for s, v in dropped.items()}, "nrt_rows_masked": {s: v[1] for s, v in dropped.items()},
         "_months": months, "_days": days, "_present": present, "_pairs": pairs,
     }
@@ -377,6 +403,24 @@ def compare(region, A, diffs):
         if their_key == "years_below_current" and cm.get("value_aqua_equiv") is None:
             continue
         note(f"month to date {mine_key}", mt[mine_key], theirs, "calibration.json")
+    au, mine_u = cal.get("as_used"), A["as_used"]
+    if au:
+        st = au["noaa20_standard"]
+        note("as used: paired months", mine_u["paired_months"], st["paired_months"], "calibration.json")
+        note("as used: adopted", mine_u["adopted"], st["adopted"], "calibration.json")
+        for which in ("with_snpp_coefficients", "with_noaa20_coefficients"):
+            for period in ("all_years", f"before_{SPLIT}", f"{SPLIT}_onward"):
+                for f_ in ("months", "abs_error_pct_of_total", "bias_pct"):
+                    note(f"as used: NOAA-20 standard {which} {period} {f_}", mine_u[which][period][f_], st[which][period][f_], "calibration.json")
+        for m in range(1, 13):
+            note(f"as used: NOAA-20 own k({m})", mine_u["noaa20_k_by_month"][m], st["noaa20_coefficients"]["by_month"][str(m)]["k"], "calibration.json")
+        theirs = {x["month"]: x for x in au["noaa20_nrt"]["months"]}
+        for u in A["conversion_as_used_nrt_months"]:
+            t_ = theirs.get(u["month"])
+            note(f"as used: near-real-time {u['month']} predicted", u["noaa20_on_aqua_scale"], t_ and t_["predicted"], "calibration.json")
+            note(f"as used: near-real-time {u['month']} Aqua", u["aqua_nrt"], t_ and t_["aqua"], "calibration.json")
+        if mine_u["nrt_error"] and au["noaa20_nrt"]["error"] and A["calibration_would_be_accepted"]:
+            note("as used: near-real-time error", mine_u["nrt_error"]["abs_error_pct_of_total"], au["noaa20_nrt"]["error"]["abs_error_pct_of_total"], "calibration.json")
     note("calibration accepted", bool(A["loyo"]["monthly_k"]["all_years"]["abs_error_pct_of_total"] <= 50 and A["months_with_own_k"] >= 9), cal["calibration_accepted"], "calibration.json")
     # the page's copy
     web = json.loads((ROOT / "docs/data" / f"{region}.json").read_text(encoding="utf-8"))

@@ -3,7 +3,8 @@
   "A point is inside a region when west <= lon <= east and south <= lat <= north (README gives the box, not whether edges count).",
   "Sensor from the file: MODIS rows by the `satellite` column (README says `satellite = A`/`T`; the files say Aqua/Terra, both accepted); VIIRS S-NPP from the SV-C2 download, NOAA-20 from the J1V-C2 download.",
   "Standard = the fire_archive_* member, near-real-time = the fire_nrt_* member of each zip.",
-  "Mask cell = (floor(lat/0.02), floor(lon/0.02)). README gives the cell size and the threshold (3) but not the origin or rounding.",
+  "Mask cell = (int((lat + 90) / 0.02), int((lon + 180) / 0.02)), as README states since the audit's fixes (the first audit assumed floor(lat / 0.02) and differed by one detection in three months).",
+  "As used: NOAA-20 standard against Aqua standard, April 2018 to July 2026; each year predicted from coefficients fitted without it, with the Suomi NPP coefficients and with NOAA-20's own; NOAA-20's own are adopted when their error (to one decimal, as published) is lower; near-real-time months are those where NOAA-20 is near-real-time and complete (README, 'The conversion as it is used').",
   "Mask counts every archive row with type 1, 2 or 3, any sensor, any confidence, anywhere in the files of that raw folder (README: 'built from every file in data/raw/'; it does not say whether low-confidence rows count).",
   "Low confidence: MODIS confidence < 30 (numeric), VIIRS confidence 'l' (README).",
   "Month and day are the UTC acq_date (README does not say; the hotspot CSV keeps acq_date).",
@@ -388,22 +389,118 @@
     "baseline_max": 642,
     "years_below_current": 18
    },
+   "calibration_would_be_accepted": true,
    "conversion_as_used_nrt_months": [
     {
+     "month": "2026-08",
+     "aqua_nrt": 789,
+     "noaa20_nrt": 6289,
+     "noaa20_on_aqua_scale": 674.4,
+     "noaa20_on_aqua_scale_unrounded": 674.4498311974352,
+     "pct_diff": -14.5
+    },
+    {
      "month": "2026-09",
-     "aqua_nrt": 263,
+     "aqua_nrt": 264,
      "noaa20_nrt": 2491,
      "noaa20_on_aqua_scale": 258.9,
-     "pct_diff": -1.6
+     "noaa20_on_aqua_scale_unrounded": 258.8873175439453,
+     "pct_diff": -1.9
     },
     {
      "month": "2026-10",
      "aqua_nrt": 227,
      "noaa20_nrt": 1958,
      "noaa20_on_aqua_scale": 230.3,
+     "noaa20_on_aqua_scale_unrounded": 230.25950659848476,
      "pct_diff": 1.4
     }
    ],
+   "as_used": {
+    "paired_months": 100,
+    "with_snpp_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 111.1,
+      "median_abs_error": 36.8,
+      "abs_error_pct_of_total": 14.6,
+      "bias_pct": 3.3,
+      "median_monthly_pct_error": 15.1,
+      "months_with_zero_observed": 0
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 181.3,
+      "median_abs_error": 39.3,
+      "abs_error_pct_of_total": 14.3,
+      "bias_pct": 4.5,
+      "median_monthly_pct_error": 16.0,
+      "months_with_zero_observed": 0
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 53.6,
+      "median_abs_error": 33.7,
+      "abs_error_pct_of_total": 15.8,
+      "bias_pct": -0.4,
+      "median_monthly_pct_error": 11.8,
+      "months_with_zero_observed": 0
+     }
+    },
+    "with_noaa20_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 118.8,
+      "median_abs_error": 42.9,
+      "abs_error_pct_of_total": 15.6,
+      "bias_pct": 0.9,
+      "median_monthly_pct_error": 16.8,
+      "months_with_zero_observed": 0
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 199.5,
+      "median_abs_error": 53.4,
+      "abs_error_pct_of_total": 15.7,
+      "bias_pct": 1.9,
+      "median_monthly_pct_error": 17.6,
+      "months_with_zero_observed": 0
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 52.7,
+      "median_abs_error": 35.3,
+      "abs_error_pct_of_total": 15.5,
+      "bias_pct": -2.0,
+      "median_monthly_pct_error": 15.2,
+      "months_with_zero_observed": 0
+     }
+    },
+    "adopted": "snpp_coefficients",
+    "noaa20_k_by_month": {
+     "1": 5.93,
+     "2": 4.981,
+     "3": 6.717,
+     "4": 8.048,
+     "5": 8.89,
+     "6": 7.347,
+     "7": 7.434,
+     "8": 9.633,
+     "9": 9.602,
+     "10": 8.886,
+     "11": 6.515,
+     "12": 5.989
+    },
+    "nrt_error": {
+     "months": 3,
+     "mae": 41.0,
+     "median_abs_error": 5.1,
+     "abs_error_pct_of_total": 9.6,
+     "bias_pct": -9.1,
+     "median_monthly_pct_error": 1.9,
+     "months_with_zero_observed": 0
+    }
+   },
    "nrt_rows_not_low_confidence": {
     "noaa20": 14656,
     "terra": 588,
@@ -413,28 +510,28 @@
    "nrt_rows_masked": {
     "noaa20": 2685,
     "terra": 18,
-    "aqua": 12,
+    "aqua": 11,
     "snpp": 2143
    },
    "mask": {
     "in_sample": {
      "veg_rows": 2047519,
-     "veg_masked": 45404,
+     "veg_masked": 45412,
      "veg_wrongly_masked_pct": 2.2,
      "non_veg_rows": 173175,
-     "non_veg_masked": 170057,
+     "non_veg_masked": 170052,
      "non_veg_caught_pct": 98.2
     },
     "out_of_sample_2024_on": {
      "veg_rows": 206082,
-     "veg_masked": 4608,
+     "veg_masked": 4612,
      "veg_wrongly_masked_pct": 2.2,
      "non_veg_rows": 37349,
      "non_veg_masked": 35560,
      "non_veg_caught_pct": 95.2
     },
-    "mask_cells_all_years": 4516,
-    "mask_cells_to_2023": 4139
+    "mask_cells_all_years": 4518,
+    "mask_cells_to_2023": 4140
    },
    "rows_exactly_on_box_edge": 19,
    "exact_duplicate_rows_since_2026_06": {},
@@ -486,7 +583,7 @@
     },
     "2026-09": {
      "aqua": [
-      263,
+      264,
       270
      ],
      "terra": [
@@ -913,12 +1010,22 @@
     "baseline_max": 9,
     "years_below_current": 21
    },
+   "calibration_would_be_accepted": false,
    "conversion_as_used_nrt_months": [
+    {
+     "month": "2026-08",
+     "aqua_nrt": 1,
+     "noaa20_nrt": 7,
+     "noaa20_on_aqua_scale": 0.2,
+     "noaa20_on_aqua_scale_unrounded": 0.19546247818499127,
+     "pct_diff": -80.5
+    },
     {
      "month": "2026-09",
      "aqua_nrt": 2,
      "noaa20_nrt": 4,
      "noaa20_on_aqua_scale": 0.0,
+     "noaa20_on_aqua_scale_unrounded": 0.02365781879482271,
      "pct_diff": -98.8
     },
     {
@@ -926,9 +1033,95 @@
      "aqua_nrt": 0,
      "noaa20_nrt": 2,
      "noaa20_on_aqua_scale": 0.0,
+     "noaa20_on_aqua_scale_unrounded": 0.017117614577581448,
      "pct_diff": null
     }
    ],
+   "as_used": {
+    "paired_months": 100,
+    "with_snpp_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 8.6,
+      "median_abs_error": 1.0,
+      "abs_error_pct_of_total": 264.9,
+      "bias_pct": 125.0,
+      "median_monthly_pct_error": 95.8,
+      "months_with_zero_observed": 55
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 15.0,
+      "median_abs_error": 1.4,
+      "abs_error_pct_of_total": 339.1,
+      "bias_pct": 217.1,
+      "median_monthly_pct_error": 97.4,
+      "months_with_zero_observed": 23
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 3.4,
+      "median_abs_error": 0.9,
+      "abs_error_pct_of_total": 147.7,
+      "bias_pct": -20.4,
+      "median_monthly_pct_error": 94.6,
+      "months_with_zero_observed": 32
+     }
+    },
+    "with_noaa20_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 13.2,
+      "median_abs_error": 1.0,
+      "abs_error_pct_of_total": 406.2,
+      "bias_pct": 274.9,
+      "median_monthly_pct_error": 95.3,
+      "months_with_zero_observed": 55
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 25.2,
+      "median_abs_error": 2.1,
+      "abs_error_pct_of_total": 569.5,
+      "bias_pct": 454.6,
+      "median_monthly_pct_error": 96.7,
+      "months_with_zero_observed": 23
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 3.4,
+      "median_abs_error": 1.0,
+      "abs_error_pct_of_total": 148.3,
+      "bias_pct": -8.9,
+      "median_monthly_pct_error": 90.8,
+      "months_with_zero_observed": 32
+     }
+    },
+    "adopted": "snpp_coefficients",
+    "noaa20_k_by_month": {
+     "1": null,
+     "2": null,
+     "3": null,
+     "4": null,
+     "5": null,
+     "6": null,
+     "7": 205.193,
+     "8": 23.646,
+     "9": null,
+     "10": null,
+     "11": null,
+     "12": null
+    },
+    "nrt_error": {
+     "months": 3,
+     "mae": 0.9,
+     "median_abs_error": 0.8,
+     "abs_error_pct_of_total": 93.3,
+     "bias_pct": -92.1,
+     "median_monthly_pct_error": 89.6,
+     "months_with_zero_observed": 1
+    }
+   },
    "nrt_rows_not_low_confidence": {
     "noaa20": 1678,
     "aqua": 120,
@@ -944,22 +1137,22 @@
    "mask": {
     "in_sample": {
      "veg_rows": 130729,
-     "veg_masked": 117885,
+     "veg_masked": 117888,
      "veg_wrongly_masked_pct": 90.2,
      "non_veg_rows": 228966,
-     "non_veg_masked": 228762,
+     "non_veg_masked": 228765,
      "non_veg_caught_pct": 99.9
     },
     "out_of_sample_2024_on": {
      "veg_rows": 5881,
-     "veg_masked": 4343,
-     "veg_wrongly_masked_pct": 73.8,
+     "veg_masked": 4346,
+     "veg_wrongly_masked_pct": 73.9,
      "non_veg_rows": 34265,
      "non_veg_masked": 34216,
      "non_veg_caught_pct": 99.9
     },
-    "mask_cells_all_years": 4516,
-    "mask_cells_to_2023": 4139
+    "mask_cells_all_years": 4518,
+    "mask_cells_to_2023": 4140
    },
    "rows_exactly_on_box_edge": 0,
    "exact_duplicate_rows_since_2026_06": {},
@@ -1432,30 +1625,126 @@
     "days": "1-13",
     "aqua_nrt": 180,
     "raw_noaa20": 686,
-    "noaa20_on_aqua_scale": 98.8,
-    "k_used": 6.942,
+    "noaa20_on_aqua_scale": 115.1,
+    "k_used": 5.96,
     "baseline_years": 24,
     "baseline_median": 180.5,
     "baseline_min": 56,
     "baseline_max": 453,
-    "years_below_current": 8
+    "years_below_current": 9
    },
+   "calibration_would_be_accepted": true,
    "conversion_as_used_nrt_months": [
+    {
+     "month": "2026-08",
+     "aqua_nrt": 313,
+     "noaa20_nrt": 1340,
+     "noaa20_on_aqua_scale": 189.5,
+     "noaa20_on_aqua_scale_unrounded": 189.49025053520802,
+     "pct_diff": -39.5
+    },
     {
      "month": "2026-09",
      "aqua_nrt": 461,
      "noaa20_nrt": 2225,
-     "noaa20_on_aqua_scale": 373.0,
-     "pct_diff": -19.1
+     "noaa20_on_aqua_scale": 412.8,
+     "noaa20_on_aqua_scale_unrounded": 412.7650176678445,
+     "pct_diff": -10.5
     },
     {
      "month": "2026-10",
      "aqua_nrt": 755,
      "noaa20_nrt": 3111,
-     "noaa20_on_aqua_scale": 499.8,
-     "pct_diff": -33.8
+     "noaa20_on_aqua_scale": 527.0,
+     "noaa20_on_aqua_scale_unrounded": 526.9640051909023,
+     "pct_diff": -30.2
     }
    ],
+   "as_used": {
+    "paired_months": 100,
+    "with_snpp_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 567.1,
+      "median_abs_error": 81.9,
+      "abs_error_pct_of_total": 13.4,
+      "bias_pct": -2.8,
+      "median_monthly_pct_error": 12.3,
+      "months_with_zero_observed": 0
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 416.3,
+      "median_abs_error": 62.8,
+      "abs_error_pct_of_total": 9.7,
+      "bias_pct": -4.4,
+      "median_monthly_pct_error": 10.8,
+      "months_with_zero_observed": 0
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 690.6,
+      "median_abs_error": 95.7,
+      "abs_error_pct_of_total": 16.5,
+      "bias_pct": -1.6,
+      "median_monthly_pct_error": 16.1,
+      "months_with_zero_observed": 0
+     }
+    },
+    "with_noaa20_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 558.9,
+      "median_abs_error": 110.8,
+      "abs_error_pct_of_total": 13.2,
+      "bias_pct": 0.0,
+      "median_monthly_pct_error": 11.8,
+      "months_with_zero_observed": 0
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 438.6,
+      "median_abs_error": 106.7,
+      "abs_error_pct_of_total": 10.2,
+      "bias_pct": -0.9,
+      "median_monthly_pct_error": 11.4,
+      "months_with_zero_observed": 0
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 657.4,
+      "median_abs_error": 121.4,
+      "abs_error_pct_of_total": 15.7,
+      "bias_pct": 0.8,
+      "median_monthly_pct_error": 12.2,
+      "months_with_zero_observed": 0
+     }
+    },
+    "adopted": "noaa20_coefficients",
+    "noaa20_k_by_month": {
+     "1": 6.376,
+     "2": 7.061,
+     "3": 5.451,
+     "4": 5.559,
+     "5": 6.948,
+     "6": 6.203,
+     "7": 6.639,
+     "8": 7.072,
+     "9": 5.39,
+     "10": 5.904,
+     "11": 5.96,
+     "12": 6.067
+    },
+    "nrt_error": {
+     "months": 3,
+     "mae": 133.3,
+     "median_abs_error": 123.5,
+     "abs_error_pct_of_total": 26.1,
+     "bias_pct": -26.1,
+     "median_monthly_pct_error": 30.2,
+     "months_with_zero_observed": 0
+    }
+   },
    "nrt_rows_not_low_confidence": {
     "noaa20": 9881,
     "aqua": 1438,
@@ -1471,22 +1760,22 @@
    "mask": {
     "in_sample": {
      "veg_rows": 10244572,
-     "veg_masked": 422565,
+     "veg_masked": 423115,
      "veg_wrongly_masked_pct": 4.1,
      "non_veg_rows": 198707,
-     "non_veg_masked": 193943,
+     "non_veg_masked": 193946,
      "non_veg_caught_pct": 97.6
     },
     "out_of_sample_2024_on": {
      "veg_rows": 2027317,
-     "veg_masked": 44113,
+     "veg_masked": 44164,
      "veg_wrongly_masked_pct": 2.2,
      "non_veg_rows": 33002,
-     "non_veg_masked": 30923,
+     "non_veg_masked": 30920,
      "non_veg_caught_pct": 93.7
     },
-    "mask_cells_all_years": 4516,
-    "mask_cells_to_2023": 4139
+    "mask_cells_all_years": 4518,
+    "mask_cells_to_2023": 4140
    },
    "rows_exactly_on_box_edge": 62,
    "exact_duplicate_rows_since_2026_06": {},
@@ -1515,8 +1804,8 @@
     "days": "1-13",
     "aqua_nrt": 186,
     "raw_noaa20": 898,
-    "noaa20_on_aqua_scale": 129.4,
-    "k_used": 6.942,
+    "noaa20_on_aqua_scale": 150.7,
+    "k_used": 5.96,
     "baseline_years": 24,
     "baseline_median": 180.5,
     "baseline_min": 56,
@@ -1955,30 +2244,126 @@
     "days": "1-13",
     "aqua_nrt": 1356,
     "raw_noaa20": 9681,
-    "noaa20_on_aqua_scale": 1880.7,
-    "k_used": 5.148,
+    "noaa20_on_aqua_scale": 1783.5,
+    "k_used": 5.428,
     "baseline_years": 24,
     "baseline_median": 2181.0,
     "baseline_min": 1146,
     "baseline_max": 3090,
     "years_below_current": 9
    },
+   "calibration_would_be_accepted": true,
    "conversion_as_used_nrt_months": [
     {
+     "month": "2026-08",
+     "aqua_nrt": 9888,
+     "noaa20_nrt": 92223,
+     "noaa20_on_aqua_scale": 9862.5,
+     "noaa20_on_aqua_scale_unrounded": 9862.505059146233,
+     "pct_diff": -0.3
+    },
+    {
      "month": "2026-09",
-     "aqua_nrt": 2365,
+     "aqua_nrt": 2366,
      "noaa20_nrt": 19140,
-     "noaa20_on_aqua_scale": 2262.2,
-     "pct_diff": -4.3
+     "noaa20_on_aqua_scale": 2196.3,
+     "noaa20_on_aqua_scale_unrounded": 2196.269689861871,
+     "pct_diff": -7.2
     },
     {
      "month": "2026-10",
      "aqua_nrt": 2917,
      "noaa20_nrt": 22736,
-     "noaa20_on_aqua_scale": 4056.4,
-     "pct_diff": 39.1
+     "noaa20_on_aqua_scale": 3677.2,
+     "noaa20_on_aqua_scale_unrounded": 3677.1780674196075,
+     "pct_diff": 26.1
     }
    ],
+   "as_used": {
+    "paired_months": 100,
+    "with_snpp_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 511.5,
+      "median_abs_error": 271.8,
+      "abs_error_pct_of_total": 10.8,
+      "bias_pct": 5.1,
+      "median_monthly_pct_error": 6.5,
+      "months_with_zero_observed": 0
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 596.6,
+      "median_abs_error": 355.1,
+      "abs_error_pct_of_total": 11.7,
+      "bias_pct": 3.9,
+      "median_monthly_pct_error": 7.9,
+      "months_with_zero_observed": 0
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 441.9,
+      "median_abs_error": 245.2,
+      "abs_error_pct_of_total": 10.0,
+      "bias_pct": 6.2,
+      "median_monthly_pct_error": 6.0,
+      "months_with_zero_observed": 0
+     }
+    },
+    "with_noaa20_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 491.7,
+      "median_abs_error": 315.0,
+      "abs_error_pct_of_total": 10.4,
+      "bias_pct": 0.4,
+      "median_monthly_pct_error": 7.6,
+      "months_with_zero_observed": 0
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 600.8,
+      "median_abs_error": 425.0,
+      "abs_error_pct_of_total": 11.8,
+      "bias_pct": -0.8,
+      "median_monthly_pct_error": 8.6,
+      "months_with_zero_observed": 0
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 402.4,
+      "median_abs_error": 208.6,
+      "abs_error_pct_of_total": 9.1,
+      "bias_pct": 1.5,
+      "median_monthly_pct_error": 6.5,
+      "months_with_zero_observed": 0
+     }
+    },
+    "adopted": "noaa20_coefficients",
+    "noaa20_k_by_month": {
+     "1": 5.314,
+     "2": 4.615,
+     "3": 4.894,
+     "4": 5.873,
+     "5": 7.834,
+     "6": 9.045,
+     "7": 8.79,
+     "8": 9.351,
+     "9": 8.715,
+     "10": 6.183,
+     "11": 5.428,
+     "12": 5.581
+    },
+    "nrt_error": {
+     "months": 3,
+     "mae": 318.5,
+     "median_abs_error": 169.7,
+     "abs_error_pct_of_total": 6.3,
+     "bias_pct": 3.7,
+     "median_monthly_pct_error": 7.2,
+     "months_with_zero_observed": 0
+    }
+   },
    "nrt_rows_not_low_confidence": {
     "noaa20": 179005,
     "terra": 5682,
@@ -1988,13 +2373,13 @@
    "nrt_rows_masked": {
     "noaa20": 34604,
     "terra": 590,
-    "aqua": 435,
-    "snpp": 29058
+    "aqua": 434,
+    "snpp": 29057
    },
    "mask": {
     "in_sample": {
      "veg_rows": 11733869,
-     "veg_masked": 489825,
+     "veg_masked": 490162,
      "veg_wrongly_masked_pct": 4.2,
      "non_veg_rows": 1978365,
      "non_veg_masked": 1958985,
@@ -2002,14 +2387,14 @@
     },
     "out_of_sample_2024_on": {
      "veg_rows": 2338170,
-     "veg_masked": 66612,
+     "veg_masked": 66575,
      "veg_wrongly_masked_pct": 2.8,
      "non_veg_rows": 436075,
-     "non_veg_masked": 418412,
+     "non_veg_masked": 418411,
      "non_veg_caught_pct": 95.9
     },
-    "mask_cells_all_years": 7831,
-    "mask_cells_to_2023": 6796
+    "mask_cells_all_years": 7832,
+    "mask_cells_to_2023": 6797
    },
    "rows_exactly_on_box_edge": 0,
    "exact_duplicate_rows_since_2026_06": {},
@@ -2040,13 +2425,13 @@
     "days": "1-13",
     "aqua_nrt": 1401,
     "raw_noaa20": 13244,
-    "noaa20_on_aqua_scale": 2572.8,
-    "k_used": 5.148,
+    "noaa20_on_aqua_scale": 2440.0,
+    "k_used": 5.428,
     "baseline_years": 24,
     "baseline_median": 2181.0,
     "baseline_min": 1146,
     "baseline_max": 3090,
-    "years_below_current": 18
+    "years_below_current": 17
    },
    "nrt_month_totals_with_and_without_mask": {
     "2026-08": {
@@ -2061,7 +2446,7 @@
     },
     "2026-09": {
      "aqua": [
-      2365,
+      2366,
       2566
      ],
      "terra": [
@@ -2069,7 +2454,7 @@
       2301
      ],
      "snpp": [
-      19210,
+      19211,
       28689
      ],
      "noaa20": [
@@ -2488,22 +2873,118 @@
     "baseline_max": 641,
     "years_below_current": 18
    },
+   "calibration_would_be_accepted": true,
    "conversion_as_used_nrt_months": [
     {
+     "month": "2026-08",
+     "aqua_nrt": 785,
+     "noaa20_nrt": 6236,
+     "noaa20_on_aqua_scale": 669.0,
+     "noaa20_on_aqua_scale_unrounded": 669.0306797309055,
+     "pct_diff": -14.8
+    },
+    {
      "month": "2026-09",
-     "aqua_nrt": 259,
+     "aqua_nrt": 260,
      "noaa20_nrt": 2444,
      "noaa20_on_aqua_scale": 253.8,
-     "pct_diff": -2.0
+     "noaa20_on_aqua_scale_unrounded": 253.79366149696563,
+     "pct_diff": -2.4
     },
     {
      "month": "2026-10",
      "aqua_nrt": 223,
      "noaa20_nrt": 1927,
      "noaa20_on_aqua_scale": 226.2,
+     "noaa20_on_aqua_scale_unrounded": 226.208866142656,
      "pct_diff": 1.4
     }
    ],
+   "as_used": {
+    "paired_months": 100,
+    "with_snpp_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 110.1,
+      "median_abs_error": 37.8,
+      "abs_error_pct_of_total": 14.6,
+      "bias_pct": 3.4,
+      "median_monthly_pct_error": 15.4,
+      "months_with_zero_observed": 0
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 180.8,
+      "median_abs_error": 38.1,
+      "abs_error_pct_of_total": 14.3,
+      "bias_pct": 4.6,
+      "median_monthly_pct_error": 16.5,
+      "months_with_zero_observed": 0
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 52.4,
+      "median_abs_error": 32.6,
+      "abs_error_pct_of_total": 15.7,
+      "bias_pct": -0.3,
+      "median_monthly_pct_error": 12.4,
+      "months_with_zero_observed": 0
+     }
+    },
+    "with_noaa20_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 117.9,
+      "median_abs_error": 42.5,
+      "abs_error_pct_of_total": 15.7,
+      "bias_pct": 0.9,
+      "median_monthly_pct_error": 17.0,
+      "months_with_zero_observed": 0
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 199.3,
+      "median_abs_error": 52.9,
+      "abs_error_pct_of_total": 15.7,
+      "bias_pct": 1.9,
+      "median_monthly_pct_error": 18.2,
+      "months_with_zero_observed": 0
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 51.4,
+      "median_abs_error": 34.2,
+      "abs_error_pct_of_total": 15.4,
+      "bias_pct": -2.0,
+      "median_monthly_pct_error": 15.8,
+      "months_with_zero_observed": 0
+     }
+    },
+    "adopted": "snpp_coefficients",
+    "noaa20_k_by_month": {
+     "1": 5.938,
+     "2": 4.936,
+     "3": 6.649,
+     "4": 7.937,
+     "5": 8.69,
+     "6": 7.108,
+     "7": 7.406,
+     "8": 9.631,
+     "9": 9.611,
+     "10": 8.92,
+     "11": 6.478,
+     "12": 6.079
+    },
+    "nrt_error": {
+     "months": 3,
+     "mae": 41.8,
+     "median_abs_error": 6.2,
+     "abs_error_pct_of_total": 9.9,
+     "bias_pct": -9.4,
+     "median_monthly_pct_error": 2.4,
+     "months_with_zero_observed": 0
+    }
+   },
    "nrt_rows_not_low_confidence": {
     "noaa20": 14550,
     "terra": 581,
@@ -2513,28 +2994,28 @@
    "nrt_rows_masked": {
     "noaa20": 2649,
     "terra": 15,
-    "aqua": 11,
+    "aqua": 10,
     "snpp": 2094
    },
    "mask": {
     "in_sample": {
      "veg_rows": 2026742,
-     "veg_masked": 43077,
+     "veg_masked": 43085,
      "veg_wrongly_masked_pct": 2.1,
      "non_veg_rows": 172164,
-     "non_veg_masked": 169082,
+     "non_veg_masked": 169077,
      "non_veg_caught_pct": 98.2
     },
     "out_of_sample_2024_on": {
      "veg_rows": 202063,
-     "veg_masked": 4298,
+     "veg_masked": 4302,
      "veg_wrongly_masked_pct": 2.1,
      "non_veg_rows": 36810,
      "non_veg_masked": 35148,
      "non_veg_caught_pct": 95.5
     },
-    "mask_cells_all_years": 7831,
-    "mask_cells_to_2023": 6796
+    "mask_cells_all_years": 7832,
+    "mask_cells_to_2023": 6797
    },
    "rows_exactly_on_box_edge": 12,
    "exact_duplicate_rows_since_2026_06": {},
@@ -2586,7 +3067,7 @@
     },
     "2026-09": {
      "aqua": [
-      259,
+      260,
       266
      ],
      "terra": [
@@ -3013,12 +3494,22 @@
     "baseline_max": 9,
     "years_below_current": 21
    },
+   "calibration_would_be_accepted": false,
    "conversion_as_used_nrt_months": [
+    {
+     "month": "2026-08",
+     "aqua_nrt": 1,
+     "noaa20_nrt": 7,
+     "noaa20_on_aqua_scale": 0.2,
+     "noaa20_on_aqua_scale_unrounded": 0.19546247818499127,
+     "pct_diff": -80.5
+    },
     {
      "month": "2026-09",
      "aqua_nrt": 2,
      "noaa20_nrt": 4,
      "noaa20_on_aqua_scale": 0.0,
+     "noaa20_on_aqua_scale_unrounded": 0.02365781879482271,
      "pct_diff": -98.8
     },
     {
@@ -3026,9 +3517,95 @@
      "aqua_nrt": 0,
      "noaa20_nrt": 2,
      "noaa20_on_aqua_scale": 0.0,
+     "noaa20_on_aqua_scale_unrounded": 0.017117614577581448,
      "pct_diff": null
     }
    ],
+   "as_used": {
+    "paired_months": 100,
+    "with_snpp_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 8.6,
+      "median_abs_error": 1.0,
+      "abs_error_pct_of_total": 264.9,
+      "bias_pct": 125.0,
+      "median_monthly_pct_error": 95.8,
+      "months_with_zero_observed": 55
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 15.0,
+      "median_abs_error": 1.4,
+      "abs_error_pct_of_total": 339.1,
+      "bias_pct": 217.1,
+      "median_monthly_pct_error": 97.4,
+      "months_with_zero_observed": 23
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 3.4,
+      "median_abs_error": 0.9,
+      "abs_error_pct_of_total": 147.7,
+      "bias_pct": -20.4,
+      "median_monthly_pct_error": 94.6,
+      "months_with_zero_observed": 32
+     }
+    },
+    "with_noaa20_coefficients": {
+     "all_years": {
+      "months": 100,
+      "mae": 13.2,
+      "median_abs_error": 1.0,
+      "abs_error_pct_of_total": 406.2,
+      "bias_pct": 274.9,
+      "median_monthly_pct_error": 95.3,
+      "months_with_zero_observed": 55
+     },
+     "before_2022": {
+      "months": 45,
+      "mae": 25.2,
+      "median_abs_error": 2.1,
+      "abs_error_pct_of_total": 569.5,
+      "bias_pct": 454.6,
+      "median_monthly_pct_error": 96.7,
+      "months_with_zero_observed": 23
+     },
+     "2022_onward": {
+      "months": 55,
+      "mae": 3.4,
+      "median_abs_error": 1.0,
+      "abs_error_pct_of_total": 148.3,
+      "bias_pct": -8.9,
+      "median_monthly_pct_error": 90.8,
+      "months_with_zero_observed": 32
+     }
+    },
+    "adopted": "snpp_coefficients",
+    "noaa20_k_by_month": {
+     "1": null,
+     "2": null,
+     "3": null,
+     "4": null,
+     "5": null,
+     "6": null,
+     "7": 205.193,
+     "8": 23.646,
+     "9": null,
+     "10": null,
+     "11": null,
+     "12": null
+    },
+    "nrt_error": {
+     "months": 3,
+     "mae": 0.9,
+     "median_abs_error": 0.8,
+     "abs_error_pct_of_total": 93.3,
+     "bias_pct": -92.1,
+     "median_monthly_pct_error": 89.6,
+     "months_with_zero_observed": 1
+    }
+   },
    "nrt_rows_not_low_confidence": {
     "noaa20": 1678,
     "aqua": 120,
@@ -3044,22 +3621,22 @@
    "mask": {
     "in_sample": {
      "veg_rows": 130729,
-     "veg_masked": 117885,
+     "veg_masked": 117888,
      "veg_wrongly_masked_pct": 90.2,
      "non_veg_rows": 228964,
-     "non_veg_masked": 228762,
+     "non_veg_masked": 228765,
      "non_veg_caught_pct": 99.9
     },
     "out_of_sample_2024_on": {
      "veg_rows": 5881,
-     "veg_masked": 4343,
-     "veg_wrongly_masked_pct": 73.8,
+     "veg_masked": 4346,
+     "veg_wrongly_masked_pct": 73.9,
      "non_veg_rows": 34265,
      "non_veg_masked": 34216,
      "non_veg_caught_pct": 99.9
     },
-    "mask_cells_all_years": 7831,
-    "mask_cells_to_2023": 6796
+    "mask_cells_all_years": 7832,
+    "mask_cells_to_2023": 6797
    },
    "rows_exactly_on_box_edge": 0,
    "exact_duplicate_rows_since_2026_06": {},

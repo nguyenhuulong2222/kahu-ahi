@@ -8,6 +8,62 @@ How it was done:
 - `audit/county_check.py` samples 2,000 detections per region and locates each one, and its nearest town, in boundary files the project does not use (US Census counties; geoBoundaries districts).
 - The page text, README.md, SOURCES.md, AI_USE.md, THIRD_PARTY_NOTICES.md, LICENSE and data/manifest.json were read against each other and against the JSON files. Part of that read (claims against sources, licences) was done by a second reviewer working only from the files; items taken from that read and not re-checked here are marked "(read, not re-checked)".
 
+## Follow-up: what was fixed, and what remains
+
+Written after the fixes of 14 Nov 2026 (commits `151bf3e` to `8cd692a`). The audit below is left as it was written, against commit `0deb160`; where a figure in it has since changed, this section says so.
+
+Re-checked after the fixes: `audit/recompute.py`, updated for the rules README now states and for the as-used chain, reproduces every monthly count, coefficient, error figure, as-used figure, adoption decision and month-to-date figure in all four regions with **zero differences** (the three one-detection differences of B6 are gone now that the mask-cell rule is written down). The page was checked in a browser at 1440×900 and 390×844 on all four regions, each new figure against its JSON value, console clean.
+
+### Fixed
+
+| Finding | What was done | Commit |
+|---|---|---|
+| A1 as-used error | `calibrate.py` now measures the chain the page uses and writes it to `calibration.json` and `<region>.json` (`as_used`): NOAA-20 standard against Aqua standard on held-out years, with Suomi NPP factors and with NOAA-20's own; and NOAA-20 near-real-time against Aqua for every complete month. The acceptance rule is applied to the chain as used; a failing region's recent converted values would read "not reliable" (none fails today). The as-used error is shown in the band, in "This month so far" and in the month detail. | `151bf3e` |
+| A2 what the record contains | The band and the calendar state that the record from July 2002 is MODIS Aqua and that no month is converted. A switch rebuilds the calendar and charts as a VIIRS-only record, with each month's difference from Aqua and the forward-test result beside it. Lede changed to match. | `2b8e862` |
+| A3 baseline | The band, the one-line result and the comparison table show three measured steps: as recorded, one whole-year ratio, monthly factors. | `91ea98c` |
+| B1 county | The town's county is worded as the town's ("a town in ..."). The point's own county and country come only from the Nominatim answer, otherwise they are not stated. CSV columns renamed. | `ba06d94` |
+| A5 "not flying" | Replaced by documented launch and first-data dates (NASA Science pages, FIRMS FAQ), "no data received yet for this date" after a download's last row, and "stopped" only for Suomi NPP, which FIRMS states. | `d7b26d3`, `8cd692a` |
+| A6 Aqua drift | NASA's own account is cited (last drag make-up manoeuvre December 2021, free drift since, about +50 minutes by January 2025). The page gives it as the reason for the 2022 split and no longer suggests a cause for the higher error. | `ba72f1e` |
+| A4, B6, B7, B9, parts of B5, B8, C | TBD lines resolved; status line final; four regions throughout; file sizes and periods corrected; reproduction rules added to README; licence named with what it does not cover; Esri and the licence in the footer; template text removed; "nominal" confidence; Hawaiʻi wording; image resolution wording; California-inside-the-fit stated as a lower bound with three independent areas. | `578d7db` |
+
+### Numbers that moved, and why
+
+Item A1's test adopted NOAA-20's own factors where they had the lower error on held-out years: the Vietnam region (13.2% against 13.4%) and the contiguous United States (10.4% against 10.8%); not California (15.6% against 14.6%). The gains are small. Everything that moved:
+
+- NOAA-20 values on the Aqua scale, 104 months (April 2018 to November 2026), in the Vietnam region and the contiguous United States (`noaa20_aqua_equiv`, `n20_eq`).
+- Month-to-date estimate: Vietnam region 98.8 → 115.1 (years below: 8 → 9); contiguous United States 1,880.7 → 1,783.5.
+- The October 2026 differences quoted in A1 are now +26.1% (United States, was +39.1%) and −30.2% (Vietnam region, was −33.8%); September: −7.2% and −10.5%.
+
+Nothing else moved: no count, no Suomi NPP coefficient, no figure of the validation table, nothing in California or Hawaiʻi.
+
+Measured as used (from `calibration.json`):
+
+| Region | NOAA-20 standard, held-out years | Near-real-time, Aug–Oct 2026 | Worst near-real-time month |
+|---|---:|---:|---|
+| California | 14.6% | 9.6% | August, −14.5% |
+| Vietnam region | 13.2% | 26.1% | August, −39.5% |
+| Contiguous United States | 10.4% | 6.3% | October, +26.1% |
+
+Factors fitted on near-real-time data could not be tested on held-out years: there are three such months, all in 2026. A single near-real-time ratio tested by leaving one month out gave 11.4%, 10.5% and 15.8%; it is reported and not adopted.
+
+### County check, re-run
+
+The town named on the card is in a different county or district than the detection as often as before (California 26.6%, United States 25.8%, Vietnam region 45.2%, Hawaiʻi 0%); that is geography, not a defect, and the card now says whose county it is. The rate at which the card attaches a town's county or country to the detection is zero by construction. For 40 sampled detections in the United States, the county Nominatim returned for the point was the Census county every time (one spelled "Saint" for "St.").
+
+### Remains
+
+- **A2, partly.** The VIIRS-only record covers the calendar and the charts. The map and the sentences above it stay on the Aqua record, and the page says so.
+- **A1, limits.** Three near-real-time months are a thin basis; the figure will move as months are added. The first screen at 1440×900 holds the three figures and the chart, but the explanatory lines under the third figure and the as-used sentence run below the fold.
+- **B2.** Hawaiʻi's near-real-time months are still shown as provisional counts although the mask removes nearly every row there.
+- **B3.** One afternoon pass over Hawaiʻi is still split across two UTC dates.
+- **B4.** The mask check on the page is still the in-sample one; the out-of-sample figures are only in this file.
+- **B5.** The national fit was not re-run without California; the 20.0% is stated as a lower bound.
+- **B8.** Not done: DOIs for the FIRMS products; URLs and dates for the four ARSET trainings; a source for "sensors saturate on large fires"; a source for the image resolutions; the team's GOES-18 Lahaina analysis is still referred to without a source.
+- **B9.** AI_USE.md does not say how `pipeline/ingest.py` and `pipeline/calibrate.py` came to be; that is for the team to state. Esri's attribution guidance was still not opened.
+- **SOURCES.md, "Other projects consulted".** Filled with what is known to have been looked at (NASA Worldview and the FIRMS map, for layout). The team should confirm nothing else was read.
+- **Cosmetic.** Hawaiʻi's percentages of very small numbers; "1 detections".
+- **To watch.** NASA's Aqua page calls the mission active and the downloads hold Aqua rows to 13–14 Nov 2026. A search result, not opened, described a NASA status document from May 2025 that planned to end Aqua's mission in late 2026. If Aqua has in fact stopped, "Aqua still has data" needs rewording and the VIIRS-only record becomes the main one.
+
 ## Summary
 
 The arithmetic is sound. An independent recomputation from the raw files reproduces every coefficient, every error figure and every month-to-date figure in all four regions, and 3,556 monthly counts with three differences of one detection.
