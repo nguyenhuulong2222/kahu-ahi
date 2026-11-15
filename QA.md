@@ -180,3 +180,18 @@ Not verified in this second pass: the 250-step control tour of the first pass wa
 layout changes (the panel states, the card, the grouped markers and the phone timeline were exercised by the
 checks above); the full-screen map; print of the report; other browsers and real phones. With the card open on
 desktop, a long Esri attribution is shortened with an ellipsis rather than wrapped.
+
+## Third pass: three layout fixes seen in the screenshots
+
+Date: 14 Nov 2026. Layout only; no count or data file was touched, so `audit/recompute.py` was not run again after
+this pass (its last run, after the second pass, reported 0 differences). "Before" shots are in `qa/before3/`; the
+"after" shots were re-shot at 1440x900 and 390x844 and looked at. Console clean in both.
+
+| # | Defect | Fix | Before | After |
+|---|---|---|---|---|
+| 1 | Detection card: an empty block between the place note and the locator; no cue that the card scrolls; the last visible line cut in half at the bottom edge. | The locator sits right-aligned directly under the place lines, with the small note beside it, so the row has no empty block (measured: the locator starts 2 px below the top of the note, flush with the right edge). While the card holds more than it shows, its bottom edge fades the text out under the same shadow the legend uses, so no line is cut hard; the cue goes when the end is reached (checked by scrolling to the end). On the phone the card is not a scrolling box, so it has no cue. | `before3/us_day-latest_desk_card.png`, `before3/us_day-latest_phone_card.png` | `us_day-latest_desk_card.png`, `us_day-latest_desk_card_end.png`, `us_day-latest_phone_card.png` |
+| 2 | "Record shown in the calendar and charts": the first choice sat beside the label and the second wrapped under it. | The label is on its own line; the two choices are on one line under it, level with each other (measured at 1440: same top, 889 and 1070 px from the left); on a phone they are stacked and left-aligned. Same in both places the switch appears. | `before3/us_day-latest_desk_calendar.png` | `us_day-latest_desk_calendar.png`, `us_day-latest_desk_recordbar.png`, `us_day-latest_phone_calendar.png`, `us_day-latest_phone_recordbar.png` |
+| 3 | Calendar section at 1100 px and wider: an empty block between "Colour shows" and the calendar. | The calendar starts 10 px under the control. The right column (what the record is, the record switch, the note on the area, the selected month) starts level with the top of the calendar (measured: both at the same offset). Below 1100 px the order is unchanged. | `before3/us_day-latest_desk_calendar.png` | `us_day-latest_desk_calendar.png`, `us_day-latest_phone_calendar.png` |
+
+Not verified in this pass: the 147-cell overlap check and the control tour were not repeated (the changes are
+inside the card, the record switch and the calendar section); 1024x768 was not re-shot.

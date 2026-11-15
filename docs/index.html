@@ -93,8 +93,9 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 /* A panel is never taller than the room it has (set in fitMapPanels); when its content is taller it scrolls, and a
    shadow at the edge that has more shows it. */
 #layersbody,#maplegend{overflow:auto;background:linear-gradient(#fff 40%,rgba(255,255,255,0)) top,linear-gradient(rgba(255,255,255,0),#fff 60%) bottom,radial-gradient(farthest-side at 50% 0,rgba(20,33,61,.45),rgba(20,33,61,0)) top,radial-gradient(farthest-side at 50% 100%,rgba(20,33,61,.45),rgba(20,33,61,0)) bottom;background-repeat:no-repeat;background-size:100% 28px,100% 28px,100% 10px,100% 10px;background-attachment:local,local,scroll,scroll}
-.recordbar{margin:8px 0;padding:8px 12px;background:var(--paper);border-radius:6px}.recordbar fieldset{border:0;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 18px}
-.recordbar legend{float:left;font-weight:600;margin-right:14px;padding:0}.recordbar label{display:inline-flex;gap:6px;align-items:center;min-height:32px}.recordbar p{margin:4px 0 0}
+.recordbar{margin:8px 0;padding:8px 12px;background:var(--paper);border-radius:6px}.recordbar fieldset{border:0;margin:0;padding:0;display:block}
+.recordbar legend{float:none;display:block;font-weight:600;margin:0;padding:0}.recordopts{display:flex;flex-wrap:wrap;align-items:center;gap:0 24px}.recordbar label{display:inline-flex;gap:6px;align-items:center;min-height:32px;margin:0}.recordbar label input{min-height:auto;width:18px;height:18px;margin:0}
+@media(max-width:600px){.recordopts{flex-direction:column;align-items:flex-start}}.recordbar p{margin:4px 0 0}
 #statewrap{display:block;margin-top:4px}#statewrap[hidden]{display:none}#statewrap label,.pagehead label[for=region]{display:block}
 .pagehead>div:last-child{flex:0 0 auto}.pagehead>div:last-child select{min-width:210px}
 .statemap svg{display:block;width:100%;height:auto;max-height:460px}.statemap path{stroke:#fff;stroke-width:.6;cursor:pointer}.statemap path:hover{stroke:#14213d;stroke-width:1.6}
@@ -128,7 +129,11 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
   .cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px;align-items:start}.cols2>.howto,.cols2>form{margin-top:0!important}
   .flow2{columns:2;column-gap:40px}.flow2>*{break-inside:avoid}.flow2 h3{break-after:avoid;margin-top:0}.flow2 table{max-width:100%}
   #drill{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0 40px;align-items:start}#drill>*{grid-column:2}#drill>.crumbs,#drill>h3,#drill>details{grid-column:1/-1}#drill>.chart{grid-column:1;grid-row:3/span 8}
-  .calgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 40px;align-items:start}.calgrid>div:first-child{max-width:780px}
+  /* Calendar: how to read and the colour control, then the calendar with everything about the record and the selected
+     month beside it, starting level with the calendar's top. The last row takes any slack, so nothing is spread out. */
+  .calsec{display:grid;grid-template-columns:minmax(0,780px) minmax(0,1fr);grid-template-rows:auto auto auto auto auto auto auto 1fr auto;gap:0 40px;align-items:start}
+  .calsec>*{grid-column:1}#calhow{grid-row:1}#calmode{grid-row:2;margin-bottom:10px}#banner{grid-row:3}#areabanner{grid-row:4}#calbox{grid-row:5/span 4;margin-top:0}.calsec>#legend{grid-row:9}
+  #recordsays,#record2,#calnote,#detail{grid-column:2}#recordsays{grid-row:5}#record2{grid-row:6;margin-top:0}#calnote{grid-row:7}#detail{grid-row:8}
   #compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px;align-items:start}#compare>*{grid-column:1/-1}#compare>p{grid-column:auto}}
 @media(min-width:1100px){.widewrap{max-width:1400px}.pair2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
   .pair2 .harmgrid,.pair2 .mostgrid{grid-template-columns:minmax(0,1fr)}.pair2>section:only-child,.pair2>section[hidden]+section{grid-column:1/-1}}
@@ -188,6 +193,9 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #cardsheet{max-height:50%}
 .sheetbar{display:flex;gap:8px;justify-content:space-between;margin-bottom:6px}
 .sheetbar button{min-height:36px;padding:4px 10px}
+/* When the card holds more than it shows, its bottom edge fades the text out under a shadow (class set in cardCue),
+   so no line is cut in half and the reader sees there is more. */
+#cardsheet.more::after{content:"";display:block;position:sticky;bottom:-10px;height:34px;margin:-34px -12px -10px;pointer-events:none;background:linear-gradient(rgba(255,255,255,0),#fff 62%),radial-gradient(farthest-side at 50% 100%,rgba(20,33,61,.45),rgba(20,33,61,0)) bottom/100% 10px no-repeat}
 /* Wide: the card takes the right edge of the map and every map control moves left of it, so it covers none of them. */
 @media(min-width:601px){#cardsheet{left:auto;right:10px;top:10px;bottom:calc(var(--tl-h) + 10px);width:380px;max-height:none}
   .mapshell.has-card .leaflet-right{right:400px}}
@@ -196,7 +204,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 /* Phone: the card is a block under the timeline, not a sheet over the map. */
 @media(max-width:600px){#cardsheet{position:static;max-height:none;margin:0 8px 10px}}
 .card .town{font-size:1.02rem}.card .country{margin-top:1px}.card .feature{margin-top:3px}.card .kv .note{margin-top:4px;font-size:11.5px}
-.locator{display:block;margin:6px 0 2px;line-height:0;text-align:right}.card dl .kv:first-child{grid-template-columns:minmax(0,1fr)}
+.locator{display:block;margin:4px 0 2px;line-height:0;text-align:right}.placefoot{display:flex;gap:12px;align-items:flex-start;margin-top:4px}.placefoot .note{flex:1 1 0;min-width:0;margin:0!important}.placefoot .locator{flex:0 0 auto;margin:2px 0 0}.card dl .kv:first-child{grid-template-columns:minmax(0,1fr)}
 /* report for one detection, and its one-page print layout */
 #report dl.card{margin:0;max-width:760px}#report .reportimg{max-width:420px}#report .limits{margin:0;padding-left:1.2em;max-width:72ch}
 .reporttwo{display:grid;grid-template-columns:1fr;gap:0 24px}
@@ -451,21 +459,17 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 
   <section aria-labelledby="h-cal">
     <h2 id="h-cal">The full record, month by month</h2>
-    <div class="cols2"><div>
-    <p>How to read it: each row is a year and each box is a month. The number in a box is that month's fire detections on the MODIS Aqua scale; a brighter box means more. Select a box to see that month on the map, or a year to see the whole year.</p>
-    <div class="controls" style="margin-top:8px"><div><label for="mode">Colour shows</label>
+    <div class="calsec">
+    <p id="calhow">How to read it: each row is a year and each box is a month. The number in a box is that month's fire detections on the MODIS Aqua scale; a brighter box means more. Select a box to see that month on the map, or a year to see the whole year.</p>
+    <div class="controls" id="calmode" style="margin-top:8px;margin-bottom:10px"><div><label for="mode">Colour shows</label>
       <select id="mode"><option value="count">Fire detections</option><option value="anom">Compared with the usual for that month</option></select></div></div>
-    </div><div>
     <p id="recordsays"></p>
     <div class="recordbar" id="record2"></div>
     <p class="note" id="calnote"></p>
-    </div></div>
     <div id="banner"></div>
     <div id="areabanner"></div>
-    <div class="calgrid"><div>
-    <div class="calwrap"><table class="cal" id="cal"></table></div>
+    <div class="calwrap" id="calbox"><table class="cal" id="cal"></table></div>
     <div class="legend" id="legend"></div>
-    </div>
     <div id="detail" aria-live="polite"><p class="note">Select a month to see what each satellite recorded.</p></div>
     </div>
   </section>
@@ -819,12 +823,12 @@ function drawRecordBars() {
   const ok = D.calibration_accepted, f = D.snpp_to_aqua.forward_test, viirs = recordMode === "viirs" && ok;
   $("recordsays").textContent = recordSentence();
   ["record1", "record2"].forEach(id => {
-    const box = $(id), set = el("fieldset", {}, el("legend", {text: "Record shown in the calendar and charts"}));
+    const box = $(id), opts = el("div", {class: "recordopts"}), set = el("fieldset", {}, el("legend", {text: "Record shown in the calendar and charts"}), opts);
     [["aqua", "MODIS Aqua record"], ["viirs", "VIIRS-only record (as if Aqua had ended)"]].forEach(([v, text]) => {
       const input = el("input", {type: "radio", name: id + "mode", value: v});
       input.checked = (v === "viirs") === viirs; input.disabled = v === "viirs" && !ok;
       input.addEventListener("change", () => { if (input.checked) setRecord(v); });
-      set.append(el("label", {}, input, text));
+      opts.append(el("label", {}, input, text));
     });
     const kids = [set];
     if (!ok) kids.push(el("p", {class: "note", text: "VIIRS is not converted in " + inRegion() + ", so there is no VIIRS-only record to show."}));
@@ -3117,8 +3121,8 @@ function placeRow(lat, lon, sensor) {
   return [
     el("div", {class: "town"}, el("strong", {text: t ? t.where : "The list of towns for this region could not be loaded."}), t ? t.townIn : ""),
     own, feature,
-    el("div", {class: "note", text: "The place is the centre of a satellite pixel about " + (sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not the exact spot of the fire. Towns: GeoNames, CC BY 4.0. Named features: © OpenStreetMap contributors, via Nominatim."}),
-    locator(lat, lon)];
+    el("div", {class: "placefoot"}, el("div", {class: "note", text: "The place is the centre of a satellite pixel about " + (sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not the exact spot of the fire. Towns: GeoNames, CC BY 4.0. Named features: © OpenStreetMap contributors, via Nominatim."}),
+    locator(lat, lon))];
 }
 function cardNode(r) {
   const d = det(r), zone = zoneNow(), row = (k, ...v) => el("div", {class: "kv"}, el("dt", {text: k}), el("dd", {}, ...v));
@@ -3154,7 +3158,7 @@ function openCard(r) {
   const x = el("button", {type: "button", class: "secondary", text: "Close"}), back = el("button", {type: "button", class: "secondary", text: "Back to the whole region"});
   x.addEventListener("click", closeCard);
   back.addEventListener("click", () => { const v = prevView; closeCard(); if (v) map.setView(v.c, v.z, {animate: !REDUCE}); else map.fitBounds(regionBounds, {animate: !REDUCE}); });
-  sheet.replaceChildren(el("div", {class: "sheetbar"}, back, x), cardNode(r)); sheet.hidden = false; sheet.scrollTop = 0; $("mapshell").classList.add("has-card"); if (matchMedia("(max-width: 1180px)").matches) setLayersOpen(false); fitMapPanels();
+  sheet.replaceChildren(el("div", {class: "sheetbar"}, back, x), cardNode(r)); sheet.hidden = false; sheet.scrollTop = 0; cardCue(); $("mapshell").classList.add("has-card"); if (matchMedia("(max-width: 1180px)").matches) setLayersOpen(false); fitMapPanels();
   const z = Math.max(11, map.getZoom()), shift = phone ? [0, 0] : [(sheet.offsetWidth + 20) / 2, 0];
   // Phone: the card is under the timeline; bring the map, the timeline and the top of the card into view together.
   if (phone) $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"});
@@ -3166,6 +3170,11 @@ function openCard(r) {
   L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#111", weight: 5, fill: false, interactive: false}).addTo(layers.pick);
   L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#f2a900", weight: 3, fill: false, interactive: false}).addTo(layers.pick);
 }
+// The cue at the card's bottom edge is on while there is more below.
+function cardCue() { const s = $("cardsheet"); s.classList.toggle("more", !s.hidden && s.scrollHeight - s.scrollTop - s.clientHeight > 6); }
+$("cardsheet").addEventListener("scroll", cardCue);
+new MutationObserver(cardCue).observe($("cardsheet"), {childList: true, subtree: true, characterData: true});
+$("cardsheet").addEventListener("load", cardCue, true); addEventListener("resize", cardCue);
 function closeCard() { if (!map) return; map.closePopup(); $("mapshell").classList.remove("has-card"); $("cardsheet").hidden = true; $("cardsheet").replaceChildren(); layers.pick.clearLayers(); prevView = null; }
 // The drawn detection nearest to a click or tap, if one is within reach.
 let drawnRows = [], drawnSide = 0, fitNext = false;
