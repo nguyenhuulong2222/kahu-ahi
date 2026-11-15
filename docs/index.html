@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/svg+xml" href="kahu-ahi-mark.svg">
 <title>Kahu Ahi: one fire record across MODIS and VIIRS</title>
-<meta name="description" content="One fire record across MODIS and VIIRS: VIIRS fire detections put on the MODIS Aqua scale, with the measured error of doing so.">
+<meta name="description" content="One fire record across MODIS and VIIRS: the MODIS Aqua record, with VIIRS converted to its scale and tested as the successor that continues it when Aqua stops.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Kahu Ahi: one fire record across MODIS and VIIRS">
-<meta property="og:description" content="VIIRS fire detections put on the MODIS Aqua scale, region by region, with the measured error of doing so. Kahu Ahi is Hawaiian for 'keeper of the fire'.">
+<meta property="og:description" content="The MODIS Aqua fire record, with VIIRS converted to its scale and tested as the successor that continues it when Aqua stops. Kahu Ahi is Hawaiian for 'keeper of the fire'.">
 <meta property="og:image" content="https://nguyenhuulong2222.github.io/kahu-ahi/kahu-ahi-og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -92,6 +92,8 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .headline{margin:2px 0 0;font-size:.98rem;font-weight:600}.headline:empty{display:none}
 #layersbody{max-height:max(200px,calc(52vh - var(--tl-h) - 150px));overflow:auto}
 .mapshell:fullscreen #layersbody,.mapshell.is-full #layersbody{max-height:calc(100vh - var(--tl-h) - 150px)}
+.recordbar{margin:8px 0;padding:8px 12px;background:var(--paper);border-radius:6px}.recordbar fieldset{border:0;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 18px}
+.recordbar legend{float:left;font-weight:600;margin-right:14px;padding:0}.recordbar label{display:inline-flex;gap:6px;align-items:center;min-height:32px}.recordbar p{margin:4px 0 0}
 .maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
 .mapshell{margin-top:6px!important}
 /* Harmonization result: three figures and a small chart, straight under the map. */
@@ -264,7 +266,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <div class="brand"><img class="mark" src="kahu-ahi-mark.svg" alt="" aria-hidden="true" width="42" height="54">
     <div><h1>Kahu Ahi: one fire record across MODIS and VIIRS</h1>
     <p class="namenote">Kahu Ahi is Hawaiian for 'keeper of the fire': <i lang="haw">kahu</i>, keeper or guardian; <i lang="haw">ahi</i>, fire.</p>
-    <p class="lede">VIIRS counts put on the MODIS Aqua scale, region by region, with the measured error of doing so.</p>
+    <p class="lede">The record shown is MODIS Aqua. VIIRS, converted to its scale and tested, runs beside it and is what continues the record when Aqua stops.</p>
     <p class="headline" id="headline" aria-live="polite"></p></div></div>
   <div><label for="region">Region</label>
     <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option><option value="conus">Contiguous United States</option></select></div>
@@ -369,6 +371,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </section>
   <section aria-labelledby="h-drill">
     <h2 id="h-drill">Fire activity over time</h2>
+    <div class="recordbar" id="record1"></div>
     <p class="note">This opens on the days of one month. Select a bar to go down a level; use the trail above the chart to go up to the month, the year or all years. The map, the timeline and the calendar follow.</p>
     <div id="drill" aria-live="polite"></div>
   </section>
@@ -378,6 +381,8 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <p>How to read it: each row is a year and each box is a month. The number in a box is that month's fire detections on the MODIS Aqua scale; a brighter box means more. Select a box to see that month on the map, or a year to see the whole year.</p>
     <div class="controls" style="margin-top:8px"><div><label for="mode">Colour shows</label>
       <select id="mode"><option value="count">Fire detections</option><option value="anom">Compared with the usual for that month</option></select></div></div>
+    <p id="recordsays"></p>
+    <div class="recordbar" id="record2"></div>
     <p class="note" id="calnote"></p>
     <div id="banner"></div>
     <div id="areabanner"></div>
@@ -473,7 +478,8 @@ const STATUS = {
   partial_first_month:"Aqua's first month, only partly observed",
   terra_only_not_harmonized:"Before Aqua: only MODIS Terra, a morning satellite. Not on the same scale, so not coloured",
   not_calibrated_insufficient_overlap:"VIIRS only, and not converted in this region",
-  no_detections_coverage_unknown:"No satellite in this record was observing yet"
+  no_detections_coverage_unknown:"No satellite in this record was observing yet",
+  before_viirs:"Before the VIIRS record used here, so the VIIRS-only record has no value"
 };
 // Fire ramp, low to high: deep maroon, red, orange, yellow. Lightness rises at every step (L* 14 to 92), also under
 // simulated protanopia, deuteranopia and tritanopia, so it still reads in greyscale and with colour-vision deficiency.
@@ -526,7 +532,8 @@ function monthName(m) { return MONTHS[+m.slice(5) - 1] + " " + m.slice(0, 4); }
 function fullMonth(m) { return MONTH_FULL[+m.slice(5) - 1] + " " + m.slice(0, 4); }
 
 // The usual for each calendar month: median of complete, standard Aqua months.
-function mediansOf(months) { return MONTHS.map((_, i) => median(months.filter(x => x.status === "standard" && +x.m.slice(5) === i + 1 && x.m.slice(0, 4) >= "2003").map(x => x.h))); }
+function isStd(x) { return x.status === "standard" || x.status === "standard_calibrated"; }
+function mediansOf(months) { return MONTHS.map((_, i) => median(months.filter(x => isStd(x) && +x.m.slice(5) === i + 1 && x.m.slice(0, 4) >= "2003").map(x => x.h))); }
 // The region's coefficient for calendar month m, applied as calibrate.py applies it: the month's own, else the annual one.
 function coeff(m) {
   if (!D.calibration_accepted) return null;
@@ -560,6 +567,64 @@ function asUsedText(short) {
     : " Factors fitted on NOAA-20 itself were tested and did no better (" + pct(other.abs_error_pct_of_total) + " against " + pct(e.abs_error_pct_of_total) + "), so the Suomi NPP factors are used.";
   if (!u.accepted) t += " Used this way the conversion fails the page's own test, so recent converted values are marked not reliable.";
   return t;
+}
+// ---------- which record the calendar and the charts show ----------
+// "aqua": the record as published (MODIS Aqua from its first full month). "viirs": as if Aqua had ended, built only from
+// converted VIIRS: Suomi NPP while it has standard data, NOAA-20 after. The map and the sentences above it stay on the Aqua record.
+let recordMode = "aqua", calCache = null;
+function viirsSeries(base) {
+  const lastStd = s => { const v = D.sensors[s + "/standard"]; return v ? v.last.slice(0, 7) : ""; }, sn = lastStd("VIIRS_SNPP"), nn = lastStd("VIIRS_NOAA20");
+  const first = D.snpp_to_aqua.years ? D.months.find(x => x.snpp_eq != null && x.m > D.sensors["VIIRS_SNPP/standard"].first.slice(0, 7)) : null;
+  const months = base.months.map(x => {
+    const y = Object.assign({}, x, {aquaH: x.h, aquaSrc: x.src}), part = x.status.startsWith("partial_month_") ? "partial_month_" : "";
+    if (!first || x.m < first.m) { y.h = null; y.status = "before_viirs"; return y; }
+    if (x.snpp_eq != null && x.m <= sn) { y.h = x.snpp_eq; y.src = "VIIRS_SNPP"; y.status = part + "standard_calibrated"; }
+    else if (x.n20_eq != null) { y.h = x.n20_eq; y.src = "VIIRS_NOAA20"; y.status = part + (x.m <= nn ? "standard_calibrated" : "provisional_nrt"); }
+    else if (x.snpp_eq != null) { y.h = x.snpp_eq; y.src = "VIIRS_SNPP"; y.status = part + "provisional_nrt"; }
+    else { y.h = null; y.status = "before_viirs"; }
+    return y;
+  });
+  return Object.assign({}, base, {months, medians: mediansOf(months), viirsOnly: true});
+}
+function calSeries() {
+  if (recordMode !== "viirs" || !D.calibration_accepted) return S;
+  if (!calCache || calCache.base !== S) calCache = {base: S, v: viirsSeries(S)};
+  return calCache.v;
+}
+// Run a drawing function with the calendar's record in place of the published one.
+function withRecord(fn) { const keep = S; S = calSeries(); try { return fn(); } finally { S = keep; } }
+function recordSentence() {
+  const a = D.sensors["MODIS_AQUA/standard"], y0 = D.snpp_to_aqua.years && D.snpp_to_aqua.years[0];
+  if (!a) return "";
+  const from = MONTH_FULL[+a.first.slice(5, 7) - 1] + " " + a.first.slice(0, 4);
+  return "From " + from + " the record shown is MODIS Aqua: no month of it is converted. " + (D.calibration_accepted && y0
+    ? "Converted VIIRS runs beside it from " + y0 + " as the tested successor, and is what continues the record when Aqua stops."
+    : "VIIRS is not converted in " + inRegion() + ", so no successor stands ready to continue it.");
+}
+function setRecord(mode) {
+  recordMode = mode === "viirs" && D.calibration_accepted ? "viirs" : "aqua";
+  drawCalendar(); select(curSel());
+}
+function drawRecordBars() {
+  const ok = D.calibration_accepted, f = D.snpp_to_aqua.forward_test, viirs = recordMode === "viirs" && ok;
+  $("recordsays").textContent = recordSentence();
+  ["record1", "record2"].forEach(id => {
+    const box = $(id), set = el("fieldset", {}, el("legend", {text: "Record shown in the calendar and charts"}));
+    [["aqua", "MODIS Aqua record"], ["viirs", "VIIRS-only record (as if Aqua had ended)"]].forEach(([v, text]) => {
+      const input = el("input", {type: "radio", name: id + "mode", value: v});
+      input.checked = (v === "viirs") === viirs; input.disabled = v === "viirs" && !ok;
+      input.addEventListener("change", () => { if (input.checked) setRecord(v); });
+      set.append(el("label", {}, input, text));
+    });
+    const kids = [set];
+    if (!ok) kids.push(el("p", {class: "note", text: "VIIRS is not converted in " + inRegion() + ", so there is no VIIRS-only record to show."}));
+    else {
+      const a = f && f["2019_to_2021"], b = f && f["2022_onward"];
+      kids.push(el("p", {class: "note", text: (viirs ? "Showing converted VIIRS only, from " + D.snpp_to_aqua.years[0] + ": Suomi NPP while it has standard data, NOAA-20 after. Select a month to see how far it is from what Aqua recorded. The map stays on the MODIS Aqua record. " : "")
+        + (a && b ? "How a conversion built in the past holds up later: factors fitted on years up to 2018 and tested on later years were off by " + pct(a.abs_error_pct_of_total) + " for 2019 to 2021 and " + pct(b.abs_error_pct_of_total) + " from 2022." : "")}));
+    }
+    box.replaceChildren(...kids);
+  });
 }
 function regionSeries() { return {months: D.months, medians: mediansOf(D.months), current: D.current_month}; }
 
@@ -597,6 +662,7 @@ async function load(region, wish) {
   if (HAS_INSIDE[region]) { try { const r = await fetch("data/" + region + "_inside.json"); if (r.ok) INSIDE = await r.json(); } catch (e) { INSIDE = null; } }
   if (token !== loadToken) return;
   area = null; S = regionSeries(); pointsOn = false; applySel({});
+  recordMode = wish.record === "viirs" && D.calibration_accepted ? "viirs" : "aqua";
   $("through").textContent = "Data through " + D.data_through + ". Detections of presumed vegetation fire, low-confidence ones removed.";
   if (wish.sensor && [...$("sensor").options].some(o => o.value === wish.sensor)) $("sensor").value = wish.sensor;
   drawHarm(); drawTrust(); drawCompare(); drawRegionOnMap(); await setupDownload();
@@ -710,7 +776,7 @@ function flyingOn(s, d) { const sp = sensorSpan(s); return !!sp && d >= sp.first
 // ---------- what you are looking at: a few plain sentences for the current selection ----------
 function yearStats() {
   const by = {};
-  S.months.forEach(x => { const y = by[x.m.slice(0, 4)] = by[x.m.slice(0, 4)] || {total: 0, n: 0, std: 0, any: false}; if (x.h != null) { y.total += x.h; y.any = true; } y.n++; if (x.status === "standard") y.std++; });
+  S.months.forEach(x => { const y = by[x.m.slice(0, 4)] = by[x.m.slice(0, 4)] || {total: 0, n: 0, std: 0, any: false}; if (x.h != null) { y.total += x.h; y.any = true; } y.n++; if (isStd(x)) y.std++; });
   for (const y in by) by[y].complete = by[y].std === 12;
   return by;
 }
@@ -793,7 +859,8 @@ function barChart(title, bars) {
   const yaxis = el("div", {class: "yaxis", "aria-hidden": "true"}, el("span", {text: fmt(top)}), el("span", {text: fmt(top / 2)}), el("span", {text: "0"}));
   return el("div", {class: "chart", role: "group", "aria-label": title}, yaxis, plot, xaxis);
 }
-function drawDrill() {
+function drawDrill() { withRecord(drawDrillIn); }
+function drawDrillIn() {
   const box = $("drill"), lv = level(), ys = yearStats(), cs = completeSpan(ys);
   // breadcrumb
   const crumbs = el("nav", {class: "crumbs", "aria-label": "Time level"}), link = (text, sel, here) => {
@@ -816,7 +883,7 @@ function drawDrill() {
     const best = cs && cs.years.reduce((a, b) => ys[b].total > ys[a].total ? b : a);
     sum = list.length + " years, " + list[0] + " to " + list[list.length - 1] + "." + (best ? " The most detections in a complete year: " + best + ", with " + fmt(ys[best].total) + ". The usual complete year has " + fmt(median(cs.years.map(k => ys[k].total))) + "." : "") + " Select a year to see its months.";
   } else if (lv === "year") {
-    const usual = MONTHS.map((_, i) => S.months.filter(v => v.status === "standard" && +v.m.slice(5) === i + 1 && v.m.slice(0, 4) >= "2003").map(v => v.h));
+    const usual = MONTHS.map((_, i) => S.months.filter(v => isStd(v) && +v.m.slice(5) === i + 1 && v.m.slice(0, 4) >= "2003").map(v => v.h));
     const ms = MONTHS.map((_, i) => S.months.find(v => v.m === selYear + "-" + String(i + 1).padStart(2, "0")));
     kids.push(el("h3", {text: "Detections each month of " + selYear + ", " + where}));
     kids.push(barChart("Detections each month of " + selYear, ms.map((x, i) => {
@@ -877,7 +944,8 @@ function colour(x) {
   return ramp(x.h, Math.max(...S.months.map(m => m.h || 0)));
 }
 
-function drawCalendar() {
+function drawCalendar() { withRecord(drawCalendarIn); drawRecordBars(); }
+function drawCalendarIn() {
   const byYear = {};
   S.months.forEach(x => (byYear[x.m.slice(0, 4)] = byYear[x.m.slice(0, 4)] || {})[+x.m.slice(5)] = x);
   const t = $("cal"); t.replaceChildren();
@@ -931,13 +999,17 @@ function drawCalendar() {
   $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
 }
 
-function drawDetail(x) {
+function drawDetail(x) { withRecord(() => drawDetailIn(S.months.find(v => v.m === x.m) || x)); }
+function drawDetailIn(x) {
   const y = x.m.slice(0, 4), m = +x.m.slice(5), st = baseStatus(x.status), med = S.medians[m - 1];
   const box = $("detail"); box.replaceChildren();
   box.append(el("h3", {text: MONTHS[m - 1] + " " + y + (area ? ", chosen area" : ""), style: "margin:0 0 4px;font-size:1.05rem"}));
   let line = x.h == null ? "No value on the harmonized scale." : x.h === 0 ? "0 detections recorded by " + (SENSOR[x.src] || x.src) + ". Whether the area could be observed all month is unknown." : fmt(x.h) + " detections on the Aqua scale, from " + (SENSOR[x.src] || x.src) + ".";
   if (x.h != null && med != null && !isPartial(x.status)) line += " The usual " + MONTHS[m - 1] + " is " + fmt(med) + (med > 0 ? " (this is " + (x.h / med).toFixed(1) + " times that)." : ".");
   box.append(el("p", {text: line}));
+  // In the VIIRS-only record, say how far this month is from what Aqua recorded.
+  if (S.viirsOnly && x.h != null && x.aquaH != null && x.aquaSrc === "MODIS_AQUA") box.append(el("p", {id: "detaildiff", text: "MODIS Aqua recorded " + fmt(x.aquaH) + " this month. The VIIRS-only value is "
+    + (x.aquaH > 0 ? (x.h >= x.aquaH ? "+" : "−") + Math.abs(100 * (x.h - x.aquaH) / x.aquaH).toFixed(1) + "% from that (" + (x.h >= x.aquaH ? "+" : "−") + fmt(Math.abs(x.h - x.aquaH)) + " detections)." : fmt(x.h) + ", where Aqua recorded none.")}));
   box.append(el("p", {class: "note", text: (STATUS[st] || st) + (x.status.startsWith("partial_month_") ? ". This month is not complete, so it is not compared with a full month." : ".")}));
   const v = validationFor(x);
   if (v) box.append(el("p", {class: "note", text: v.text}));
@@ -1104,7 +1176,7 @@ function drawHarm() {
     figs.append(fig("After conversion, tested on years left out", "Not harmonized", "The conversion was off by " + pct(f.all.abs_error_pct_of_total) + (f.limit ? "; the limit is " + f.limit + "%" : "") + ". Only MODIS Aqua is shown here.", "refused"));
     figs.append(fig("Calendar months with enough detections for a factor", f.own + " of 12", (f.need ? f.need + " are needed. " : "") + (D.region.id === "hawaii" ? "Most heat detected here is volcanic, and the record cannot reliably separate it from vegetation fire." : ""), "refused"));
   }
-  const left = el("div", {}, figs, el("p", {style: "margin:10px 0 0", text: ok ? "One record: MODIS Aqua where it has data, VIIRS divided by its month's factor elsewhere. " : "The same test that accepts a conversion elsewhere refuses it here, and the page says so rather than show a number it cannot support. "}, el("a", {href: "#h-trust", text: "How these figures were measured, and all regions side by side"})));
+  const left = el("div", {}, figs, el("p", {style: "margin:10px 0 0", id: "harmsays", text: recordSentence() + (ok ? " " : " The same test that accepts a conversion elsewhere refuses it here, and the page says so rather than show a number it cannot support. ")}, el("a", {href: "#h-trust", text: "How these figures were measured, and all regions side by side"})));
   if (ok && asUsedText()) left.append(el("p", {class: "note", id: "harmused", style: "margin:8px 0 0", text: asUsedText()}));
   box.append(el("div", {class: "harmgrid"}, left, pairChart(D)));
 }
@@ -1294,7 +1366,7 @@ function drawAreaBanner() {
 
 // ---------- URL hash: region, month, map satellite, area ----------
 function readHash() {
-  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor"), at: p.get("at"), view: p.get("view"), report: p.get("report")};
+  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor"), at: p.get("at"), view: p.get("view"), report: p.get("report"), record: p.get("record")};
   const a = (p.get("area") || "").split(",").map(Number);
   if (a.length === 4 && a.every(Number.isFinite)) w.area = {w: a[0], s: a[1], e: a[2], n: a[3]};
   return w;
@@ -1315,12 +1387,14 @@ function writeHash() {
   if ($("sensor").value !== "auto") p.set("sensor", $("sensor").value);
   if (area) p.set("area", [area.w, area.s, area.e, area.n].map(v => v.toFixed(1)).join(","));
   if (reportKey && lv === "day") p.set("report", reportKey);
+  if (recordMode === "viirs") p.set("record", "viirs");
   history.replaceState(null, "", "#" + p.toString());
 }
 function applyHash() {
   const w = readHash();
   if (w.region && w.region !== (D && D.region.id) && [...$("region").options].some(o => o.value === w.region)) { $("region").value = w.region; load(w.region, w); return; }
   if (!D) return;
+  { const want = w.record === "viirs" && D.calibration_accepted ? "viirs" : "aqua"; if (want !== recordMode) { recordMode = want; drawCalendar(); } }
   if (w.sensor && w.sensor !== $("sensor").value && [...$("sensor").options].some(o => o.value === w.sensor)) $("sensor").value = w.sensor;
   const then = () => select(startSel(w)).then(() => { goAt(wishAt(w)); const r = wishReport(w); if (r && selDay === r.date && reportKeyOf(r) !== reportKey) openReport(r); });
   if (w.area) setArea(w.area, true).then(then);
