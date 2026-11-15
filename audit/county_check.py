@@ -18,8 +18,20 @@ Both the detection and the town are located in the same boundary file, so differ
 spelled do not matter. For the United States the name printed on the card is also compared with the
 Census name of the county that holds the detection.
 
-Standard library only.  Usage:  python3 audit/county_check.py
+After the fix (the card words the town's county as the town's, and takes the detection's own county only from
+the Nominatim lookup), two things are measured:
+  - how often the town named on the card lies in another county or district than the detection (unchanged by
+    the fix; it is now worded as the town's);
+  - with --nominatim N: for N sampled detections in the contiguous United States, whether the county Nominatim
+    returns for the point (what the card now prints as the point's own) is the Census county of the point.
+    One request every 1.2 s, as the Nominatim usage policy asks.
+
+Standard library only.  Usage:  python3 audit/county_check.py [--nominatim 40]
 """
+import sys
+import time
+import urllib.parse
+import urllib.request
 import gzip
 import json
 import math
@@ -199,6 +211,34 @@ def main():
             "km_to_nearest_town": {"median": round(dist[len(dist) // 2], 1), "p90": round(dist[int(len(dist) * .9)], 1), "max": round(dist[-1], 1)},
             "by_distance": dict(by_km), "examples": examples}
         print(region, json.dumps(report["regions"][region]["counts"]), report["regions"][region]["different_unit_pct_of_both_located"], report["regions"][region]["ci95_pct"], report["regions"][region]["km_to_nearest_town"])
+    if "--nominatim" in sys.argv:
+        n = int(sys.argv[sys.argv.index("--nominatim") + 1])
+        rows, _ = sample_rows("conus")
+        got = {"asked": 0, "answered": 0, "county_given": 0, "county_matches_census": 0, "state_matches_census": 0, "mismatches": []}
+        for lat, lon, *_ in rows[:: max(1, len(rows) // n)][:n]:
+            here = units.find(lat, lon)
+            if here is None or here["country"] != "United States":
+                continue
+            got["asked"] += 1
+            url = "https://nominatim.openstreetmap.org/reverse?" + urllib.parse.urlencode({"format": "jsonv2", "lat": f"{lat:.5f}", "lon": f"{lon:.5f}", "zoom": "18", "addressdetails": "1", "accept-language": "en"})
+            try:
+                with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "kahu-ahi-audit-script/1 (one-off check of 40 points)"}), timeout=20) as r:
+                    a = json.load(r).get("address", {})
+                got["answered"] += 1
+                county = a.get("county") or a.get("district") or a.get("municipality") or ""
+                if county:
+                    got["county_given"] += 1
+                    if county.lower() == here["name"].lower():
+                        got["county_matches_census"] += 1
+                    else:
+                        got["mismatches"].append({"lat": lat, "lon": lon, "nominatim": county, "census": here["name"], "state": here["state"]})
+                if (a.get("state") or "").lower() == here["state"].lower():
+                    got["state_matches_census"] += 1
+            except Exception as e:      # the page treats an unanswered lookup as "not stated"
+                got.setdefault("errors", []).append(str(e)[:80])
+            time.sleep(1.2)
+        report["nominatim_point_county_conus"] = got
+        print("nominatim", json.dumps({k: v for k, v in got.items() if k != "mismatches"}), got["mismatches"][:5])
     (OUT / "county_check.json").write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
 
 

@@ -343,5 +343,21 @@
     }
    ]
   }
+ },
+ "nominatim_point_county_conus": {
+  "asked": 40,
+  "answered": 40,
+  "county_given": 40,
+  "county_matches_census": 39,
+  "state_matches_census": 40,
+  "mismatches": [
+   {
+    "lat": 29.99996,
+    "lon": -90.40062,
+    "nominatim": "Saint Charles Parish",
+    "census": "St. Charles Parish",
+    "state": "Louisiana"
+   }
+  ]
  }
 }

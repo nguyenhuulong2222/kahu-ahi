@@ -2252,7 +2252,10 @@ function placeName(lat, lon) {
       try {
         const r = await fetch(NOMINATIM_URL + "?" + new URLSearchParams({format: "jsonv2", lat: lat.toFixed(5), lon: lon.toFixed(5), zoom: "18", addressdetails: "1", "accept-language": "en"}), {signal: stop.signal});
         if (!r.ok) throw new Error(r.status);
-        return placeText(await r.json());
+        const j = await r.json(), a = (j && j.address) || {};
+        // The administrative names here belong to the point itself (the place that contains the pixel centre).
+        const own = [a.county || a.district || a.municipality || "", a.state || a.province || a.region || "", a.country || ""].filter((v, i, all) => v && all.indexOf(v) === i);
+        return {features: placeText(j), own: own.join(", "), country: a.country || ""};
       } catch (e) { placeCache.delete(key); return null; }
       finally { clearTimeout(timer); }
     });
@@ -2278,7 +2281,9 @@ function nearTown(lat, lon) {
   const name = best[0] + (best[1] ? " (" + best[1] + ")" : ""), shown = km < 100 ? Math.round(km) : Math.round(km / 10) * 10;
   const short = km < 1 ? "In " + best[0] : fmt(shown) + " km " + dir + " of " + best[0];
   const adm = (PLACES.admin[best[5]] || "").split(", "), country = adm.length ? adm.pop() : "";
-  const out = {name: best[0], km, dir: km < 1 ? "" : dir, short, country, admin: adm.join(", "), where: (km < 1 ? "In " + name : fmt(shown) + " km " + dir + " of " + name), text: (km < 1 ? "In " + name : fmt(shown) + " km " + dir + " of " + name) + (PLACES.admin[best[5]] ? ", " + PLACES.admin[best[5]] : "")};
+  // The county and country in the gazetteer are the town's. They are only ever shown as the town's, never as the detection's.
+  const townIn = PLACES.admin[best[5]] ? " (a town in " + PLACES.admin[best[5]] + ")" : "", where = km < 1 ? "Within 1 km of " + name : fmt(shown) + " km " + dir + " of " + name;
+  const out = {name: best[0], km, dir: km < 1 ? "" : dir, short: km < 1 ? "Within 1 km of " + best[0] : short, townAdmin: PLACES.admin[best[5]] || "", where, townIn, text: where + townIn};
   nearCacheTown.set(key, out);
   return out;
 }
@@ -2289,16 +2294,16 @@ function dmsText(lat, lon) {
 // The place of a detection in two lines. Line 1, the nearest town, is immediate and never needs the network.
 // Line 2, the nearest named feature, comes from the one Nominatim lookup; after 3 s or on failure it says it is unavailable.
 function fillPlace(node, lat, lon, lead) {
-  const town = nearTown(lat, lon), feature = el("span", {class: "feature", text: " Looking up the nearest named feature."});
+  const town = nearTown(lat, lon), feature = el("span", {class: "feature", text: " Looking up the point's own county and the nearest named feature."});
   node.replaceChildren(lead || "", el("strong", {text: town ? town.text : "The list of towns for this region could not be loaded."}),
     el("span", {class: "note", text: " The place is the centre of the satellite pixel, not the exact spot of the fire. Towns: GeoNames, CC BY 4.0."}), el("br"), feature);
   let done = false;
-  const late = setTimeout(() => { if (!done) feature.textContent = "Nearest named feature unavailable right now."; }, PLACE_WAIT_MS);
+  const late = setTimeout(() => { if (!done) feature.textContent = "The point's own county and country are not stated yet: the lookup has not answered."; }, PLACE_WAIT_MS);
   placeName(lat, lon).then(t => {
     done = true; clearTimeout(late);
-    if (t === null) feature.textContent = "Nearest named feature unavailable.";
-    else if (!t) feature.replaceChildren();   // nothing finer than the county: line 1 stands alone
-    else feature.replaceChildren("Nearest named feature: ", el("strong", {text: t}), el("span", {class: "note", text: " (© OpenStreetMap contributors, via Nominatim)"}));
+    if (t === null) { feature.textContent = "The point's own county and country are not stated: the lookup did not answer."; return; }
+    feature.replaceChildren(...(t.own ? ["The point itself is in ", el("strong", {text: t.own}), "."] : ["The point's own county and country are not stated."]),
+      ...(t.features ? [" Nearest named feature: ", el("strong", {text: t.features}), "."] : []), el("span", {class: "note", text: " (© OpenStreetMap contributors, via Nominatim)"}));
   });
 }
 
@@ -2348,19 +2353,18 @@ function locator(lat, lon) {
 }
 // The Place row of a card: the town line in bold, the country, the nearest named feature under it, then the small print and the locator.
 function placeRow(lat, lon, sensor) {
-  const t = nearTown(lat, lon), feature = el("div", {class: "feature", text: "Looking up the nearest named feature."});
+  const t = nearTown(lat, lon), own = el("div", {class: "country", text: "Looking up the point's own county and country."}), feature = el("div", {class: "feature"});
   let done = false;
-  const late = setTimeout(() => { if (!done) feature.textContent = "Nearest named feature unavailable right now."; }, PLACE_WAIT_MS);
+  const late = setTimeout(() => { if (!done) own.textContent = "The point's own county and country: not stated yet, the lookup has not answered."; }, PLACE_WAIT_MS);
   placeName(lat, lon).then(f => {
     done = true; clearTimeout(late);
-    if (f === null) feature.textContent = "Nearest named feature unavailable.";
-    else if (!f) feature.replaceChildren();
-    else feature.replaceChildren("Nearest named feature: ", el("strong", {text: f}));
+    if (f === null) { own.textContent = "The point's own county and country: not stated, the lookup did not answer."; return; }
+    if (f.own) own.replaceChildren("The point itself is in ", el("strong", {text: f.own})); else own.textContent = "The point's own county and country: not stated.";
+    if (f.features) feature.replaceChildren("Nearest named feature: ", el("strong", {text: f.features}));
   });
   return [locator(lat, lon),
-    el("div", {class: "town"}, el("strong", {text: t ? t.where : "The list of towns for this region could not be loaded."})),
-    ...(t ? [el("div", {text: t.admin}), el("div", {class: "country"}, "Country: ", el("strong", {text: t.country || "not given"}))] : []),
-    feature,
+    el("div", {class: "town"}, el("strong", {text: t ? t.where : "The list of towns for this region could not be loaded."}), t ? t.townIn : ""),
+    own, feature,
     el("div", {class: "note", text: "The place is the centre of a satellite pixel about " + (sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not the exact spot of the fire. Towns: GeoNames, CC BY 4.0. Named features: © OpenStreetMap contributors, via Nominatim."})];
 }
 function cardNode(r) {
@@ -2463,10 +2467,10 @@ function drawTable() {
 }
 function downloadTable() {
   if (!tbl) return;
-  const zone = TIMEZONE[D.region.id], lines = ["acq_date,acq_time,latitude,longitude,sensor,quality,confidence,frp,daynight,type,counted,local_time,time_zone,nearest_place,distance_km,direction"];
+  const zone = TIMEZONE[D.region.id], lines = ["acq_date,acq_time,latitude,longitude,sensor,quality,confidence,frp,daynight,type,counted,local_time,time_zone,nearest_town,km_to_nearest_town,direction_from_town,town_is_in"];
   const q = v => '"' + String(v).replace(/"/g, '""') + '"';
   [...tbl.rows].sort((a, b) => (a[5] < b[5] ? -1 : a[5] > b[5] ? 1 : 0)).forEach(r => { const t = nearTown(r[0], r[1]);
-    lines.push(r[5] + "," + q(localText(det(r), zone, true)) + "," + zone + "," + (t ? q(t.name) + "," + t.km.toFixed(1) + "," + t.dir : ",,")); });
+    lines.push(r[5] + "," + q(localText(det(r), zone, true)) + "," + zone + "," + (t ? q(t.name) + "," + t.km.toFixed(1) + "," + t.dir + "," + q(t.townAdmin) : ",,,")); });
   const a = el("a", {href: URL.createObjectURL(new Blob([lines.join("\n") + "\n"], {type: "text/csv"})), download: tbl.csvName});
   document.body.append(a); a.click(); a.remove();
 }
