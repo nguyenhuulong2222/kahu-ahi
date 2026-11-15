@@ -36,6 +36,7 @@ p{margin:0 0 12px;max-width:68ch}
 section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;margin-top:20px}
 .controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;margin-top:20px}
 label{font-size:.9rem;color:var(--muted);display:block}
+select{max-width:100%}#calmode>div{min-width:0;max-width:100%}#reportaddr a{overflow-wrap:anywhere}
 select,button,input{font:inherit;color:var(--ink);background:#fff;border:1px solid #8793a6;border-radius:4px;padding:8px 10px;min-height:44px}
 button{background:var(--action);color:#fff;border-color:var(--action);cursor:pointer;font-weight:600}
 button:disabled{opacity:.55;cursor:default}
@@ -156,7 +157,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #map{height:calc(52vh - var(--tl-h));min-height:380px;isolation:isolate;background:#0d1b2a}
 .mapshell:fullscreen,.mapshell.is-full{display:flex;flex-direction:column;width:100%;height:100%;margin:0;border:0}
 .mapshell.is-full{position:fixed;inset:0;z-index:2000;height:100dvh}
-.mapshell:fullscreen #map,.mapshell.is-full #map{flex:1;height:auto;min-height:0}
+.mapshell:fullscreen #map,.mapshell.is-full #map{flex:1;height:auto!important;min-height:0!important}
 .timeline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;background:#14213d;color:#fff}
 .tl-btn{min-height:40px;padding:6px 10px;background:#fff;color:var(--ink);border-color:#fff;font-weight:600}
 .tl-btn[aria-pressed="true"]{background:#f2a900;color:#14213d;border-color:#f2a900}
@@ -171,7 +172,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #biglabel{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:900;pointer-events:none;padding:4px 16px;border-radius:6px;background:rgba(20,33,61,.82);color:#fff;font-weight:700;font-size:clamp(1.6rem,5vw,3rem);font-variant-numeric:tabular-nums;white-space:nowrap}
 #mapnotes{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:900;width:min(440px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .mapnote{pointer-events:auto;padding:10px 14px;border-radius:6px;background:rgba(255,255,255,.96);box-shadow:0 1px 6px rgba(0,0,0,.35);border-left:4px solid var(--warn);font-size:.95rem}
-.mapnote p{margin:0 0 8px}.mapnote button{min-height:40px}
+.mapnote p{margin:0 0 8px}.mapnote button{min-height:40px;margin:0 6px 4px 0}
 #map .leaflet-top.leaflet-left{display:flex;align-items:flex-start;gap:0 8px;max-width:calc(100% - 160px)}
 .mchip{display:flex;align-items:center;gap:2px 4px;flex-wrap:wrap;max-width:min(660px,calc(100vw - 500px));padding:3px 4px 3px 10px;border-radius:6px;background:rgba(255,255,255,.96);box-shadow:0 1px 6px rgba(0,0,0,.35);border-left:4px solid var(--warn);font:600 13px/1.3 var(--font);color:var(--ink)}
 .mchip[hidden]{display:none}.mchip .linkish{font-weight:600;min-height:30px}.mchip #chipclose{all:unset;cursor:pointer;min-width:30px;min-height:30px;text-align:center;font-size:18px;line-height:30px;border-radius:4px}
@@ -191,7 +192,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .card .note{margin:6px 0 0;font-size:12px}.card button:not(.linkish){min-height:40px}
 #cardsheet{position:absolute;left:8px;right:8px;bottom:calc(var(--tl-h) + 10px);z-index:1100;max-height:62%;overflow:auto;padding:10px 12px;border-radius:8px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);font:13px/1.4 var(--font)}
 #cardsheet{max-height:50%}
-.sheetbar{display:flex;flex-wrap:wrap;gap:6px 8px;margin-bottom:6px}.sheetbar button:last-child{margin-left:auto}#card-where{margin:0 0 6px;padding:6px 8px;background:#fff6e5;border-left:4px solid #f2a900;color:var(--ink)}
+.sheetbar{position:relative;display:flex;flex-wrap:wrap;gap:6px 8px;margin-bottom:6px;padding-right:44px}.sheetbar button{flex:1 1 auto}.sheetbar .cardx{position:absolute;top:0;right:0;flex:none;width:36px;min-width:36px;padding:0;font-size:1.25rem;line-height:1}#card-where{margin:0 0 6px;padding:6px 8px;background:#fff6e5;border-left:4px solid #f2a900;color:var(--ink)}
 .sheetbar button{min-height:36px;padding:4px 7px}@media(min-width:601px){.sheetbar button{font-size:12.5px}}
 /* When the card holds more than it shows, its bottom edge fades the text out under a shadow (class set in cardCue),
    so no line is cut in half and the reader sees there is more. */
@@ -207,6 +208,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
    never lies over the map, its controls or the timeline. */
 .mapshell.card-open #legendpanel{display:none}
 #cardsheet.floating{position:fixed;left:auto;right:16px;top:auto;bottom:16px;width:380px;max-width:calc(100vw - 32px);max-height:min(70vh,560px);z-index:2400;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+#cardsheet.floating.atleft,#previewcard.floating.atleft{left:16px;right:auto}#cardsheet.floating.capped,#previewcard.floating.capped{max-height:min(46vh,420px)}
 #previewcard.docked{position:absolute;left:auto;right:10px;top:10px;bottom:calc(var(--tl-h) + 10px);width:380px;max-height:none;z-index:1100;box-shadow:0 2px 10px rgba(0,0,0,.45)}
 @media(max-width:600px){#cardsheet,#cardsheet.floating{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-width:none;max-height:55vh;margin:0;border-radius:10px 10px 0 0;z-index:2400;box-shadow:0 -3px 14px rgba(0,0,0,.4)}
   #cardsheet.attop,#previewcard.attop{border-radius:0 0 10px 10px;box-shadow:0 3px 14px rgba(0,0,0,.4)}}
@@ -316,7 +318,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   #legendpanel{width:220px}#layerspanel{max-width:calc(100vw - 132px)}
   #map .leaflet-top.leaflet-left{flex-wrap:wrap;max-width:none;right:0}.mchip{max-width:calc(100vw - 30px);flex:0 1 auto;margin-top:6px!important}
   .leaflet-bottom.leaflet-left{bottom:36px}
-  #biglabel{top:58px}#mapnotes{top:108px}
+  #biglabel{top:58px}#mapnotes{top:60px;left:10px;right:58px;width:auto;transform:none}#biglabel:not([hidden])~#mapnotes{top:108px}.mapnote{font-size:.84rem;line-height:1.35;padding:7px 10px;max-height:150px;overflow:auto}.mapnote p{margin:0 0 5px}.mapnote button{min-height:36px;padding:4px 8px}
   .mapshell{--tl-h:200px}.tl-levels{order:8;flex:1 1 100%}.tl-levels .tl-btn{flex:1 1 0;padding:6px 4px;font-size:.9rem;min-width:0}
   #monthrow{grid-template-columns:repeat(6,minmax(0,1fr))}#monthrow strong{grid-column:1/-1}
   .leaflet-control-attribution{font-size:10px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -395,7 +397,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <div id="cardsheet" class="detpop" role="dialog" aria-label="One detection" hidden></div>
   <div id="previewcard" role="dialog" aria-labelledby="pv-title" hidden></div>
   <div id="mapnotes">
-    <div id="mapempty" class="mapnote" role="status" aria-live="polite" hidden><p></p><button type="button" id="toauto">Switch to the harmonized view</button></div>
+    <div id="mapempty" class="mapnote" role="status" aria-live="polite" hidden><p></p><button type="button" id="toauto">Switch to the harmonized view</button><button type="button" id="tolatest" class="secondary" hidden></button></div>
   </div>
 </section>
 
@@ -669,7 +671,7 @@ function stateFacts(v) {
 }
 const ERROR_STEPS = [[10, "#cfe8e6"], [20, "#8fc9c5"], [35, "#3f9e98"], [Infinity, "#0b6e6e"]];   // one hue, light to dark; refused states are hatched instead
 let stateSort = {key: "error", dir: 1};
-function openState(id) { const w = readHash(); w.state = id; w.area = null; w.at = null; w.report = null; w.sensor = null; $("state").value = id; return load("conus", w); }
+function openState(id) { const w = readHash(); if (w.day && w.day === autoDay) w.day = null; w.state = id; w.area = null; w.at = null; w.report = null; w.sensor = null; $("state").value = id; return load("conus", w); }
 function drawByState() {
   const sec = $("bystate"), box = $("bystatebody");
   sec.hidden = !(ST && GEO && D && D.region.id === "conus" && !STATE);
@@ -686,7 +688,7 @@ function drawByState() {
   const kx = Math.cos(37 * Math.PI / 180), sc = 900 / ((e - w) * kx), W = 900, H = Math.ceil((n - s0) * sc), X = lon => ((lon - w) * kx * sc).toFixed(1), Y = lat => ((n - lat) * sc).toFixed(1);
   const svg = svgEl("svg", {viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Map of the 48 states and DC coloured by the tested error of each state's conversion; states that are not harmonized are hatched. The table beside the map has every number."});
   svg.append(svgEl("defs", {}, svgEl("pattern", {id: "hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)"}, svgEl("rect", {width: 6, height: 6, fill: "#f3ede3"}), svgEl("line", {x1: 0, y1: 0, x2: 0, y2: 6, stroke: "#8a4b00", "stroke-width": 2}))));
-  const byId = Object.fromEntries(rows.map(r => [r.id, r])), labels = [];
+  const byId = Object.fromEntries(rows.map(r => [r.id, r]));
   all.forEach(g => {
     const r = byId[g.id], fill = r.v.calibration_accepted ? ERROR_STEPS.find(st => r.e <= st[0])[1] : "url(#hatch)";
     const d = g.rings.map(f => { let t = ""; for (let i = 0; i < f.length; i += 2) t += (i ? "L" : "M") + X(f[i]) + " " + Y(f[i + 1]); return t + "Z"; }).join("");
@@ -694,12 +696,11 @@ function drawByState() {
     path.append(svgEl("title", {text: g.name + ": " + (r.v.calibration_accepted ? "error " + pct(r.e) : "not harmonized (" + r.why + ")")}));
     path.addEventListener("click", () => openState(g.id));
     svg.append(path);
-    if (!r.v.calibration_accepted) labels.push(svgEl("text", {x: X((g.bbox[0] + g.bbox[2]) / 2), y: Y((g.bbox[1] + g.bbox[3]) / 2), "text-anchor": "middle", "dominant-baseline": "middle", text: g.id}));
   });
-  svg.append(...labels);
+  const hatched = el("p", {class: "note", id: "hatchnames", text: "Hatched, not harmonized: " + all.filter(g => !byId[g.id].v.calibration_accepted).map(g => g.name).sort().join(", ") + "."});
   const legend = el("div", {class: "statelegend", "aria-hidden": "true"}, el("span", {text: "Error of the state's own conversion, tested on years left out. Lighter = smaller error; from best to worst:"}));
   ERROR_STEPS.forEach((st, i) => legend.append(el("span", {}, el("span", {class: "sw2", style: "background:" + st[1]}), i === 0 ? "up to " + st[0] + "%" : st[0] === Infinity ? "over " + ERROR_STEPS[i - 1][0] + "% to " + limit + "%" : "over " + ERROR_STEPS[i - 1][0] + "% to " + st[0] + "%")));
-  legend.append(el("span", {}, el("span", {class: "sw2", style: "background:repeating-linear-gradient(45deg,#f3ede3 0 3px,#8a4b00 3px 5px)"}), "Not harmonized (hatched, with the state's letters)"));
+  legend.append(el("span", {}, el("span", {class: "sw2", style: "background:repeating-linear-gradient(45deg,#f3ede3 0 3px,#8a4b00 3px 5px)"}), "Not harmonized (hatched; named below)"));
   // table
   const val = r => stateSort.key === "error" ? (r.e == null ? Infinity : r.e) : stateSort.key === "aqua" ? r.v.aqua_detections_paired_months : r.v.name;
   rows.sort((a, b) => { const x = val(a), y = val(b); return (x < y ? -1 : x > y ? 1 : a.v.name.localeCompare(b.v.name)) * stateSort.dir; });
@@ -720,7 +721,7 @@ function drawByState() {
       el("td", {text: r.v.calibration_accepted ? (r.v.as_used && !r.v.as_used.accepted ? "Harmonized; recent values not reliable" : "Harmonized") : "Not harmonized: " + r.why})));
   });
   t.append(body);
-  box.replaceChildren(intro, el("div", {class: "stategrid"}, el("div", {class: "statemap"}, svg, legend), el("div", {class: "calwrap statetable"}, t)),
+  box.replaceChildren(intro, el("div", {class: "stategrid"}, el("div", {class: "statemap"}, svg, legend, hatched), el("div", {class: "calwrap statetable"}, t)),
     el("p", {class: "note", text: "A state is the Census Bureau's simplified outline (1:5,000,000); a detection belongs to the state whose outline contains its position. " + fmt(ST.rows.outside_every_state) + " of " + N(ST.rows.in_a_state + ST.rows.outside_every_state, "detection") + " in the national files fall in no state (offshore, or land the simplified coastline cuts off); they stay in the national numbers and are in no state's. \"Aqua detections\" are MODIS Aqua's counted detections over the months both satellites have; \"factor months\" is how many of the 12 calendar months have enough of them for a factor of their own. \"National factors\" is the state's error when the country's factors are used instead of its own. Select a state on the map, in the table or in the State list."}));
 }
 const round1 = v => Math.round(v * 10) / 10;
@@ -895,14 +896,16 @@ async function load(region, wish) {
   if (token !== loadToken) return;
   area = null; S = regionSeries(); pointsOn = false; applySel({});
   recordMode = wish.record === "viirs" && D.calibration_accepted ? "viirs" : "aqua";
+  fitFirstScreen();
   $("through").textContent = "Data through " + dayName(D.data_through) + " (UTC). Detections of presumed vegetation fire, low-confidence ones removed.";
   // A region or a state opens on the harmonized view unless the link names a satellite.
   chipFromLink = !!(wish.sensor && [...$("sensor").options].some(o => o.value === wish.sensor)); chipDismissed = "";
   $("sensor").value = chipFromLink ? wish.sensor : "auto";
   drawHarm(); drawByState(); drawTrust(); drawCompare(); drawRegionOnMap(); await setupDownload();
   if (token !== loadToken) return;
-  // With no time in the link the page opens on the latest day that has a counted detection, so the map is never empty on load.
+  // With no time in the link the page opens on the latest complete day that has a counted detection, so the map is never empty on load.
   applySel(startSel(wish));
+  fitFirstScreen();
   if (STATE) wish.area = null;
   if (wish.area && !(await setArea(wish.area, true))) wish.area = null;
   if (token !== loadToken) return;
@@ -992,10 +995,18 @@ function viewIndex(d) {
   return GRID_SENSORS.indexOf(v !== "auto" ? v : x && GRID_SENSORS.includes(x.src) ? x.src : "MODIS_AQUA");
 }
 function harmIndex(d) { const x = D.months.find(m => m.m === d.slice(0, 7)); return GRID_SENSORS.indexOf(x && GRID_SENSORS.includes(x.src) ? x.src : "MODIS_AQUA"); }
-// The most recent day with at least one counted detection in the harmonized view: where the page opens.
+// The last day in the files when it was still being received as they were made: the day after the last one the
+// month-so-far comparison uses. Its count is not complete, so the page does not open on it and says so where it is shown.
+function partialDay() {
+  const c = D && D.current_month;
+  if (!c || !D.data_through.startsWith(c.month)) return null;
+  return +D.data_through.slice(8) > +String(c.days).split("-").pop() ? D.data_through : null;
+}
+// The most recent complete day with at least one counted detection in the harmonized view: where the page opens.
 function latestDay() {
   if (!daily) return null;
-  for (let i = daily.dates.length - 1; i >= 0; i--) { const d = daily.dates[i]; if (d <= D.data_through && dayCounts(d)[harmIndex(d)] > 0) return d; }
+  const part = partialDay();
+  for (let i = daily.dates.length - 1; i >= 0; i--) { const d = daily.dates[i]; if (d !== part && d <= D.data_through && dayCounts(d)[harmIndex(d)] > 0) return d; }
   return null;
 }
 // The day with the most counted detections among dates starting with a prefix ("2021", "2021-08", or "" for the whole record).
@@ -1660,7 +1671,9 @@ function readHash() {
 function wishReport(w) { const a = (w.report || "").split(","); return w.day && a.length === 4 && Number.isFinite(+a[0]) && Number.isFinite(+a[1]) && GRID_SENSORS.includes(a[2]) ? {date: w.day, lat: +a[0], lon: +a[1], sensor: a[2], time: a[3].padStart(4, "0")} : null; }
 function wishAt(w) { const a = (w.at || "").split(",").map(Number); return a.length === 2 && a.every(Number.isFinite) ? a : null; }
 // What a link asks for; with no time in it, the latest day with a counted detection ("view=all" asks for all years).
-function startSel(w) { const d = !w.day && !w.month && !w.year && w.view !== "all" && latestDay(); return d ? {day: d} : wishSel(w); }
+// autoDay remembers the day the page chose itself, so that opening a state from it lands on that state's own latest day.
+let autoDay = null;
+function startSel(w) { const d = !w.day && !w.month && !w.year && w.view !== "all" && latestDay(); if (d) autoDay = d; return d ? {day: d} : wishSel(w); }
 function wishSel(w) { return w.day ? {day: w.day} : w.month ? {month: w.month} : w.year ? {year: w.year} : {}; }
 function writeHash() {
   if (!D) return;
@@ -2624,11 +2637,14 @@ function yearSensor(y) {
     label: SENSOR[s] + (s === "MODIS_AQUA" ? "" : auto ? " (before Aqua; not on the Aqua scale)" : ", as recorded (not converted)")};
 }
 // Words for the map when the chosen satellite has nothing to show: having no data is different from having data and seeing nothing.
-function setEmpty(text, offerAuto) {
+function setEmpty(text, offerAuto, offerLatest) {
   const box = $("mapempty");
   box.hidden = !text;
   box.firstElementChild.textContent = text || "";
   $("toauto").hidden = !offerAuto;
+  const d = text && offerLatest ? latestDay() : null, b = $("tolatest");
+  b.hidden = !d || d === selDay; b.dataset.day = d || "";
+  b.textContent = d ? "Go to " + dayName(d) + ", the latest day with a detection here" : "";
   updateChip();
 }
 // Any satellite other than the harmonized view is named in a one-line chip beside the Layers button, with the way back.
@@ -2730,10 +2746,11 @@ async function drawMap() {
   }
   const nothing = SENSOR[pick.s] + " has data for this period but recorded no detection in " + inRegion() + (lv === "day" ? " on " : " in ") + name + ". That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
   if (lv === "day") {
-    const n = daily ? dayCounts(selDay)[pick.i] : null;
+    const n = daily ? dayCounts(selDay)[pick.i] : null, part = selDay === partialDay();
     sum.textContent = name + ", " + pick.label + ": " + (n == null ? "the daily counts could not be loaded." : fmt(n) + (n === 1 ? " detection" : " detections") + " counted across " + inRegion() + ".")
+      + (part ? " This day was still being received when the files were made, so its count is not complete." : "")
       + " Each detection is drawn as a square. Places with no square had no detection recorded, which is not the same as no fire.";
-    if (n === 0) setEmpty(nothing);
+    if (n === 0) setEmpty(part ? "The files hold no " + SENSOR[pick.s] + " detection in " + inRegion() + " on " + name + " yet. That day was still being received when the files were made, so this is not the day's count, and it is not the same as no fire." : nothing, false, true);
     drawMapLegend(pick); viewNote();
     mostDayRows = null; mostKey = ""; drawMost(null);
     return drawPoints();
@@ -2766,6 +2783,7 @@ async function drawMap() {
     + (area ? " (" + f(total) + " in the whole region)" : "")
     + (lv === "all" ? ", summed over " + pick.span + "." : ".")
     + (x && isPartial(x.status) ? " The month is not complete." : "") + (x && baseStatus(x.status) === "provisional_nrt" ? " Provisional data." : "")
+    + (lv === "year" && String(selYear) === D.data_through.slice(0, 4) ? " The year is not complete: this total runs to " + dayName(D.data_through) + ", while the calendar's total for the year counts complete months only." : "")
     + (STATE ? " A cell on the border also holds detections from the neighbouring state, so this total can differ a little from the state's own count in the calendar, which goes by each detection's position." : "")
     + " Blank cells mean no detection was recorded, which is not the same as no fire: when each place could be observed is unknown.";
   if (t === 0) setEmpty(nothing);
@@ -3140,7 +3158,7 @@ function imageNode(d, w, h, half) {
 // A small picture of the region box with a dot where the detection is.
 function locator(lat, lon) {
   const R = regionBox(), k = Math.cos((R.s + R.n) / 2 * Math.PI / 180), ratio = (R.n - R.s) / ((R.e - R.w) * k), w = ratio > 1 ? Math.round(84 / ratio) : 84, h = ratio > 1 ? 84 : Math.round(84 * ratio);
-  const x = (2 + (lon - R.w) / (R.e - R.w) * w).toFixed(1), y = (2 + (R.n - lat) / (R.n - R.s) * h).toFixed(1), box = el("span", {class: "locator", role: "img", "aria-label": "Where this is inside the " + D.region.name + " box"});
+  const inbox = (v, max) => Math.min(max - 5, Math.max(9, v)), x = inbox(2 + (lon - R.w) / (R.e - R.w) * w, w + 2).toFixed(1), y = inbox(2 + (R.n - lat) / (R.n - R.s) * h, h + 2).toFixed(1), box = el("span", {class: "locator", role: "img", "aria-label": "Where this is inside the " + D.region.name + " box"});
   box.innerHTML = '<svg width="' + (w + 4) + '" height="' + (h + 4) + '" viewBox="0 0 ' + (w + 4) + " " + (h + 4) + '" aria-hidden="true"><rect x="2" y="2" width="' + w + '" height="' + h + '" fill="#eef1f4" stroke="#14213d" stroke-width="1.5"/><circle cx="' + x + '" cy="' + y + '" r="5" fill="#e31a1c" stroke="#111" stroke-width="1.5"/></svg>';
   return box;
 }
@@ -3196,7 +3214,7 @@ function openCard(r) {
   if (!map) return;
   const phone = matchMedia("(max-width: 600px)").matches, sheet = $("cardsheet"), shell = $("mapshell"), d = det(r), at = [r[0], r[1]];
   map.closePopup(); prevView = null; closePreview(true);
-  const x = el("button", {type: "button", class: "secondary", text: "Close"}), go = el("button", {type: "button", id: "card-go"}), rep = el("button", {type: "button", class: "secondary", text: "Report for this place and day"});
+  const x = el("button", {type: "button", class: "secondary cardx", "aria-label": "Close", title: "Close", text: "×"}), go = el("button", {type: "button", id: "card-go"}), rep = el("button", {type: "button", class: "secondary", text: "Report for this place and day"});
   const where = el("p", {class: "note", id: "card-where", role: "status", hidden: true});
   const label = () => {
     if (prevView) { go.textContent = "Back to the previous view"; where.hidden = true; return; }
@@ -3238,6 +3256,31 @@ function openCard(r) {
 // Otherwise it is fixed to the window. When part of the map shell (map and timeline) is on screen, the card takes
 // the larger free space above or below it and is no taller than that space, so it covers neither the map, nor a
 // control, nor the timeline. Re-run when the page scrolls or the window changes.
+// A card fixed to the window while the reader is in a list or the table: it takes the side of the window the list
+// leaves free. Where the list is as wide as the window the card is kept short and takes the corner away from the
+// selected row, so that row stays readable and the rest can be scrolled clear of it.
+let cornerRow = null, cornerTop = false;
+function besideOrigin(node) {
+  const pv = node.id === "previewcard", origin = pv ? $("most") : document.querySelector(".dettable");
+  if (!origin || origin.hidden || !origin.offsetWidth) return;
+  const o = origin.getBoundingClientRect(), need = node.offsetWidth + 28;
+  if (innerWidth - o.right >= need) return;
+  if (o.left >= need) { node.classList.add("atleft"); return; }
+  node.classList.add("capped");
+  const row = document.querySelector(pv ? "#mostareas tr.on, #mostdays tr.on" : "#dettable tr.on");
+  if (row !== cornerRow) { cornerRow = row; const r = row && row.getBoundingClientRect(); cornerTop = !!r && (r.top + r.bottom) / 2 > innerHeight / 2; }
+  if (cornerTop) { node.style.top = "16px"; node.style.bottom = "auto"; }
+}
+// The map gives up height when the timeline would otherwise end below the first screen, so the level switch is whole.
+function fitFirstScreen() {
+  const m = $("map"), shell = $("mapshell");
+  m.style.height = m.style.minHeight = "";
+  if (matchMedia("(max-width: 600px)").matches || shell.classList.contains("is-full") || document.fullscreenElement) return;
+  const top = shell.getBoundingClientRect().top + scrollY, tl = shell.querySelector(".timeline").offsetHeight, fit = Math.floor(innerHeight - top - tl);
+  if (fit < m.offsetHeight && fit >= 240) m.style.height = m.style.minHeight = fit + "px";
+  if (map) map.invalidateSize();
+}
+addEventListener("resize", fitFirstScreen);
 function placeCards() {
   if (!map) return;
   const phone = matchMedia("(max-width: 600px)").matches, shell = $("mapshell"), r = shell.getBoundingClientRect(), vh = innerHeight;
@@ -3245,11 +3288,11 @@ function placeCards() {
   let docked = false;
   [$("cardsheet"), $("previewcard")].forEach(node => {
     if (node.hidden) return;
-    node.style.top = node.style.bottom = node.style.maxHeight = ""; node.classList.remove("attop");
+    node.style.top = node.style.bottom = node.style.maxHeight = ""; node.classList.remove("attop", "atleft", "capped");
     const dock = !phone && mapOnScreen();
     node.classList.toggle("docked", dock); node.classList.toggle("floating", !dock);
     if (dock) { docked = true; return; }
-    if (!partly) return;
+    if (!partly) { if (!phone) besideOrigin(node); return; }
     const above = Math.max(0, r.top), below = Math.max(0, vh - r.bottom);
     if (Math.max(above, below) < 150) return;   // no room clear of the map: the default corner is used
     if (below >= above) { node.style.top = "auto"; node.style.bottom = gap + "px"; node.style.maxHeight = Math.floor(below - gap - 8) + "px"; }
@@ -3576,6 +3619,7 @@ $("go-date").addEventListener("blur", () => { if (!$("go-date").value && selDay)
 $("mode").addEventListener("change", () => { if (D) { drawCalendar(); select(curSel()); } });
 $("sensor").addEventListener("change", () => { chipFromLink = false; chipDismissed = ""; if (D) select(curSel()); });
 $("chipclose").addEventListener("click", () => { chipDismissed = $("sensor").value; updateChip(); $("map").focus(); });
+$("tolatest").addEventListener("click", e => { const d = e.currentTarget.dataset.day; if (d && D) select({day: d}); $("map").focus(); });
 ["toauto", "toauto2"].forEach(id => $(id).addEventListener("click", () => { $("sensor").value = "auto"; if (D) select(curSel()); $("map").focus(); }));
 [["lv-year", "year"], ["lv-month", "month"], ["lv-day", "day"]].forEach(([id, to]) => $(id).addEventListener("click", () => setLevel(to)));
 ["drawgrid", "drawpts"].forEach(id => $(id).addEventListener("change", () => { pausePlay(); pointsOn = $("drawpts").checked; updatePointsButton(); drawMap(); if (!pointsOn) onView(); }));

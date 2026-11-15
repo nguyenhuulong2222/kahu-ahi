@@ -330,3 +330,33 @@ card lies over the highlighted marker of the area it describes. The map is not s
 preview's rule is that it moves nothing and Next would make the map jump at every step.
 The grid-cell popup opens upward and, near the top right of a small map, part of it sits under the zoom buttons;
 the buttons stay usable.
+
+## Sixth pass: an outside review (REVIEW.md on the branch `review/tiffanie`, commit d5a8333)
+
+The review was made on `bd57e3d` at 1440x900, 1024x768 and 390x844. Its defects D1 to D8 and one item of D9 are
+answered here. Its 17 wording suggestions and its three design points (W1 to W3) are **not applied**: they change
+the headline and the page's vocabulary, which is the team's decision. No count, factor or validation number changed.
+
+| Review item | Change | Checked |
+|---|---|---|
+| D1 phone wider than the screen | Every `select` is at most as wide as its column; the report's address link breaks anywhere. | 390x844: page width 390 on the first screen, with a card, a preview card and a report open; "Colour shows" ends at 353 px; the link ends at 349 px. The 402 px and 474 px widths in the review did not reproduce on this machine before the change either (fonts differ), so the fix is checked only as "no wider than 390 here". |
+| D2 opens on a day still being received | The page opens on the latest **complete** day with a detection (13 Nov 2026; the last day in the files, 14 Nov, is the day after the month-so-far window and is skipped). Opening a state from the day the page chose lands on that state's own latest such day (Texas 13 Nov, New York 10 Nov); a day the reader chose is kept. On 14 Nov the sentence under the map adds "This day was still being received when the files were made, so its count is not complete.", and an empty map says "The files hold no MODIS Aqua detection in Texas on 14 Nov 2026 yet ... this is not the day's count, and it is not the same as no fire." An empty day offers one button, "Go to <day>, the latest day with a detection here". | All three sizes: hashes and texts read back as above; the button goes to 13 Nov. |
+| D3 phone: message over Legend | On the phone the message sits under the Layers and Expand buttons, left of the zoom buttons, in smaller type, at most 150 px tall. | 390x844, Texas 14 Nov: zoom in, zoom out, Legend and the scale bar are each the top element at their centre. `a_partial_phone.png` |
+| D4 card over the list it came from | A card fixed to the window takes the side the list leaves free: at 1440 the preview card opens at the left, over the other column. Where the list or table is as wide as the window, the card is at most 46% of the window tall and takes the corner away from the selected row. Scroll position unchanged by opening (0 px at all three sizes). | `a_preview_desk.png`, `a_preview_mid.png`, `a_rowcard9_desk.png`. **Partly fixed:** at 1024 the short preview card still lies over the lower rows of "Top 5 days" (not the list it was opened from), and at 1440 the table card lies over the text under the table; both scroll clear. |
+| D5 1024x768 level switch cut | The map gives up height when the timeline would end below the first screen (not on the phone, not in full screen). | 1024x768: timeline ends at 768. 1024x720: map 332 px, timeline ends at 720. Here the 768 case already fitted before the change; the reviewer's taller header was imitated only by the shorter window. |
+| D6 Close on its own line | Close is a 36 px "×" in the card's top right corner (named "Close" for assistive technology); the other buttons fill their rows. | 1440, 1024, 390: "Zoom in here", "Report for this place and day" and × on one row; after zooming, two full-width rows with × beside the first. `a_card_desk.png`, `a_card2_desk.png` |
+| D7 two totals for 2026 | The year sentence adds "The year is not complete: this total runs to 14 Nov 2026, while the calendar's total for the year counts complete months only." Neither total changed. | Text read back at three sizes. |
+| D8 letters on hatched states | Letters removed from the map; the twelve states are named under it. | `a_bystate_desk.png` |
+| D9 locator dot on the box edge | The dot is kept inside the box. | `a_rowcard9_desk.png` |
+
+Not done from the review: D9's calendar "k" numbers and the phone step buttons without words; all of section 3
+(wording) and section 4 (W1 to W3).
+
+Not re-run after these changes: the 147-cell overlap run, the 126-tap grid-cell test, the "select moves nothing"
+measurements of the fourth pass (only scroll position on list and table selections was measured again, 0 px), the
+control tour, `audit/recompute.py` (no data or pipeline file changed). Hawaiʻi and Vietnam were only opened at
+1024x720 (they open on 27 Sep and 13 Nov 2026, the timeline ends inside the window, no error); nothing else was
+checked on them. Full screen was checked only through the page's fallback class at 1024x720 (map 618 px plus the
+102 px timeline fill the window), not through the browser's own full screen. Console: no errors in the runs made.
+Screenshots are in `qa/rev/` (`b_` before, `a_` after).
+
