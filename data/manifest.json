@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-14T20:48:04+00:00",
+  "generated_at": "2026-11-15T00:37:37+00:00",
   "data_through": "2026-11-14",
   "regions": [
     {
@@ -40,6 +40,21 @@
       },
       "data_through": "2026-11-14",
       "calibration_accepted": true
+    },
+    {
+      "id": "conus",
+      "name": "Contiguous United States",
+      "role": "whole-country region; one coefficient per calendar month mixes fire regimes (downloads limited to the United States, so the rectangle holds no detections in Canada or Mexico)",
+      "bbox": {
+        "lat_min": 24.4,
+        "lat_max": 49.5,
+        "lon_min": -125.0,
+        "lon_max": -66.9
+      },
+      "data_through": "2026-11-14",
+      "calibration_accepted": true,
+      "raw_dir": "data/raw/usa",
+      "hotspot_files": "one per month"
     }
   ],
   "inputs": [
@@ -426,6 +441,146 @@
       "sha256": "6b10c4841abee60e29071ba13eb5535c49bf27d54f7ae4aed56c2facc5576654",
       "sha256_of": "the downloaded .zip",
       "rows": 8850
+    },
+    {
+      "region": "conus",
+      "download": "DL_FIRE_J1V-C2_850142.zip",
+      "request_id": "850142",
+      "file": "fire_archive_J1V-C2_850142.csv",
+      "product": "VJ114IMGML",
+      "collection": "2",
+      "satellite": [
+        "N20"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2018-04-01",
+        "2026-07-31"
+      ],
+      "filter": "FIRMS archive download by country (United States, which also includes Alaska and Hawaii); pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "939a9a8931118fff256626ded9be2b2ec4af1946da1d33ff375727296ded4e0d",
+      "sha256_of": "the downloaded .zip",
+      "rows": 4523389,
+      "rows_in_bbox": 4163599
+    },
+    {
+      "region": "conus",
+      "download": "DL_FIRE_J1V-C2_850142.zip",
+      "request_id": "850142",
+      "file": "fire_nrt_J1V-C2_850142.csv",
+      "product": "VJ114IMGTDL_NRT",
+      "collection": "2",
+      "satellite": [
+        "N20"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-08-01",
+        "2026-11-14"
+      ],
+      "filter": "FIRMS archive download by country (United States, which also includes Alaska and Hawaii); pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "939a9a8931118fff256626ded9be2b2ec4af1946da1d33ff375727296ded4e0d",
+      "sha256_of": "the downloaded .zip",
+      "rows": 190218,
+      "rows_in_bbox": 187230
+    },
+    {
+      "region": "conus",
+      "download": "DL_FIRE_M-C61_850141.zip",
+      "request_id": "850141",
+      "file": "fire_archive_M-C61_850141.csv",
+      "product": "MCD14ML",
+      "collection": "6.1",
+      "satellite": [
+        "Aqua",
+        "Terra"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2000-11-01",
+        "2026-08-31"
+      ],
+      "filter": "FIRMS archive download by country (United States, which also includes Alaska and Hawaii); pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "10644f2ba2f6e225b65c2bb50f8a9f1a070df0de723ffa54180a3d3d7dd61b1c",
+      "sha256_of": "the downloaded .zip",
+      "rows": 3158265,
+      "rows_in_bbox": 2757502
+    },
+    {
+      "region": "conus",
+      "download": "DL_FIRE_M-C61_850141.zip",
+      "request_id": "850141",
+      "file": "fire_nrt_M-C61_850141.csv",
+      "product": "MCD14DL",
+      "collection": "6.1",
+      "satellite": [
+        "Aqua",
+        "Terra"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-09-01",
+        "2026-11-14"
+      ],
+      "filter": "FIRMS archive download by country (United States, which also includes Alaska and Hawaii); pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "10644f2ba2f6e225b65c2bb50f8a9f1a070df0de723ffa54180a3d3d7dd61b1c",
+      "sha256_of": "the downloaded .zip",
+      "rows": 13784,
+      "rows_in_bbox": 13493
+    },
+    {
+      "region": "conus",
+      "download": "DL_FIRE_SV-C2_850143.zip",
+      "request_id": "850143",
+      "file": "fire_archive_SV-C2_850143.csv",
+      "product": "VNP14IMGML",
+      "collection": "2",
+      "satellite": [
+        "SNPP"
+      ],
+      "quality": "standard",
+      "date_range": [
+        "2012-01-20",
+        "2026-07-31"
+      ],
+      "filter": "FIRMS archive download by country (United States, which also includes Alaska and Hawaii); pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "734ac079fd7b4ee476b75a6bbd77126b3d6508a3a9fde1e275a0a7c992afb748",
+      "sha256_of": "the downloaded .zip",
+      "rows": 7448386,
+      "rows_in_bbox": 6791133
+    },
+    {
+      "region": "conus",
+      "download": "DL_FIRE_SV-C2_850143.zip",
+      "request_id": "850143",
+      "file": "fire_nrt_SV-C2_850143.csv",
+      "product": "VNP14IMGTDL_NRT",
+      "collection": "2",
+      "satellite": [
+        "SNPP"
+      ],
+      "quality": "nrt",
+      "date_range": [
+        "2026-08-01",
+        "2026-11-02"
+      ],
+      "filter": "FIRMS archive download by country (United States, which also includes Alaska and Hawaii); pipeline keeps rows inside the bbox",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/download/",
+      "accessed": "2026-11-14 (HST)",
+      "sha256": "734ac079fd7b4ee476b75a6bbd77126b3d6508a3a9fde1e275a0a7c992afb748",
+      "sha256_of": "the downloaded .zip",
+      "rows": 167353,
+      "rows_in_bbox": 164587
     }
   ],
   "gazetteer": {
@@ -462,7 +617,8 @@
     "places_per_region": {
       "california": 1524,
       "hawaii": 254,
-      "vietnam": 1941
+      "vietnam": 1941,
+      "conus": 25032
     }
   }
 }

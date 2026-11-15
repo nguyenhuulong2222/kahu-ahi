@@ -1,0 +1,338 @@
+{
+  "bbox": {
+    "east": -66.9,
+    "north": 49.5,
+    "south": 24.4,
+    "west": -125.0
+  },
+  "cell_deg": 0.1,
+  "data_through": "2026-11-14",
+  "files": [
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight",
+        "type"
+      ],
+      "confidence_values": {
+        "h": 220945,
+        "l": 203406,
+        "n": 4099038
+      },
+      "date_max": "2026-07-31",
+      "date_min": "2018-04-01",
+      "file": "DL_FIRE_J1V-C2_850142.zip:fire_archive_J1V-C2_850142.csv",
+      "instrument_values": {
+        "VIIRS": 4523389
+      },
+      "quality": "standard",
+      "rows": 4523389,
+      "rows_in_bbox": 4163599,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "N20": 4523389
+      },
+      "sha256_of_download": "939a9a8931118fff256626ded9be2b2ec4af1946da1d33ff375727296ded4e0d",
+      "type_values": {
+        "0": 3784504,
+        "1": 26096,
+        "2": 658476,
+        "3": 54313
+      },
+      "version_values": {
+        "2": 4523389
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight"
+      ],
+      "confidence_values": {
+        "h": 9686,
+        "l": 8392,
+        "n": 172140
+      },
+      "date_max": "2026-11-14",
+      "date_min": "2026-08-01",
+      "file": "DL_FIRE_J1V-C2_850142.zip:fire_nrt_J1V-C2_850142.csv",
+      "instrument_values": {
+        "VIIRS": 190218
+      },
+      "quality": "nrt",
+      "rows": 190218,
+      "rows_in_bbox": 187230,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "N20": 190218
+      },
+      "sha256_of_download": "939a9a8931118fff256626ded9be2b2ec4af1946da1d33ff375727296ded4e0d",
+      "type_values": {},
+      "version_values": {
+        "2.0NRT": 190218
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight",
+        "type"
+      ],
+      "confidence_values": {
+        "<30": 187654,
+        ">=30": 2970611
+      },
+      "date_max": "2026-08-31",
+      "date_min": "2000-11-01",
+      "file": "DL_FIRE_M-C61_850141.zip:fire_archive_M-C61_850141.csv",
+      "instrument_values": {
+        "MODIS": 3158265
+      },
+      "quality": "standard",
+      "rows": 3158265,
+      "rows_in_bbox": 2757502,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "Aqua": 1619316,
+        "Terra": 1538949
+      },
+      "sha256_of_download": "10644f2ba2f6e225b65c2bb50f8a9f1a070df0de723ffa54180a3d3d7dd61b1c",
+      "type_values": {
+        "0": 2944095,
+        "1": 74826,
+        "2": 135042,
+        "3": 4302
+      },
+      "version_values": {
+        "6.03": 2738105,
+        "61.03": 420160
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight"
+      ],
+      "confidence_values": {
+        "<30": 691,
+        ">=30": 13093
+      },
+      "date_max": "2026-11-14",
+      "date_min": "2026-09-01",
+      "file": "DL_FIRE_M-C61_850141.zip:fire_nrt_M-C61_850141.csv",
+      "instrument_values": {
+        "MODIS": 13784
+      },
+      "quality": "nrt",
+      "rows": 13784,
+      "rows_in_bbox": 13493,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "Aqua": 7594,
+        "Terra": 6190
+      },
+      "sha256_of_download": "10644f2ba2f6e225b65c2bb50f8a9f1a070df0de723ffa54180a3d3d7dd61b1c",
+      "type_values": {},
+      "version_values": {
+        "6.1NRT": 13784
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight",
+        "type"
+      ],
+      "confidence_values": {
+        "h": 431730,
+        "l": 319336,
+        "n": 6697320
+      },
+      "date_max": "2026-07-31",
+      "date_min": "2012-01-20",
+      "file": "DL_FIRE_SV-C2_850143.zip:fire_archive_SV-C2_850143.csv",
+      "instrument_values": {
+        "SNPP": 7448386
+      },
+      "quality": "standard",
+      "rows": 7448386,
+      "rows_in_bbox": 6791133,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "SNPP": 7448386
+      },
+      "sha256_of_download": "734ac079fd7b4ee476b75a6bbd77126b3d6508a3a9fde1e275a0a7c992afb748",
+      "type_values": {
+        "0": 6186941,
+        "1": 60900,
+        "2": 1107044,
+        "3": 93501
+      },
+      "version_values": {
+        "2": 7448386
+      }
+    },
+    {
+      "columns": [
+        "latitude",
+        "longitude",
+        "brightness",
+        "scan",
+        "track",
+        "acq_date",
+        "acq_time",
+        "satellite",
+        "instrument",
+        "confidence",
+        "version",
+        "bright_t31",
+        "frp",
+        "daynight"
+      ],
+      "confidence_values": {
+        "h": 10187,
+        "l": 7773,
+        "n": 149393
+      },
+      "date_max": "2026-11-02",
+      "date_min": "2026-08-01",
+      "file": "DL_FIRE_SV-C2_850143.zip:fire_nrt_SV-C2_850143.csv",
+      "instrument_values": {
+        "SNPP": 167353
+      },
+      "quality": "nrt",
+      "rows": 167353,
+      "rows_in_bbox": 164587,
+      "rows_skipped": 0,
+      "satellite_values": {
+        "SNPP": 167353
+      },
+      "sha256_of_download": "734ac079fd7b4ee476b75a6bbd77126b3d6508a3a9fde1e275a0a7c992afb748",
+      "type_values": {},
+      "version_values": {
+        "2.0NRT": 167353
+      }
+    }
+  ],
+  "generated_at": "2026-11-15T00:35:20+00:00",
+  "notes": [
+    "DL_FIRE_J1V-C2_850142.zip:fire_nrt_J1V-C2_850142.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_M-C61_850141.zip:fire_nrt_M-C61_850141.csv: no `type` column; static-source mask used instead",
+    "DL_FIRE_SV-C2_850143.zip:fire_nrt_SV-C2_850143.csv: no `type` column; static-source mask used instead"
+  ],
+  "problems": [],
+  "sensors": {
+    "MODIS_AQUA/nrt": {
+      "first": "2026-09-01",
+      "last": "2026-11-14",
+      "rows": 7465
+    },
+    "MODIS_AQUA/standard": {
+      "first": "2002-07-04",
+      "last": "2026-08-31",
+      "rows": 1449006
+    },
+    "MODIS_TERRA/nrt": {
+      "first": "2026-09-01",
+      "last": "2026-11-14",
+      "rows": 6028
+    },
+    "MODIS_TERRA/standard": {
+      "first": "2000-11-01",
+      "last": "2026-08-31",
+      "rows": 1308496
+    },
+    "VIIRS_NOAA20/nrt": {
+      "first": "2026-08-01",
+      "last": "2026-11-14",
+      "rows": 187230
+    },
+    "VIIRS_NOAA20/standard": {
+      "first": "2018-04-01",
+      "last": "2026-07-31",
+      "rows": 4163599
+    },
+    "VIIRS_SNPP/nrt": {
+      "first": "2026-08-01",
+      "last": "2026-11-02",
+      "rows": 164587
+    },
+    "VIIRS_SNPP/standard": {
+      "first": "2012-01-20",
+      "last": "2026-07-31",
+      "rows": 6791133
+    }
+  },
+  "static_source_mask": {
+    "cell_deg": 0.02,
+    "cells_masked_all_files": 7832,
+    "checked_on": "standard rows inside the region (same rows the mask was built from)",
+    "min_hits": 3,
+    "non_veg_caught_pct": 99.0,
+    "non_veg_masked": 1958985,
+    "non_veg_rows": 1978365,
+    "veg_masked": 490162,
+    "veg_rows": 11733869,
+    "veg_wrongly_masked_pct": 4.2
+  }
+}
