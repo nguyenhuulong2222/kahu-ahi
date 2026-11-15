@@ -584,6 +584,7 @@
     }
   ],
   "gazetteer": {
+    "dates_are": "UTC (14 Nov 2026 in Hawaii)",
     "source": "GeoNames",
     "source_url": "https://download.geonames.org/export/dump/",
     "licence": "Creative Commons Attribution 4.0",

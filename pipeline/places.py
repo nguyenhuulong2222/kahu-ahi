@@ -88,6 +88,7 @@ def record(manifest_path, src, region_id, n):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     g = manifest.setdefault("gazetteer", {})
     g.update({
+        "dates_are": "UTC (14 Nov 2026 in Hawaii)",
         "source": "GeoNames", "source_url": "https://download.geonames.org/export/dump/",
         "licence": "Creative Commons Attribution 4.0", "extract": SOURCE,
         "files": [{"file": f, "sha256": sha256_of(src / f), "bytes": (src / f).stat().st_size,

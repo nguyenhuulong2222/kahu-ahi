@@ -44,7 +44,9 @@ From the FIRMS FAQ (https://www.earthdata.nasa.gov/data/tools/firms/faq, "Are th
 - Giglio, L., Schroeder, W., & Justice, C. O. (2016). The collection 6 MODIS active fire detection algorithm and fire products. *Remote Sensing of Environment*, 178, 31–41. https://doi.org/10.1016/j.rse.2016.02.054
 - Schroeder, W., Oliva, P., Giglio, L., & Csiszar, I. A. (2014). The New VIIRS 375 m active fire detection data product: algorithm description and initial assessment. *Remote Sensing of Environment*, 143, 85–96. https://doi.org/10.1016/j.rse.2013.12.008
 
-`TBD — add any further paper actually used.`
+- Machado, G. M., Oliveira, M. M., & Fernandes, L. A. F. (2009). A physiologically-based model for simulation of color vision deficiency. *IEEE Transactions on Visualization and Computer Graphics*, 15(6), 1291–1298. https://doi.org/10.1109/TVCG.2009.113 — the matrices used to check the fire colour ramp under simulated colour-vision deficiency.
+
+No other paper was used.
 
 ## Training that informed the approach
 
@@ -59,7 +61,9 @@ How each one shaped the project is described in the README, "What NASA ARSET tra
 
 Ideas only. No code copied.
 
-`TBD — list any repository or project read for reference, with URL and what was taken from it.`
+- NASA Worldview — https://worldview.earthdata.nasa.gov/ — and the FIRMS Fire Map — https://firms.modaps.eosdis.nasa.gov/map/ — looked at for the layout of a map with a timeline beneath it and a layers panel. No code, logo or icon was taken from either.
+
+No other repository or project was read for reference.
 
 ## Basemap and software
 
