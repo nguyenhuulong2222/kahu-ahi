@@ -113,6 +113,29 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #cardsheet{position:absolute;left:8px;right:8px;bottom:calc(var(--tl-h) + 10px);z-index:950;max-height:62%;overflow:auto;padding:10px 12px;border-radius:8px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);font:13px/1.4 var(--font)}
 #cardsheet{max-height:50%}
 #cardsheet button.secondary{float:right;min-height:36px;padding:4px 12px;margin:0 0 4px 8px}
+/* report for one detection, and its one-page print layout */
+#report dl.card{margin:0;max-width:760px}#report .reportimg{max-width:420px}#report .limits{margin:0;padding-left:1.2em;max-width:72ch}
+.reporttwo{display:grid;grid-template-columns:1fr;gap:0 24px}
+@media(min-width:820px){.reporttwo{grid-template-columns:minmax(0,420px) minmax(0,1fr)}}
+#report .chart .plot,#report .chart .yaxis{height:110px}#report .col{cursor:default}
+#report .col.sel .barv{background:#b2182b}
+@media print{
+  @page{size:A4;margin:10mm}
+  body.has-report{background:#fff;font-size:9pt;line-height:1.3}
+  body.has-report main{padding:0}body.has-report .wrap{max-width:none;padding:0}
+  body.has-report .reporttwo{grid-template-columns:200pt 1fr;gap:0 14pt}
+  body.has-report #report .card{max-width:none}
+  body.has-report .pagehead,body.has-report .mapshell,body.has-report #monthrow,body.has-report .wrap>section:not(#report),body.has-report .two,body.has-report footer,body.has-report .noprint{display:none!important}
+  body.has-report #report{border:0;margin:0;padding:0}
+  body.has-report #report h2{font-size:13pt;margin:0}body.has-report #report h3{font-size:10pt;margin:6pt 0 2pt}
+  body.has-report #report p{margin:0 0 3pt;max-width:none}body.has-report #report .note{font-size:8pt}
+  body.has-report #report .card .kv{padding:1pt 0}
+  body.has-report #report .chart .plot,body.has-report #report .chart .yaxis{height:54pt}
+  body.has-report #report .reportimg{max-width:200pt}
+  body.has-report #report .barv,body.has-report #report .col.sel,body.has-report .snap .ring{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.has-report #report table.plain{font-size:8pt}
+  body.has-report #report a{color:inherit;text-decoration:none;overflow-wrap:anywhere}
+}
 .snapwrap{margin-top:8px}
 .snap{position:relative;display:flex;align-items:center;justify-content:center;background:var(--paper);border-radius:4px;overflow:hidden;text-align:center;padding:0}
 .snap.none{aspect-ratio:auto!important;padding:10px}
@@ -261,6 +284,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 </section>
 
 <div class="wrap">
+  <section id="report" aria-labelledby="h-report" hidden></section>
   <nav id="monthrow" aria-label="Months of the selected year" hidden></nav>
   <section aria-labelledby="h-what">
     <h2 id="h-what">What you are looking at</h2>
@@ -465,7 +489,7 @@ function regionSeries() { return {months: D.months, medians: mediansOf(D.months)
 let loadToken = 0;
 async function load(region, wish) {
   wish = wish || {};
-  pausePlay();
+  pausePlay(); closeReport();
   const token = ++loadToken;
   $("banner").replaceChildren(); $("areabanner").replaceChildren(); $("cal").replaceChildren(el("caption", {text: "Loading the record"}));
   try {
@@ -500,6 +524,7 @@ async function load(region, wish) {
   if (!wish.area) { fillAreaForm(); await refresh(); }
   if (token !== loadToken) return;
   if (wishAt(wish)) goAt(wishAt(wish));
+  if (wishReport(wish) && selDay === wishReport(wish).date) openReport(wishReport(wish));
   // Still on the day the page chose by itself: the first Play then starts from day 1 of that month.
   defaultView = !wish.day && !wish.month && !wish.year && wish.view !== "all" && level() === "day";
 }
@@ -539,6 +564,7 @@ function applySel(sel) {
 function select(sel, opts) {
   if (!D) return Promise.resolve();
   if (!(opts && opts.play)) { pausePlay(); defaultView = false; }
+  if (reportKey && sel.day !== selDay) closeReport();
   applySel(sel);
   fitNext = !!(opts && opts.fit) && !!selDay;
   closeCard();
@@ -608,8 +634,8 @@ function completeSpan(ys) { const c = Object.keys(ys).filter(y => ys[y].complete
 function times(v, usual) { const r = v / usual; return "about " + (r >= 10 ? Math.round(r) : r.toFixed(1)) + " times"; }
 const FEW_DETECTIONS = 10;   // below this many on a day, the page says the day is quiet and offers busier ones
 // One sentence for a month on the MODIS Aqua scale, compared with the usual for that calendar month.
-function monthSentence(x, place) {
-  const m = +x.m.slice(5), med = S.medians[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
+function monthSentence(x, place, medians) {
+  const m = +x.m.slice(5), med = (medians || S.medians)[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
   if (x.h == null) return st === "terra_only_not_harmonized" ? "In " + fullMonth(x.m) + " only the MODIS Terra satellite was flying (" + fmt(x.terra) + " detections). Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + fullMonth(x.m) + ".";
   if (isPartial(x.status)) return fullMonth(x.m) + " has " + fmt(x.h) + " detections so far in " + place + " on the MODIS Aqua scale. The month is not complete, so it is not compared with a full " + mn + ".";
   return fullMonth(x.m) + " had " + fmt(x.h) + " detections in " + place + " on the MODIS Aqua scale" + (med > 0 ? ", " + times(x.h, med) + " the usual " + mn + " (" + fmt(med) + (med === 1 ? " detection" : " detections") + ")." : med === 0 ? "; the usual " + mn + " has none." : ".");
@@ -1029,11 +1055,13 @@ function drawAreaBanner() {
 
 // ---------- URL hash: region, month, map satellite, area ----------
 function readHash() {
-  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor"), at: p.get("at"), view: p.get("view")};
+  const p = new URLSearchParams(location.hash.slice(1)), w = {region: p.get("region"), year: p.get("year"), month: p.get("month"), day: p.get("day"), sensor: p.get("sensor"), at: p.get("at"), view: p.get("view"), report: p.get("report")};
   const a = (p.get("area") || "").split(",").map(Number);
   if (a.length === 4 && a.every(Number.isFinite)) w.area = {w: a[0], s: a[1], e: a[2], n: a[3]};
   return w;
 }
+// The detection a report address names: "lat,lon,SENSOR,HHMM" on the day in the address.
+function wishReport(w) { const a = (w.report || "").split(","); return w.day && a.length === 4 && Number.isFinite(+a[0]) && Number.isFinite(+a[1]) && GRID_SENSORS.includes(a[2]) ? {date: w.day, lat: +a[0], lon: +a[1], sensor: a[2], time: a[3].padStart(4, "0")} : null; }
 function wishAt(w) { const a = (w.at || "").split(",").map(Number); return a.length === 2 && a.every(Number.isFinite) ? a : null; }
 // What a link asks for; with no time in it, the latest day with a counted detection ("view=all" asks for all years).
 function startSel(w) { const d = !w.day && !w.month && !w.year && w.view !== "all" && latestDay(); return d ? {day: d} : wishSel(w); }
@@ -1047,6 +1075,7 @@ function writeHash() {
   if (lv === "day") p.set("day", selDay);
   if ($("sensor").value !== "auto") p.set("sensor", $("sensor").value);
   if (area) p.set("area", [area.w, area.s, area.e, area.n].map(v => v.toFixed(1)).join(","));
+  if (reportKey && lv === "day") p.set("report", reportKey);
   history.replaceState(null, "", "#" + p.toString());
 }
 function applyHash() {
@@ -1054,7 +1083,7 @@ function applyHash() {
   if (w.region && w.region !== (D && D.region.id) && [...$("region").options].some(o => o.value === w.region)) { $("region").value = w.region; load(w.region, w); return; }
   if (!D) return;
   if (w.sensor && w.sensor !== $("sensor").value && [...$("sensor").options].some(o => o.value === w.sensor)) $("sensor").value = w.sensor;
-  const then = () => select(startSel(w)).then(() => goAt(wishAt(w)));
+  const then = () => select(startSel(w)).then(() => { goAt(wishAt(w)); const r = wishReport(w); if (r && selDay === r.date && reportKeyOf(r) !== reportKey) openReport(r); });
   if (w.area) setArea(w.area, true).then(then);
   else { if (area) clearArea(); then(); }
 }
@@ -1692,6 +1721,119 @@ function whyNotCounted(d) {
 function countedText(d) { return d.counted ? "Yes" : "No: " + whyNotCounted(d); }
 function pointText(d) { return d.lat.toFixed(4) + ", " + d.lon.toFixed(4); }
 
+// ---------- report for one detection: built only from this project's files for that place and day ----------
+const REPORT_KM = 5, REPORT_DAYS = 30;
+let reportKey = null;
+const nearCache = new Map();
+function kmBetween(lat1, lon1, lat2, lon2) {
+  const r = Math.PI / 180, a = Math.sin((lat2 - lat1) * r / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin((lon2 - lon1) * r / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(a));
+}
+function addDays(d, n) { return new Date(Date.parse(d + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10); }
+// Every row (all four satellites) within km of a point between two dates, read from the year files a piece at a time.
+function rowsNear(region, lat, lon, from, to, km) {
+  const key = [region, lat.toFixed(4), lon.toFixed(4), from, to, km].join("/");
+  if (!nearCache.has(key)) nearCache.set(key, (async () => {
+    const rows = [], dLat = km / 110.5, dLon = km / (110.5 * Math.cos(lat * Math.PI / 180));
+    for (let y = +from.slice(0, 4); y <= +to.slice(0, 4); y++) {
+      if (!hotIndex || !hotIndex.years[y]) continue;
+      await eachLines("data/hotspots/" + region + "/" + y + ".csv.gz", lines => {
+        for (const line of lines) {
+          const d = line.slice(0, 10);
+          if (d > to && d[0] !== "a") return false;
+          if (d < from || d[0] === "a") continue;
+          const f = line.split(",", 5), la = +f[2], lo = +f[3];
+          if (Math.abs(la - lat) <= dLat && Math.abs(lo - lon) <= dLon && kmBetween(lat, lon, la, lo) <= km) rows.push([la, lo, false, f[4], +d.slice(8), line]);
+        }
+      });
+    }
+    rows.forEach(r => { r[2] = r[5].endsWith(",1"); });
+    return rows;
+  })().catch(e => { nearCache.delete(key); throw e; }));
+  return nearCache.get(key);
+}
+function reportKeyOf(d) { return [d.lat.toFixed(4), d.lon.toFixed(4), d.sensor, d.time].join(","); }
+function closeReport() { reportKey = null; $("report").hidden = true; $("report").replaceChildren(); document.body.classList.remove("has-report"); }
+// d: {date, time, lat, lon, sensor} at least (from a card, or from a report address).
+async function openReport(d) {
+  // The report measures from the position as its address gives it (4 decimals), so a reopened report has the same numbers.
+  d = Object.assign({}, d, {lat: +d.lat.toFixed(4), lon: +d.lon.toFixed(4)});
+  const box = $("report"), region = D.region.id, zone = TIMEZONE[region], key = reportKeyOf(d);
+  reportKey = key; writeHash();
+  document.body.classList.add("has-report");
+  box.hidden = false;
+  box.replaceChildren(el("h2", {id: "h-report", tabindex: "-1", text: "Report for one detection"}), el("p", {class: "note", text: "Reading the detections around this place."}));
+  box.scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-report").focus({preventScroll: true});
+  const from = addDays(d.date, -REPORT_DAYS), to = addDays(d.date, REPORT_DAYS) > D.data_through ? D.data_through : addDays(d.date, REPORT_DAYS);
+  let rows;
+  try { rows = await rowsNear(region, d.lat, d.lon, from, to, REPORT_KM); }
+  catch (e) { if (reportKey === key) box.append(el("p", {class: "banner", text: "The detection files could not be read, so the report cannot be built. Try again."})); return; }
+  if (reportKey !== key || region !== D.region.id) return;
+  const all = rows.map(r => ({r, d: det(r)}));
+  const me = all.find(x => x.d.date === d.date && x.d.sensor === d.sensor && x.d.time === d.time && x.d.lat.toFixed(4) === d.lat.toFixed(4) && x.d.lon.toFixed(4) === d.lon.toFixed(4));
+  const full = me ? me.d : d, kv = (k, ...v) => el("div", {class: "kv"}, el("dt", {text: k}), el("dd", {}, ...v)), f1 = v => (Math.round(v * 10) / 10).toLocaleString("en-US", {minimumFractionDigits: 1, maximumFractionDigits: 1});
+  const pix = d.sensor.startsWith("VIIRS") ? "about 375 m" : "about 1 km";
+  const kids = [el("h2", {id: "h-report", tabindex: "-1", text: "Report for one detection: " + dayName(d.date) + ", " + D.region.name})];
+  kids.push(el("p", {class: "note", text: "Built only from this site's copy of the NASA FIRMS record. It is not an official incident report and names no cause."}));
+  if (!me) kids.push(el("p", {class: "banner", text: "This exact detection (satellite, time and position in the address) was not found in the files. The place and day below are still described."}));
+  // a. where and when
+  const place = el("span"); fillPlace(place, d.lat, d.lon);
+  kids.push(el("h3", {text: "Where and when"}), el("dl", {class: "card"},
+    kv("Place", place),
+    kv("Latitude, longitude", pointText(full) + " (centre of a satellite pixel " + pix + " across, larger at the edge of the swath)"),
+    kv("Satellite pass, local time", localText(full, zone, true)),
+    kv("Satellite pass, UTC", utcText(full, true)),
+    kv("Seen by", PLATFORM[d.sensor] || d.sensor),
+    ...(me ? [kv("Confidence, as given by FIRMS", confidenceText(full.conf)), kv("Fire radiative power", full.frp === "" ? "not given" : full.frp + " MW"), kv("Counted on this page", countedText(full))] : [])));
+  // b. what each satellite recorded within 5 km on that UTC date
+  const t = el("table", {class: "plain", id: "reporttable"}, el("tr", {}, el("th", {text: "Satellite"}), el("th", {text: "Pass times with a detection, UTC"}), el("th", {class: "num", text: "Detections"}), el("th", {class: "num", text: "Counted"}), el("th", {class: "num", text: "Highest radiative power (MW)"}), el("th", {class: "num", text: "Total radiative power (MW)"})));
+  GRID_SENSORS.forEach(sat => {
+    const mine = all.filter(x => x.d.date === d.date && x.d.sensor === sat), frp = mine.map(x => +x.d.frp).filter(Number.isFinite);
+    const times = [...new Set(mine.map(x => x.d.time))].sort().map(v => v.slice(0, 2) + ":" + v.slice(2));
+    if (mine.length) t.append(el("tr", {"data-sat": sat}, el("td", {text: SENSOR[sat]}), el("td", {text: times.join(", ")}), el("td", {class: "num", text: fmt(mine.length)}), el("td", {class: "num", text: fmt(mine.filter(x => x.d.counted).length)}), el("td", {class: "num", text: frp.length ? Math.max(...frp).toLocaleString("en-US", {maximumFractionDigits: 2}) : "not given"}), el("td", {class: "num", text: frp.length ? f1(frp.reduce((a, b) => a + b, 0)) : "not given"})));
+    else t.append(el("tr", {"data-sat": sat}, el("td", {text: SENSOR[sat]}), el("td", {colspan: "5", text: flyingOn(sat, d.date) ? "No detection recorded within " + REPORT_KM + " km. The files do not say whether the satellite passed over or could see the ground, so this is not zero fire." : "Not flying, or no longer sending data, on this date."})));
+  });
+  kids.push(el("h3", {text: "What each satellite recorded within " + REPORT_KM + " km on " + dayName(d.date) + " (UTC date)"}), el("div", {class: "calwrap"}, t));
+  // c. how long
+  const byDay = {}, anyDays = new Set();
+  all.forEach(x => { anyDays.add(x.d.date); if (x.d.sensor === d.sensor) byDay[x.d.date] = (byDay[x.d.date] || 0) + 1; });
+  const mineDays = Object.keys(byDay).sort(), anyList = [...anyDays].sort(), n = Math.round((Date.parse(to) - Date.parse(from)) / 864e5) + 1;
+  kids.push(el("h3", {text: "How long: " + REPORT_DAYS + " days before and after"}), el("p", {id: "reportspan", text:
+    (mineDays.length ? SENSOR[d.sensor] + " recorded detections within " + REPORT_KM + " km on " + mineDays.length + (mineDays.length === 1 ? " day" : " days") + " between " + dayName(from) + " and " + dayName(to) + ": first on " + dayName(mineDays[0]) + ", last on " + dayName(mineDays[mineDays.length - 1]) + "."
+      : SENSOR[d.sensor] + " recorded no detection within " + REPORT_KM + " km between " + dayName(from) + " and " + dayName(to) + ".")
+    + (anyList.length ? " Any of the four satellites: " + anyList.length + (anyList.length === 1 ? " day" : " days") + ", first " + dayName(anyList[0]) + ", last " + dayName(anyList[anyList.length - 1]) + "." : "")
+    + " Days between detections are not days without fire: the satellites pass about twice a day and cloud or smoke can hide the ground."
+    + (to < addDays(d.date, REPORT_DAYS) ? " The record ends on " + dayName(D.data_through) + ", so later days are not covered." : "")}));
+  kids.push(barChart("Detections within " + REPORT_KM + " km each day, " + SENSOR[d.sensor], Array.from({length: n}, (_, i) => { const day = addDays(from, i), off = Math.round((Date.parse(day) - Date.parse(d.date)) / 864e5), v = byDay[day] || 0;
+    return {tick: off % 10 === 0 ? (off > 0 ? "+" + off : String(off)) : "", value: flyingOn(d.sensor, day) ? v : null, sel: off === 0, cls: flyingOn(d.sensor, day) ? "" : "none", say: dayName(day) + ": " + (flyingOn(d.sensor, day) ? v + (v === 1 ? " detection" : " detections") : "satellite not flying")}; })),
+    el("p", {class: "note", text: "Up: " + SENSOR[d.sensor] + " detections within " + REPORT_KM + " km in a day (counted and not counted). Across: days before (-) and after (+) " + dayName(d.date) + ", which is marked."}));
+  // d. context
+  const R = regionSeries(), x = R.months.find(v => v.m === d.date.slice(0, 7));
+  kids.push(el("h3", {text: "The month in " + D.region.name}), el("p", {id: "reportmonth", text: (x ? monthSentence(x, D.region.name, R.medians) : "There is no monthly value for this date.")
+    + (D.calibration_accepted ? "" : " VIIRS is not converted in this region, so the monthly value is MODIS Aqua only.")}));
+  // e. image
+  // e. image, beside f. limits
+  kids.push(el("div", {class: "reporttwo"}, el("div", {}, el("h3", {text: "NASA satellite image of that day"}), el("div", {class: "reportimg"}, imageNode(Object.assign({}, full, {lat: d.lat, lon: d.lon}), 420, 280, .3))),
+    el("div", {}, el("h3", {text: "What this report cannot tell you"}), el("ul", {class: "limits"},
+    el("li", {text: "The time is when the satellite passed over and saw the heat, not when the fire started."}),
+    el("li", {text: "The position is the centre of a satellite pixel (" + pix + " across); the fire is somewhere inside it."}),
+    el("li", {text: "A detection is not a count of fires and not burned area. One fire can give many detections; a small or short fire may give none."}),
+    el("li", {text: "This is not an official incident report. It names no cause and does not replace information from emergency services."})))));
+  const print = el("button", {type: "button", text: "Print or save as PDF"}), csv = el("button", {type: "button", class: "secondary", text: "Download these " + fmt(rows.length) + " detections (CSV)"}), close = el("button", {type: "button", class: "secondary", text: "Close the report"});
+  print.addEventListener("click", () => window.print());
+  csv.addEventListener("click", () => {
+    const lines = ["acq_date,acq_time,latitude,longitude,sensor,quality,confidence,frp,daynight,type,counted,local_time,time_zone,km_from_point"];
+    [...rows].sort((a, b) => (a[5] < b[5] ? -1 : a[5] > b[5] ? 1 : 0)).forEach(r => lines.push(r[5] + ',"' + localText(det(r), zone, true) + '",' + zone + "," + kmBetween(d.lat, d.lon, r[0], r[1]).toFixed(2)));
+    const a = el("a", {href: URL.createObjectURL(new Blob([lines.join("\n") + "\n"], {type: "text/csv"})), download: "kahu-ahi_" + region + "_report_" + d.date + "_" + d.lat.toFixed(4) + "_" + d.lon.toFixed(4) + ".csv"});
+    document.body.append(a); a.click(); a.remove();
+  });
+  close.addEventListener("click", () => { closeReport(); writeHash(); });
+  kids.push(el("p", {class: "note", id: "reportaddr"}, "Address of this report: ", el("a", {href: location.href, text: location.href}), ". The CSV holds every detection within " + REPORT_KM + " km in the " + REPORT_DAYS + " days before and after, from all four satellites."),
+    el("div", {class: "areabar noprint"}, print, csv, close),
+    el("p", {class: "note", text: "Fire data: NASA FIRMS. Image: NASA GIBS / Worldview. Place name: © OpenStreetMap contributors, via Nominatim. Kahu Ahi, not endorsed by NASA."}));
+  box.replaceChildren(...kids);
+}
+
 // ---------- place names: OpenStreetMap Nominatim, one lookup for each detection a reader opens ----------
 // Usage policy: https://operations.osmfoundation.org/policies/nominatim/ . Only on a reader's click, never in bulk,
 // one request at a time and at least 1.1 s apart, each place asked once and kept in memory, attribution shown.
@@ -1799,6 +1941,7 @@ function cardNode(r) {
     row("Data quality", d.quality === "nrt" ? "near-real-time (provisional)" : d.quality),
     row("Counted on this page", countedText(d))),
     imageNode(d, 276, 184, .3),
+    (() => { const b = el("button", {type: "button", text: "Report for this place and day"}); b.addEventListener("click", () => { closeCard(); select({day: d.date}).then(() => openReport(d)); }); return b; })(),
     el("p", {class: "note", text: "Time of the satellite pass, not of the fire's start. The fire is somewhere inside a pixel about " + (d.sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not exactly at this point."}));
 }
 function openCard(r, pan) {
