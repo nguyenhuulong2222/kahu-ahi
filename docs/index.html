@@ -32,7 +32,7 @@ h3{font-size:1.05rem;margin:14px 0 4px}
 h1{font-size:clamp(1.7rem,4.6vw,2.6rem);line-height:1.12;margin:0 0 8px;font-weight:700;letter-spacing:-.01em}
 h2{font-size:1.25rem;margin:0 0 4px;font-weight:700}
 p{margin:0 0 12px;max-width:68ch}
-.lede{color:var(--muted);font-size:1.05rem}
+.lede{color:var(--ink);font-size:1.05rem}
 section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;margin-top:20px}
 .controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;margin-top:20px}
 label{font-size:.9rem;color:var(--muted);display:block}
@@ -50,6 +50,7 @@ table.cal{border-collapse:separate;border-spacing:2px;font-variant-numeric:tabul
 .cal th.yr{text-align:right;padding-right:8px}
 .cal td{width:44px;min-width:38px;height:30px;padding:0;text-align:center;border-radius:3px}
 .cal td button{all:unset;display:block;width:100%;height:30px;line-height:30px;cursor:pointer;border-radius:3px;font-size:.72rem}
+.cal td button.long{font-size:.64rem;letter-spacing:-.02em}
 .cal td button:focus-visible{outline:3px solid #f2a900;outline-offset:1px}
 .cal td.terra button{background:repeating-linear-gradient(45deg,var(--nodata) 0 4px,#fff 4px 8px);color:var(--muted)}
 .cal td.none button{background:var(--nodata);color:var(--muted)}
@@ -115,8 +116,8 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .pvchart{display:flex;align-items:flex-end;gap:1px;height:54px;margin:4px 0 2px;border-bottom:1px solid var(--line)}.pvchart i{flex:1 1 0;min-width:2px;background:#14213d;border-radius:2px 2px 0 0}.pvchart i.top{background:#c2410c}
 @media(max-width:600px){#previewcard{left:0;right:0;bottom:0;width:auto;max-width:none;max-height:70vh;border-radius:12px 12px 0 0}#previewcard .pvbar button{flex:1 1 45%;min-height:44px}}
 #mostareas tr.on td,#mostdays tr.on td{background:#fff3d6}.mostpin.on{background:#f2a900;color:#14213d;transform:scale(1.35);z-index:1000!important}
-.mostpin{background:#14213d;color:#fff;border:2px solid #fff;border-radius:50%;font:700 12px/18px var(--font);text-align:center;box-shadow:0 0 0 1px #000;cursor:pointer}
-.mostpin.s20{font-size:11px;line-height:16px}.mostpin.s18{font-size:10px;line-height:14px}.mostpin.many{overflow:visible}.mostpin .more{position:absolute;left:calc(100% - 5px);top:-8px;padding:0 4px;border-radius:8px;background:#f2a900;color:#14213d;border:1.5px solid #14213d;font:700 10px/13px var(--font);white-space:nowrap}
+.mostpin{background:rgba(20,33,61,.8);color:#fff;border:1.5px solid rgba(255,255,255,.9);border-radius:50%;font:700 11px/17px var(--font);text-align:center;cursor:pointer}
+.mostpin.s18{font-size:10.5px;line-height:15px}.mostpin.s16{font-size:10px;line-height:13px}.mostpin.many{overflow:visible}.mostpin .more{position:absolute;left:calc(100% - 5px);top:-8px;padding:0 4px;border-radius:8px;background:#f2a900;color:#14213d;border:1px solid #14213d;font:700 9px/12px var(--font);white-space:nowrap}
 .mostshow{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font-size:.92rem}.mostshow button{min-width:44px;min-height:36px;padding:4px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink);font-weight:600;cursor:pointer}
 .mostshow button[aria-pressed="true"]{background:#14213d;color:#fff;border-color:#14213d}.mostshow button:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
 .maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
@@ -146,6 +147,10 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .fig{border-left:3px solid var(--line);padding-left:10px}.fig dt{font-size:.88rem;color:var(--muted)}
 .fig dd{margin:0}.fig .big{font-size:1.35rem;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}.fig .sub{font-size:.85rem;color:var(--muted)}
 .fig.refused{border-left-color:var(--warn)}.fig.refused .big{color:var(--warn);font-size:1.2rem}
+.fig .tag{display:inline-block;margin-right:6px;padding:0 6px;border-radius:3px;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;vertical-align:1px}
+.fig.base .tag{background:#e3e7ee;color:#3d4a61}.fig.base .big{font-size:1.15rem;font-weight:600;color:#3d4a61}
+.fig.result,.fig.refused{border-left-width:5px;padding:8px 10px;border-radius:0 6px 6px 0}.fig.result{border-left-color:#0b6e6e;background:#e7f3f1}.fig.result .tag{background:#0b6e6e;color:#fff}.fig.result dt,.fig.result .sub{color:var(--ink)}
+.fig.refused{background:#fff6e5}.fig.refused .tag{background:var(--warn);color:#fff}
 .pair svg{display:block;width:100%;height:auto;overflow:visible}.pair text{font:12px var(--font);fill:var(--muted)}.pair .lab{fill:var(--ink)}
 .pairlegend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.82rem;margin:0 0 2px;padding:0;list-style:none}
 .pairlegend svg{width:26px;height:10px;display:inline-block;vertical-align:middle;margin-right:4px}
@@ -159,6 +164,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .mapshell:fullscreen,.mapshell.is-full{display:flex;flex-direction:column;width:100%;height:100%;margin:0;border:0}
 .mapshell.is-full{position:fixed;inset:0;z-index:2000;height:100dvh}
 .mapshell:fullscreen #map,.mapshell.is-full #map{flex:1;height:auto!important;min-height:0!important}
+.tl-short{display:none}
 .timeline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 12px;background:#14213d;color:#fff}
 .tl-btn{min-height:40px;padding:6px 10px;background:#fff;color:var(--ink);border-color:#fff;font-weight:600}
 .tl-btn[aria-pressed="true"]{background:#f2a900;color:#14213d;border-color:#f2a900}
@@ -189,6 +195,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .detpop .leaflet-popup-content{margin:10px 12px;font:13px/1.4 var(--font)}
 .card h3{margin:0 0 6px;font-size:1rem}.card .place{margin:0 0 6px}.place .note,.feature .note,#detplace .note{font-size:12px}.card dl{margin:0}.card p{margin:0 0 8px}
 .card .kv{display:grid;grid-template-columns:42% 1fr;gap:2px 8px;padding:3px 0;border-top:1px solid var(--line)}
+@media(max-width:600px){.card .kv{grid-template-columns:minmax(0,1fr);gap:0}.card .kv dt{font-size:.8rem}#previewcard dl{grid-template-columns:minmax(0,1fr);gap:0}#previewcard dt{font-size:.8rem}#previewcard dd{margin-bottom:5px}}
 .card dt{color:var(--muted)}.card dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .card .note{margin:6px 0 0;font-size:12px}.card button:not(.linkish){min-height:40px}
 #cardsheet{position:absolute;left:8px;right:8px;bottom:calc(var(--tl-h) + 10px);z-index:1100;max-height:62%;overflow:auto;padding:10px 12px;border-radius:8px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);font:13px/1.4 var(--font)}
@@ -210,6 +217,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .mapshell.card-open #legendpanel{display:none}
 #cardsheet.floating{position:fixed;left:auto;right:16px;top:auto;bottom:16px;width:380px;max-width:calc(100vw - 32px);max-height:min(70vh,560px);z-index:2400;box-shadow:0 4px 18px rgba(0,0,0,.45)}
 #cardsheet.floating.atleft,#previewcard.floating.atleft{left:16px;right:auto}#cardsheet.floating.capped,#previewcard.floating.capped{max-height:min(46vh,420px)}
+#previewcard.inline{position:static;width:auto;max-width:none;max-height:none;margin:2px 0 8px;z-index:auto;box-shadow:0 1px 6px rgba(0,0,0,.25);border:1px solid var(--line);border-top:4px solid #14213d;white-space:normal;text-align:left}tr.pvinline>td{padding:0!important;border:0}
 #previewcard.docked{position:absolute;left:auto;right:10px;top:10px;bottom:calc(var(--tl-h) + 10px);width:380px;max-height:none;z-index:1100;box-shadow:0 2px 10px rgba(0,0,0,.45)}
 @media(max-width:600px){#cardsheet,#cardsheet.floating{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-width:none;max-height:55vh;margin:0;border-radius:10px 10px 0 0;z-index:2400;box-shadow:0 -3px 14px rgba(0,0,0,.4)}
   #cardsheet.attop,#previewcard.attop{border-radius:0 0 10px 10px;box-shadow:0 3px 14px rgba(0,0,0,.4)}}
@@ -311,7 +319,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 #layerspanel.collapsed,#legendpanel.collapsed{width:auto}
 @media(min-width:601px) and (max-width:1180px){.mapshell{--tl-h:102px}.mapshell.has-card.layers-open .leaflet-control-attribution{max-width:calc(100vw - 790px)}}
 @media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:300px;height:300px}.lede{display:none}.headline{font-size:.92rem}.pagehead{gap:4px 24px}.brand{gap:9px}.brand .mark{width:34px;height:44px}.namenote{font-size:.82rem}.maplabel{margin-top:8px}
-  .timeline{gap:6px}.tl-word{display:none}
+  .timeline{gap:5px}.tl-word{display:none}.tl-short{display:inline;font-size:.8rem}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
   #tl-speed{flex:1 1 76px;min-width:76px;max-width:110px;min-height:40px;padding:4px 2px 4px 6px;font-size:.9rem}#tl-range{flex:1 1 100%}
   .coordbox{display:none}
@@ -378,10 +386,10 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <div class="timeline" role="group" aria-label="Time shown on the map">
     <button type="button" id="tl-play" class="tl-btn" aria-pressed="false" aria-label="Play through time">▶ <span class="tl-word">Play</span></button>
     <select id="tl-speed" aria-label="Playback speed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select>
-    <button type="button" id="tl-py" class="tl-btn" aria-label="Previous year">« <span class="tl-word">Year</span></button>
-    <button type="button" id="tl-pm" class="tl-btn" aria-label="Previous month">‹ <span class="tl-word">Month</span></button>
-    <button type="button" id="tl-nm" class="tl-btn" aria-label="Next month"><span class="tl-word">Month</span> ›</button>
-    <button type="button" id="tl-ny" class="tl-btn" aria-label="Next year"><span class="tl-word">Year</span> »</button>
+    <button type="button" id="tl-py" class="tl-btn" aria-label="Previous year">« <span class="tl-word">Year</span><span class="tl-short"></span></button>
+    <button type="button" id="tl-pm" class="tl-btn" aria-label="Previous month">‹ <span class="tl-word">Month</span><span class="tl-short"></span></button>
+    <button type="button" id="tl-nm" class="tl-btn" aria-label="Next month"><span class="tl-word">Month</span><span class="tl-short"></span> ›</button>
+    <button type="button" id="tl-ny" class="tl-btn" aria-label="Next year"><span class="tl-word">Year</span><span class="tl-short"></span> »</button>
     <input type="range" id="tl-range" min="0" max="0" value="0" step="1" aria-label="Month shown on the map; the first position is all years">
     <output id="tl-label" class="sr" for="tl-range" aria-live="polite">All years</output>
     <span id="tl-goto" class="tl-goto" role="group" aria-label="Go to a year, month or date">
@@ -1258,7 +1266,7 @@ function drawCalendarIn() {
       else { b.style.background = c; b.style.color = textOn(c); }
       if (st === "provisional_nrt") td.classList.add("prov");
       if (isPartial(x.status)) td.classList.add("partial");
-      b.textContent = x.h == null ? (st === "terra_only_not_harmonized" ? "T" : "") : (x.h >= 10000 ? Math.round(x.h / 1000) + "k" : fmt(x.h));
+      b.textContent = x.h == null ? (st === "terra_only_not_harmonized" ? "T" : "") : fmt(x.h); b.classList.toggle("long", x.h != null && x.h >= 10000);
       b.setAttribute("aria-label", MONTHS[m - 1] + " " + y + ": " + (x.h == null ? "no harmonized value" : N(x.h, "detection")) + ". " + (STATUS[st] || st));
       b.addEventListener("click", () => selectMonth(x.m));
       td.append(b); tr.append(td);
@@ -1457,15 +1465,15 @@ function drawHarm() {
     ? "the newer VIIRS satellites record about " + timesK(D.snpp_to_aqua.coefficients.annual_k) + " times as many fire detections as the older MODIS Aqua. Corrected month by month, VIIRS is off by " + pct(f.all.abs_error_pct_of_total) + " in years the method had not seen. "
     : stateFacts(D).says.replace(/^Not/, "not") + " Only MODIS Aqua is shown. "), el("a", {href: "#h-harm", text: "See the result"}));
   if (!f.all || !f.raw) { box.append(el("p", {class: "note", text: "Not enough months with both MODIS Aqua and VIIRS to test a correction in " + inRegion() + "."})); return; }
-  const fig = (label, big, sub, cls) => el("div", {class: "fig" + (cls ? " " + cls : "")}, el("dt", {text: label}), el("dd", {}, el("div", {class: "big", text: big}), sub ? el("div", {class: "sub", text: sub}) : ""));
+  const fig = (label, big, sub, cls, tag) => el("div", {class: "fig" + (cls ? " " + cls : "")}, el("dt", {}, tag ? el("span", {class: "tag", text: tag}) : "", label), el("dd", {}, el("div", {class: "big", text: big}), sub ? el("div", {class: "sub", text: sub}) : ""));
   const figs = el("dl", {class: "figs"});
-  figs.append(fig("1. VIIRS counts as recorded", pct(f.raw.abs_error_pct_of_total), "off from MODIS Aqua, as a share of Aqua's total over " + f.raw.months + " shared months"));
-  if (f.annual) figs.append(fig("2. One ratio for the whole year", pct(f.annual.abs_error_pct_of_total), "off, tested the same way. This simpler correction is what step 3 has to beat."));
+  figs.append(fig("1. VIIRS counts as recorded", pct(f.raw.abs_error_pct_of_total), "off from MODIS Aqua, as a share of Aqua's total over " + f.raw.months + " shared months", "base", "Baseline"));
+  if (f.annual) figs.append(fig("2. One ratio for the whole year", pct(f.annual.abs_error_pct_of_total), "off, tested the same way. This simpler correction is what step 3 has to beat.", "base", "Baseline"));
   const periods = f.before && f.after ? f.first + " to " + (f.split - 1) + ": " + pct(f.before.abs_error_pct_of_total) + "; from " + f.split + ": " + pct(f.after.abs_error_pct_of_total) : "";
   if (ok) {
-    figs.append(fig("3. Corrected month by month (used here)", pct(f.all.abs_error_pct_of_total), "off in years the method had not seen" + (periods ? "; " + periods : "") + ". VIIRS records between " + f.kMin.k + " (" + MONTH_FULL[f.kMin.m - 1] + ") and " + f.kMax.k + " (" + MONTH_FULL[f.kMax.m - 1] + ") detections for every one MODIS Aqua records."));
+    figs.append(fig("3. Corrected month by month (used here)", pct(f.all.abs_error_pct_of_total), "off in years the method had not seen" + (periods ? "; " + periods : "") + ". VIIRS records between " + f.kMin.k + " (" + MONTH_FULL[f.kMin.m - 1] + ") and " + f.kMax.k + " (" + MONTH_FULL[f.kMax.m - 1] + ") detections for every one MODIS Aqua records.", "result", "Result"));
   } else {
-    figs.append(fig("3. Corrected month by month", "Not harmonized", stateFacts(D).says.replace(/^Not harmonized: /, "").replace(/^./, c => c.toUpperCase()) + " Only MODIS Aqua is shown here." + (D.region.id === "hawaii" ? " Most heat detected here is volcanic." : ""), "refused"));
+    figs.append(fig("3. Corrected month by month", "Not harmonized", stateFacts(D).says.replace(/^Not harmonized: /, "").replace(/^./, c => c.toUpperCase()) + " Only MODIS Aqua is shown here." + (D.region.id === "hawaii" ? " Most heat detected here is volcanic." : ""), "refused", "Result"));
   }
   const left = el("div", {}, figs, el("p", {style: "margin:10px 0 0", id: "harmsays", text: recordSentence() + (ok ? " " : " The same test that accepts a correction elsewhere refuses it here, and the page says so rather than show a number it cannot support. ")}, el("a", {href: "#h-trust", text: "How these figures were measured, and all regions side by side"})));
   if (ok && asUsedText()) left.append(el("p", {class: "note", id: "harmused", style: "margin:8px 0 0", text: asUsedText()}));
@@ -1724,7 +1732,10 @@ const layers = {}, allYearsCache = {};
 const MAP_RAMP = FIRE.slice(3);
 // Opacity of each colour step, lowest to highest: a cell with one detection in the whole period is faint and lets
 // the basemap show through; the busiest cells are solid. The legend swatches use the same values.
-const STEP_OPACITY = [.3, .42, .55, .7, .82, .92, 1];
+// Opacity of each colour step. A year or all years fills the map, so the low steps stay faint and the land shows
+// through; a month has few cells, each a pixel or two wide when zoomed out, so its low steps are drawn stronger.
+const STEP_OPACITY_WIDE = [.3, .42, .55, .7, .82, .92, 1], STEP_OPACITY_MONTH = [.6, .66, .72, .8, .88, .94, 1];
+function stepOpacity() { const lv = level(); return lv === "month" || lv === "day" ? STEP_OPACITY_MONTH : STEP_OPACITY_WIDE; }
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
 // Kept short so it does not cover the map on a phone. The full GIBS acknowledgment is in the page footer.
 // The GIBS reference overlays and the street map share one OpenStreetMap string, which Leaflet shows once.
@@ -1785,7 +1796,7 @@ function makeCellLayer() {
           const X = Math.round(xa), Y = Math.round(ya);
           t.fillRect(X, Y, Math.max(1, Math.round(xb) - X), Math.max(1, Math.round(yb) - Y));
         }
-        ctx.globalAlpha = STEP_OPACITY[st];
+        ctx.globalAlpha = stepOpacity()[st];
         ctx.drawImage(tmp, 0, 0);
       });
     }
@@ -2091,7 +2102,7 @@ function updateTimeline() {
   syncGoto();
   [["tl-pm", "Previous ", p.word], ["tl-nm", "Next ", p.word], ["tl-py", "Previous ", p.coarse], ["tl-ny", "Next ", p.coarse]].forEach(([id, a, w]) => {
     const b = $(id); b.hidden = !w; if (!w) return;
-    b.querySelector(".tl-word").textContent = w; b.setAttribute("aria-label", a + w.toLowerCase());
+    b.querySelector(".tl-word").textContent = w; b.querySelector(".tl-short").textContent = {Day: "Day", Month: "Mo", Year: "Yr"}[w] || w; b.setAttribute("aria-label", a + w.toLowerCase());
   });
   // A step button that cannot move is switched off and says why.
   [["tl-pm", v === 1, "This is the start of the record"], ["tl-py", v === 1, "This is the start of the record"], ["tl-nm", v === n, "This is the end of the record"], ["tl-ny", v === n, "This is the end of the record"]].forEach(([id, off, why]) => {
@@ -2107,7 +2118,8 @@ function updateTimeline() {
 const AREA_R = 3, AREA_KM = (2 * AREA_R + 1) * 11, MOST_CHOICES = [5, 10, 20], MOST_MAX_BYTES = 12e6;
 // How many areas and days are listed: the reader's choice, else 10 for the whole United States and 5 elsewhere.
 let mostChoice = null, mostPins = null, pvOrder = null;
-function mostCount() { return mostChoice || (D.region.id === "conus" && !STATE ? 10 : 5); }
+// The whole country lists 10 for a month, a year or all years, and 5 for one day, where ten markers would hide the day's few squares.
+function mostCount() { return mostChoice || (D.region.id === "conus" && !STATE && level() !== "day" ? 10 : 5); }
 // Numbered markers for the listed areas. Numbers that would overlap at this zoom are drawn as one marker ("3+2": area 3 and
 // two more), which opens the first of them; Next in the card reaches the others.
 function layoutPins() {
@@ -2116,7 +2128,7 @@ function layoutPins() {
   mostPins.clearLayers();
   const c = mostCtx;
   if (!c) return;
-  const size = c.areas.length > 10 ? 18 : c.areas.length > 5 ? 20 : 22, groups = [];
+  const size = c.areas.length > 10 ? 16 : c.areas.length > 5 ? 18 : 20, groups = [];
   c.areas.forEach((a, i) => { const ll = [a.bounds[1][0], a.bounds[0][1]]; groups.push({pt: map.latLngToContainerPoint(ll), ll, items: [i]}); });
   // Merge markers whose boxes would touch, lowest number first, until none do (a merged marker is wider, so check again).
   const width = g => g.items.length > 1 ? size + 14 : size, hit = (a, b) => Math.abs(a.pt.x - b.pt.x) < (width(a) + width(b)) / 2 + 3 && Math.abs(a.pt.y - b.pt.y) < size + 3;
@@ -2194,7 +2206,7 @@ function drawMostIn(pick) {
   if (lv === "day") mostDayRows.forEach(r => { if (r[2]) { const k = keyAt(r[0], r[1]); cells.set(k, (cells.get(k) || 0) + 1); } });
   else shown.forEach((v, k) => { if (v > 0) cells.set(k, v); });
   let total = 0; cells.forEach(v => { total += v; });
-  sec.hidden = false;
+  sec.hidden = false; pvHome();
   $("h-most").textContent = "Where and when it burned most: " + period + ", " + D.region.name + ", " + SENSOR[pick.s];
   const intro = el("p", {id: "mostintro", class: "note", text: "The places and days with the most satellite detections in " + inRegion() + (lv === "day" ? " on " : lv === "all" ? ", " + (pick.span ? pick.span : "all years") : " in ") + (lv === "all" ? "" : period)
     + ", for " + pick.label + "." + (D.calibration_accepted ? "" : " VIIRS is not corrected in " + inRegion() + ", so these are MODIS Aqua's own counts, as recorded.")
@@ -2357,9 +2369,9 @@ async function openArea(a, pick, note) {
 let mostCtx = null, preview = null;
 function closePreview(quiet) {
   const card = $("previewcard");
-  if (!preview) { card.hidden = true; return; }
+  if (!preview) { pvHome(); card.hidden = true; return; }
   const p = preview, c = mostCtx;
-  preview = null; card.hidden = true; card.replaceChildren(); card.classList.remove("floating", "docked", "attop"); $("mapshell").classList.remove("has-card"); fitMapPanels();
+  preview = null; pvHome(); card.hidden = true; card.replaceChildren(); card.classList.remove("floating", "docked", "attop", "atleft", "capped"); $("mapshell").classList.remove("has-card"); fitMapPanels();
   if (c) [...c.areas, ...c.days].forEach(o => { if (o.row) o.row.classList.remove("on"); if (o.pin && o.pin._icon) o.pin._icon.classList.remove("on"); });
   if (!quiet && p.opener && document.contains(p.opener)) p.opener.focus({preventScroll: true});
 }
@@ -2816,7 +2828,7 @@ function drawMapLegend(pick) {
   const lg = $("maplegend"); lg.replaceChildren();
   if (pick.flying && level() !== "day") {
     const steps = el("span", {class: "steps"});
-    legendSteps(pick.max, !!pick.k).forEach(st => steps.append(el("span", {class: "step"}, el("span", {class: "chip"}, el("span", {style: "background:" + st.c + ";opacity:" + STEP_OPACITY[MAP_RAMP.indexOf(st.c)]})), st.text)));
+    legendSteps(pick.max, !!pick.k).forEach(st => steps.append(el("span", {class: "step"}, el("span", {class: "chip"}, el("span", {style: "background:" + st.c + ";opacity:" + stepOpacity()[MAP_RAMP.indexOf(st.c)]})), st.text)));
     lg.append(el("span", {class: "legtitle", text: "Detections in a 0.1° cell" + (pick.span ? ", " + pick.span : "") + " (each colour covers a wider range than the one before; fainter means fewer):"}), steps);
   }
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:transparent;border:1px dashed #55627a"}), "Blank: no detection recorded, which is not the same as no fire"));
@@ -3192,7 +3204,7 @@ function placeRow(lat, lon, sensor) {
   return [
     el("div", {class: "town"}, el("strong", {text: t ? t.where : "The list of towns for this region could not be loaded."}), t ? t.townIn : ""),
     own, feature,
-    el("div", {class: "placefoot"}, el("div", {class: "note", text: "The place is the centre of a satellite pixel about " + (sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not the exact spot of the fire. Towns: GeoNames, CC BY 4.0. Named features: © OpenStreetMap contributors, via Nominatim."}),
+    el("div", {class: "placefoot"}, el("div", {class: "note", text: "Towns: GeoNames, CC BY 4.0. Named features: © OpenStreetMap contributors, via Nominatim."}),
     locator(lat, lon))];
 }
 function cardNode(r) {
@@ -3205,7 +3217,7 @@ function cardNode(r) {
   const here = el("a", {href: "#" + new URLSearchParams({region: D.region.id, day: d.date, at: d.lat.toFixed(4) + "," + d.lon.toFixed(4)}).toString(), text: "Open this point at zoom 14"});
   return el("div", {class: "card"}, el("h3", {text: "One detection"}), el("dl", {},
     row("Place", ...placeRow(d.lat, d.lon, d.sensor)),
-    row(localLabel(), hasLocal() ? localText(d, zone, true) : noLocal()),
+    ...(hasLocal() ? [row(localLabel(), localText(d, zone, true))] : []),
     row("Satellite pass, UTC", utcText(d, true)),
     row("Latitude, longitude", el("span", {class: "pt4", text: pointText(d)}), " ", copy, el("br"), el("span", {class: "dms", text: dmsText(d.lat, d.lon)}), el("br"), here),
     row("Seen by", PLATFORM[d.sensor] || d.sensor),
@@ -3215,7 +3227,7 @@ function cardNode(r) {
     row("Data quality", d.quality === "nrt" ? "near-real-time (provisional)" : d.quality),
     row("Counted on this page", countedText(d))),
     imageNode(d, 276, 184, .3),
-    el("p", {class: "note", text: "Time of the satellite pass, not of the fire's start. The fire is somewhere inside a pixel about " + (d.sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not exactly at this point."}));
+    el("p", {class: "note cardfoot", text: (hasLocal() ? "" : "Local time: " + noLocal() + " ") + "The time is the satellite pass, not the fire's start; the fire is somewhere inside a pixel about " + (d.sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not exactly at this point."}));
 }
 // Opening a detection moves the map to it, rings it, and shows its card beside it: docked on the right on a wide screen,
 // as a sheet along the bottom on a phone. The point is centred in the part of the map the card leaves free.
@@ -3276,14 +3288,28 @@ function openCard(r) {
 // leaves free. Where the list is as wide as the window the card is kept short and takes the corner away from the
 // selected row, so that row stays readable and the rest can be scrolled clear of it.
 let cornerRow = null, cornerTop = false;
+function pvHome() {
+  const card = $("previewcard"), tr = card.closest("tr.pvinline");
+  card.classList.remove("inline");
+  if (tr) { $("mapshell").insertBefore(card, $("mapnotes")); tr.remove(); }
+}
 function besideOrigin(node) {
-  const pv = node.id === "previewcard", origin = pv ? $("most") : document.querySelector(".dettable");
-  if (!origin || origin.hidden || !origin.offsetWidth) return;
-  const o = origin.getBoundingClientRect(), need = node.offsetWidth + 28;
-  if (innerWidth - o.right >= need) return;
-  if (o.left >= need) { node.classList.add("atleft"); return; }
+  const pv = node.id === "previewcard", row = document.querySelector(pv ? "#mostareas tr.on, #mostdays tr.on" : "#dettable tr.on");
+  const origin = pv ? (row ? row.closest("table") : $("most")) : document.querySelector(".dettable");
+  if (!origin || origin.hidden || !origin.offsetWidth) { if (pv) pvHome(); return; }
+  const o = origin.getBoundingClientRect(), need = (pv ? 400 : node.offsetWidth) + 28;
+  if (innerWidth - o.right >= need) { if (pv) pvHome(); return; }
+  if (o.left >= need) { if (pv) pvHome(); node.classList.add("atleft"); return; }
+  if (pv && row) {
+    // No side of the window is clear of the list: the card goes into the list, under the row it describes.
+    if (node.closest("tr.pvinline") && node.closest("tr.pvinline").previousElementSibling === row) { node.classList.remove("floating"); node.classList.add("inline"); return; }
+    pvHome();
+    const cell = el("td", {colspan: row.cells.length});
+    row.after(el("tr", {class: "pvinline"}, cell)); cell.append(node);
+    node.classList.remove("floating"); node.classList.add("inline");
+    return;
+  }
   node.classList.add("capped");
-  const row = document.querySelector(pv ? "#mostareas tr.on, #mostdays tr.on" : "#dettable tr.on");
   if (row !== cornerRow) { cornerRow = row; const r = row && row.getBoundingClientRect(); cornerTop = !!r && (r.top + r.bottom) / 2 > innerHeight / 2; }
   if (cornerTop) { node.style.top = "16px"; node.style.bottom = "auto"; }
 }
@@ -3307,6 +3333,7 @@ function placeCards() {
     node.style.top = node.style.bottom = node.style.maxHeight = ""; node.classList.remove("attop", "atleft", "capped");
     const dock = !phone && mapOnScreen();
     node.classList.toggle("docked", dock); node.classList.toggle("floating", !dock);
+    if (node.id === "previewcard" && (dock || phone || partly)) pvHome();
     if (dock) { docked = true; return; }
     if (!partly) { if (!phone) besideOrigin(node); return; }
     const above = Math.max(0, r.top), below = Math.max(0, vh - r.bottom);
