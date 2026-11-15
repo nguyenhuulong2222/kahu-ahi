@@ -76,7 +76,11 @@ td.num,th.num{text-align:right}
 .range .lab{position:absolute;top:40px;transform:translateX(-50%);font-size:.78rem;color:var(--muted);white-space:nowrap}
 .two{display:grid;grid-template-columns:1fr;gap:20px}
 @media(min-width:820px){.two{grid-template-columns:1fr 1fr}.two>section{margin-top:0}.two{margin-top:20px}}
-footer{margin-top:28px;font-size:.88rem;color:var(--muted)}
+/* The footer sits in the page grid: its text starts and ends where the text inside the section cards does. */
+footer{margin-top:28px;padding:0 21px;font-size:.88rem;color:var(--muted);display:grid;grid-template-columns:minmax(0,1fr);gap:18px 32px}
+footer h2{margin:0 0 4px;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink)}footer p{margin:0 0 8px;max-width:70ch}
+@media(min-width:601px){footer{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1100px){footer{grid-template-columns:repeat(3,minmax(0,1fr))}}
 a{color:var(--action)}
 button.secondary{background:#fff;color:var(--action)}
 button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -134,6 +138,9 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 @media(min-width:1100px){.wrap{max-width:1400px}.pagehead p{max-width:78ch}
   .cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px;align-items:start}.cols2>.howto,.cols2>form{margin-top:0!important}
   .flow2{columns:2;column-gap:40px}.flow2>*{break-inside:avoid}.flow2 h3{break-after:avoid;margin-top:0}.flow2 table{max-width:100%}
+  /* Text that stood alone in the left half of a full-width card takes the columns of the block under it. */
+  section.drillsec{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0 40px;align-items:start}section.drillsec>h2,section.drillsec>#drill{grid-column:1/-1}section.drillsec>.recordbar{grid-column:1;margin-bottom:0}section.drillsec>.recordbar p{max-width:none}section.drillsec>p.note{grid-column:2;margin:8px 0 0}
+  #bystatebody{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:0 20px;align-items:start}#bystatebody>*{grid-column:1/-1}#bystatebody>#statesum{grid-column:1;max-width:none}#bystatebody>p.note{grid-column:2;grid-row:1;max-width:none}
   #drill{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0 40px;align-items:start}#drill>*{grid-column:2}#drill>.crumbs,#drill>h3,#drill>details{grid-column:1/-1}#drill>.chart{grid-column:1;grid-row:3/span 8}
   /* Calendar: how to read and the colour control, then the calendar with everything about the record and the selected
      month beside it, starting level with the calendar's top. The last row takes any slack, so nothing is spread out. */
@@ -475,7 +482,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <div class="areabar"><button type="button" id="detmore" class="secondary" hidden>Show more</button><button type="button" id="detcsv" class="secondary">Download these rows (CSV)</button></div>
     <p id="detplace" aria-live="polite" style="margin-top:12px" hidden></p>
   </section>
-  <section aria-labelledby="h-drill">
+  <section aria-labelledby="h-drill" class="drillsec">
     <h2 id="h-drill">Fire activity over time</h2>
     <div class="recordbar" id="record1"></div>
     <p class="note">This opens on the days of one month. Select a bar to go down a level; use the trail above the chart to go up to the month, the year or all years. The map, the timeline and the calendar show the same period; the map keeps its view.</p>
@@ -572,9 +579,18 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </section>
 
   <footer>
-    <p>Built by the team behind <a href="https://kahuola.org">Kahu Ola (kahuola.org)</a>, a civic hazard platform for Hawaiʻi.</p>
-    <p id="coverage">This page covers all 50 states and the District of Columbia (the lower 48 and DC state by state, Alaska and Hawaiʻi as regions) and the Vietnam region. US territories (Puerto Rico, Guam, the U.S. Virgin Islands, American Samoa, the Northern Mariana Islands) are not included in this version: the FIRMS download for the United States that this page reads holds no detection for any of them. Two parts of the states are also outside the regions: Alaska west of 170° W and the Northwestern Hawaiian Islands.</p>
-    <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; from zoom 9, Esri World Imagery (Powered by Esri), drawn with esri-leaflet and esri-leaflet-vector (Apache 2.0) and MapLibre GL JS (BSD 3-Clause), with the OpenStreetMap street map as the fallback; the GIBS overlays and the street map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS). Daily satellite images: NASA GIBS and NASA Worldview Snapshots. Town names: <a href="https://www.geonames.org">GeoNames</a>, CC BY 4.0. Named features: <a href="https://nominatim.org">Nominatim</a>, © OpenStreetMap contributors. Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>. Code: <a href="https://github.com/nguyenhuulong2222/kahu-ahi/blob/main/LICENSE">Apache License 2.0</a>; the fire data are NASA FIRMS data and the town list is GeoNames data (CC BY 4.0), not covered by that licence.</p>
+    <div><h2>Who built this</h2>
+      <p>Built by the team behind <a href="https://kahuola.org">Kahu Ola (kahuola.org)</a>, a civic hazard platform for Hawaiʻi.</p>
+      <p>Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event.</p>
+      <p id="coverage">This page covers all 50 states and the District of Columbia (the lower 48 and DC state by state, Alaska and Hawaiʻi as regions) and the Vietnam region. US territories (Puerto Rico, Guam, the U.S. Virgin Islands, American Samoa, the Northern Mariana Islands) are not included in this version: the FIRMS download for the United States that this page reads holds no detection for any of them. Two parts of the states are also outside the regions: Alaska west of 170° W and the Northwestern Hawaiian Islands.</p></div>
+    <div><h2>Data and map credits</h2>
+      <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; from zoom 9, Esri World Imagery (Powered by Esri), drawn with esri-leaflet and esri-leaflet-vector (Apache 2.0) and MapLibre GL JS (BSD 3-Clause), with the OpenStreetMap street map as the fallback; the GIBS overlays and the street map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</p>
+      <p>Daily satellite images: NASA GIBS and NASA Worldview Snapshots. Town names: <a href="https://www.geonames.org">GeoNames</a>, CC BY 4.0. Named features: <a href="https://nominatim.org">Nominatim</a>, © OpenStreetMap contributors.</p></div>
+    <div><h2>Licence and NASA</h2>
+      <p>Code: <a href="https://github.com/nguyenhuulong2222/kahu-ahi/blob/main/LICENSE">Apache License 2.0</a>; the fire data are NASA FIRMS data and the town list is GeoNames data (CC BY 4.0), not covered by that licence.</p>
+      <p>We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS).</p>
+      <p>Not endorsed by NASA.</p>
+      <p>Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p></div>
   </footer>
 </div>
 </main>

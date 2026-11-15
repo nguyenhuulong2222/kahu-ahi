@@ -455,3 +455,32 @@ were stepped through with 0.7 s each, so a state whose result line had not yet b
 measured with the previous header. Console: no errors. Other selects on the page (speed, year, month, Layers) were
 not measured in this pass; widths other than 390 and 360 were not checked.
 
+## Tenth pass: the footer in the page grid, and blocks that stopped at half width
+
+**Footer.** Layout only: the 16 sentences and 7 links that were there are all there (compared sentence by sentence
+by script before and after). Three blocks with small headings: "Who built this" (the team, the Space Apps
+sentence, the coverage paragraph), "Data and map credits", "Licence and NASA" (licence, the GIBS acknowledgment,
+"Not endorsed by NASA.", the repository). Screenshots `qa/rev3/footer_w1440.png`, `footer_w1920.png`,
+`footer_w1024.png`, `footer_w390.png`.
+
+| Width | Columns | Footer text, left to right | Text inside the last card, left to right | Characters a line |
+|---|---|---|---|---|
+| 1440 | 3 | 50 to 1375 | 50 to 1376 | about 65 |
+| 1920 | 3 | 290 to 1615 | 290 to 1616 | about 65 |
+| 1024 | 2 (third block under the first) | 37 to 972 | 37 to 972 | about 69 |
+| 390 | 1 | 37 to 353 | 37 to 353 | about 48 |
+
+**Half-width blocks.** The whole page of the lower 48 was scanned at 1440x900 and 1920x1080 for any block
+narrower than 62% of a container more than 900 px wide. The page is 1,400 px wide at most, so both sizes give the
+same list.
+
+| Found | Outcome |
+|---|---|
+| By state: the introduction and the note under the grid each stopped at about 45% of the card | Fixed: side by side above the map and the table, in the grid's own two columns. `sec_bystate.png` |
+| Fire activity over time: the record box's note and "This opens on the days of one month ..." stopped at 43% | Fixed: the record box takes the chart's column and the note the column beside it. `sec_h-drill.png` |
+| Trust section and "Method, limits and sources": 20 paragraphs, bars and tables reported at 43 to 48% | Not a defect: both already flow in two columns that fill the card; the first scan measured a column as if it were alone. The second scan skips multi-column, grid and flex parents and reports nothing in these, the calendar, this month so far, the seasonal chart, the band or the detections table. |
+
+Not checked: the same scan in a state view, Alaska, Hawaiʻi or the Vietnam region, or with a report open; the
+scan cannot see a grid whose second column is empty, so those were judged from the eight section screenshots in
+`qa/rev3/` only. Console: no errors.
+
