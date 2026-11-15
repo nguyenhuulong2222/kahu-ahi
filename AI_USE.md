@@ -26,6 +26,7 @@ AI tools were used in this project. This file records which tools and how.
 - `docs/index.html`, same day: the detection card and table, place names from Nominatim, the NASA image of the day (GIBS and Worldview Snapshots), and the one-page report for a detection. Each outside service was checked against its documentation and with real requests before use.
 - `pipeline/places.py` and the nearest-town line (GeoNames), the nearest-named-feature line (Nominatim at its finest zoom) and coordinates in degrees, minutes and seconds.
 - The contiguous United States region: running the existing steps on the US downloads, `export.py --hotspots-by-month` and the page's reader for month files, `pipeline/inside.py` (California inside the national fit), the single-canvas cell layer with before and after timings, and UTC-only times for that region.
+- `docs/index.html`: the title and one-line result, the "Harmonization result" band with its paired chart (colours checked with a colour-vision validator), the "Compare regions" table, panels that start collapsed over a wide region box, and a tighter one-page print of the report.
 - Documentation: README method, validation, limits and run instructions; THIRD_PARTY_NOTICES; SOURCES; `data/manifest.json`.
 
 The team set the requirements, the rules the code must keep (one metric, no zero shown as "no fire", no change to calibration), and reviewed the results.

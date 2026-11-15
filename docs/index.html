@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
-<title>Kahu Ahi: where and when satellites saw fire</title>
+<title>Kahu Ahi: one fire record across MODIS and VIIRS</title>
 <meta name="description" content="A burning-activity calendar that puts VIIRS fire detections on the MODIS Aqua scale and shows how far that can be trusted.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -76,10 +76,33 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .mapshell{position:relative;margin-top:16px;padding:0;border-radius:0;border:0;background:#0d1b2a}
 /* header: title beside the controls on wide screens, so the map starts high on the page */
 .pagehead{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:end;justify-content:space-between}
-.pagehead h1{font-size:clamp(1.35rem,3.2vw,2rem);margin:0}
-/* The map and the timeline together take about 70% of the window height. */
+.pagehead h1{font-size:clamp(1.3rem,3vw,1.9rem);margin:0;line-height:1.2}
+.pagehead>div:first-child{flex:1 1 520px}
+.lede{margin:4px 0 0;font-size:.98rem;max-width:none}.headline{max-width:none}
+.headline{margin:2px 0 0;font-size:.98rem;font-weight:600}.headline:empty{display:none}
+#layersbody{max-height:max(200px,calc(55vh - var(--tl-h) - 150px));overflow:auto}
+.mapshell:fullscreen #layersbody,.mapshell.is-full #layersbody{max-height:calc(100vh - var(--tl-h) - 150px)}
+.maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
+.mapshell{margin-top:6px!important}
+/* Harmonization result: three figures and a small chart, straight under the map. */
+#harm{margin-top:12px;padding:14px 20px}
+.harmgrid{display:grid;gap:12px 20px;grid-template-columns:1fr;margin-top:6px}
+@media(min-width:900px){.harmgrid{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}}
+.figs{display:grid;gap:10px 16px;grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
+@media(max-width:600px){.figs{grid-template-columns:1fr}}
+.fig{border-left:3px solid var(--line);padding-left:10px}.fig dt{font-size:.88rem;color:var(--muted)}
+.fig dd{margin:0}.fig .big{font-size:1.35rem;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}.fig .sub{font-size:.85rem;color:var(--muted)}
+.fig.refused{border-left-color:var(--warn)}.fig.refused .big{color:var(--warn);font-size:1.2rem}
+.pair svg{display:block;width:100%;height:auto;overflow:visible}.pair text{font:12px var(--font);fill:var(--muted)}.pair .lab{fill:var(--ink)}
+.pairlegend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.82rem;margin:0 0 2px;padding:0;list-style:none}
+.pairlegend svg{width:26px;height:10px;display:inline-block;vertical-align:middle;margin-right:4px}
+.pair h3{margin:0 0 2px;font-size:.92rem}.pair .readout{min-height:1.4em;margin:2px 0 0;font-size:.82rem}
+.pair details{font-size:.85rem}.pair details table{margin-top:4px}
+#compare table a{color:inherit;text-decoration-color:var(--action);text-underline-offset:2px}#compare td.num,#compare th.num{text-align:right}
+#compare tr.here td:first-child{font-weight:700}
+/* The map and the timeline together take about 55% of the window height, so the harmonization result under them is on the first screen. */
 .mapshell{--tl-h:56px}
-#map{height:calc(70vh - var(--tl-h));min-height:380px;isolation:isolate;background:#0d1b2a}
+#map{height:calc(55vh - var(--tl-h));min-height:380px;isolation:isolate;background:#0d1b2a}
 .mapshell:fullscreen,.mapshell.is-full{display:flex;flex-direction:column;width:100%;height:100%;margin:0;border:0}
 .mapshell.is-full{position:fixed;inset:0;z-index:2000;height:100dvh}
 .mapshell:fullscreen #map,.mapshell.is-full #map{flex:1;height:auto;min-height:0}
@@ -125,17 +148,17 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #report .col.sel .barv{background:#b2182b}
 @media print{
   @page{size:A4;margin:10mm}
-  body.has-report{background:#fff;font-size:9pt;line-height:1.3}
+  body.has-report{background:#fff;font-size:8.6pt;line-height:1.28}
   body.has-report main{padding:0}body.has-report .wrap{max-width:none;padding:0}
   body.has-report .reporttwo{grid-template-columns:200pt 1fr;gap:0 14pt}
   body.has-report #report .card{max-width:none}
-  body.has-report .pagehead,body.has-report .mapshell,body.has-report #monthrow,body.has-report .wrap>section:not(#report),body.has-report .two,body.has-report footer,body.has-report .noprint{display:none!important}
+  body.has-report .pagehead,body.has-report .maplabel,body.has-report .mapshell,body.has-report #monthrow,body.has-report .wrap>section:not(#report),body.has-report .two,body.has-report footer,body.has-report .noprint{display:none!important}
   body.has-report #report{border:0;margin:0;padding:0}
-  body.has-report #report h2{font-size:13pt;margin:0}body.has-report #report h3{font-size:10pt;margin:6pt 0 2pt}
+  body.has-report #report h2{font-size:13pt;margin:0}body.has-report #report h3{font-size:10pt;margin:4pt 0 2pt}
   body.has-report #report p{margin:0 0 3pt;max-width:none}body.has-report #report .note{font-size:8pt}
   body.has-report #report .card .kv{padding:1pt 0}
-  body.has-report #report .chart .plot,body.has-report #report .chart .yaxis{height:54pt}
-  body.has-report #report .reportimg{max-width:200pt}
+  body.has-report #report .chart .plot,body.has-report #report .chart .yaxis{height:40pt}
+  body.has-report #report .reportimg{max-width:200pt}body.has-report #report .snap{max-height:100pt}
   body.has-report #report .barv,body.has-report #report .col.sel,body.has-report .snap .ring{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.has-report #report table.plain{font-size:8pt}
   body.has-report #report a{color:inherit;text-decoration:none;overflow-wrap:anywhere}
@@ -211,7 +234,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 .areabar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:14px}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:4px}
 #layerspanel.collapsed,#legendpanel.collapsed{width:auto}
-@media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:340px}
+@media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:300px;height:300px}.lede,.headline{font-size:.92rem}.pagehead{gap:4px 24px}.maplabel{margin-top:8px}
   .timeline{gap:6px}#tl-range{order:-1;flex-basis:100%}.tl-word{display:none}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
   #tl-play{order:-3}#tl-range{order:-2;flex:1 1 52%}#tl-speed{order:-1}
@@ -228,12 +251,15 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 <body>
 <main>
 <div class="wrap pagehead">
-  <h1>Kahu Ahi: where and when satellites saw fire</h1>
+  <div><h1>Kahu Ahi: one fire record across MODIS and VIIRS</h1>
+    <p class="lede">VIIRS counts put on the MODIS Aqua scale, region by region, with the measured error of doing so.</p>
+    <p class="headline" id="headline" aria-live="polite"></p></div>
   <div><label for="region">Region</label>
     <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option><option value="conus">Contiguous United States</option></select></div>
 </div>
 
-<section class="mapshell" id="mapshell" aria-label="Map of fire detections">
+<div class="wrap"><h2 id="h-map" class="maplabel">Where and when satellites saw fire</h2></div>
+<section class="mapshell" id="mapshell" aria-labelledby="h-map">
   <div id="map" aria-label="Map of fire detections. The text below the map describes what it shows." aria-describedby="mapsum"></div>
   <!-- Moved into the map's corners by setupMap(); kept here so the page still makes sense without the map. -->
   <div class="mpanel" id="layerspanel">
@@ -288,6 +314,10 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 </section>
 
 <div class="wrap">
+  <section id="harm" aria-labelledby="h-harm">
+    <h2 id="h-harm">Harmonization result</h2>
+    <div id="harmbody"></div>
+  </section>
   <section id="report" aria-labelledby="h-report" hidden></section>
   <nav id="monthrow" aria-label="Months of the selected year" hidden></nav>
   <section aria-labelledby="h-what">
@@ -380,6 +410,8 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <section aria-labelledby="h-trust">
     <h2 id="h-trust">How far to trust the harmonized numbers</h2>
     <div id="trust"></div>
+    <h3 id="h-compare">Compare regions</h3>
+    <div id="compare" aria-live="polite"></div>
   </section>
 
   <section aria-labelledby="h-dl">
@@ -526,7 +558,7 @@ async function load(region, wish) {
   area = null; S = regionSeries(); pointsOn = false; applySel({});
   $("through").textContent = "Data through " + D.data_through + ". Detections of presumed vegetation fire, low-confidence ones removed.";
   if (wish.sensor && [...$("sensor").options].some(o => o.value === wish.sensor)) $("sensor").value = wish.sensor;
-  drawTrust(); drawRegionOnMap(); await setupDownload();
+  drawHarm(); drawTrust(); drawCompare(); drawRegionOnMap(); await setupDownload();
   if (token !== loadToken) return;
   // With no time in the link the page opens on the latest day that has a counted detection, so the map is never empty on load.
   applySel(startSel(wish));
@@ -937,6 +969,140 @@ function drawSeason() {
   });
 }
 
+// ---------- harmonization result (the band under the map) ----------
+// Every figure here is read from the region's JSON (D); nothing is typed in.
+const SERIES = [   // colours checked for separation under colour-vision deficiency; each also has its own marker and dash
+  {key: "raw", name: "VIIRS as recorded", color: "#7a5ea8", dash: "5 3", mark: "square"},
+  {key: "conv", name: "VIIRS converted", color: "#c2410c", dash: "", mark: "diamond"},
+  {key: "aqua", name: "MODIS Aqua", color: "#1f4e9c", dash: "2 3", mark: "circle"}];
+function svgEl(tag, attrs, ...kids) {
+  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs || {}) { if (k === "text") n.textContent = attrs[k]; else n.setAttribute(k, attrs[k]); }
+  n.append(...kids); return n;
+}
+function markNode(kind, x, y, color) {
+  const a = {fill: color, stroke: "#fff", "stroke-width": 1.5};
+  return kind === "square" ? svgEl("rect", {x: x - 4, y: y - 4, width: 8, height: 8, ...a}) : kind === "diamond" ? svgEl("path", {d: "M" + x + " " + (y - 5.5) + "l5.5 5.5l-5.5 5.5l-5.5 -5.5z", ...a}) : svgEl("circle", {cx: x, cy: y, r: 4.5, ...a});
+}
+// What the conversion is, in the numbers the page's files give for the region.
+function harmFacts(d) {
+  const L = d.snpp_to_aqua.leave_one_year_out, bm = d.snpp_to_aqua.coefficients.by_month;
+  const split = (Object.keys(L.monthly_k).map(k => /^before_(\d+)$/.exec(k)).find(Boolean) || [])[1];
+  const own = Object.keys(bm).filter(m => !bm[m].uses_annual_fallback && bm[m].k != null).sort((a, b) => bm[a].k - bm[b].k);
+  const rule = d.acceptance_rule || "";
+  return {raw: L.uncalibrated.all_years, all: L.monthly_k.all_years, before: split && L.monthly_k["before_" + split], after: split && L.monthly_k[split + "_onward"], split,
+    first: d.snpp_to_aqua.years && d.snpp_to_aqua.years[0], last: d.snpp_to_aqua.years && d.snpp_to_aqua.years[1],
+    own: own.length, kMin: own.length ? {m: +own[0], k: bm[own[0]].k} : null, kMax: own.length ? {m: +own[own.length - 1], k: bm[own[own.length - 1]].k} : null,
+    limit: (/<= (\d+)%/.exec(rule) || [])[1], need: (/at least (\d+)/.exec(rule) || [])[1]};
+}
+// Yearly totals over the complete years that both MODIS Aqua and VIIRS Suomi NPP watched.
+function pairedYears(d) {
+  const ys = d.snpp_to_aqua.years, by = {};
+  if (!ys) return [];
+  d.months.forEach(x => { const y = +x.m.slice(0, 4); if (y > ys[0] && y < ys[1] && x.aqua != null && x.snpp != null) { const t = by[y] = by[y] || {year: y, n: 0, raw: 0, aqua: 0, conv: 0, hasConv: true}; t.n++; t.raw += x.snpp; t.aqua += x.aqua; if (x.snpp_eq == null) t.hasConv = false; else t.conv += x.snpp_eq; } });
+  return Object.values(by).filter(t => t.n === 12).sort((a, b) => a.year - b.year);
+}
+function pairChart(d) {
+  const rows = pairedYears(d), box = el("div", {class: "pair"});
+  if (rows.length < 2) return box;
+  const series = SERIES.filter(s => s.key !== "conv" || (d.calibration_accepted && rows.every(r => r.hasConv)));
+  const W = 440, H = 170, mL = 52, mR = 108, mT = 8, mB = 20, top = niceMax(Math.max(...rows.map(r => r.raw)));
+  const x = i => mL + (W - mL - mR) * i / (rows.length - 1), y = v => mT + (H - mT - mB) * (1 - v / top);
+  const val = (r, s) => s.key === "conv" ? Math.round(r.conv) : r[s.key];
+  const title = "Detections per year, " + rows[0].year + " to " + rows[rows.length - 1].year + ", " + d.region.name;
+  const svg = svgEl("svg", {viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": title + ". " + series.map(s => s.name + ": " + fmt(val(rows[0], s)) + " in " + rows[0].year + ", " + fmt(val(rows[rows.length - 1], s)) + " in " + rows[rows.length - 1].year).join("; ") + ". The numbers are in the table below the chart."});
+  [0, .5, 1].forEach(f => svg.append(svgEl("line", {x1: mL, x2: W - mR, y1: y(top * f), y2: y(top * f), stroke: "#cfd6df", "stroke-width": 1}), svgEl("text", {x: mL - 6, y: y(top * f) + 4, "text-anchor": "end", text: fmt(top * f)})));
+  rows.forEach((r, i) => { if (i === 0 || i === rows.length - 1 || (i % 4 === 0 && i < rows.length - 2)) svg.append(svgEl("text", {x: x(i), y: H - 5, "text-anchor": "middle", text: r.year})); });
+  const cross = svgEl("line", {y1: mT, y2: H - mB, stroke: "#55627a", "stroke-width": 1, visibility: "hidden"});
+  svg.append(cross);
+  series.forEach(s => {
+    svg.append(svgEl("path", {d: rows.map((r, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(val(r, s)).toFixed(1)).join(""), fill: "none", stroke: s.color, "stroke-width": 2, "stroke-dasharray": s.dash, "stroke-linejoin": "round"}));
+    svg.append(markNode(s.mark, x(rows.length - 1), y(val(rows[rows.length - 1], s)), s.color));
+  });
+  // Names at the line ends, moved apart where two lines end close together.
+  const ends = series.map(s => ({s, y: y(val(rows[rows.length - 1], s))})).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+  const over = ends.length ? ends[ends.length - 1].y - (H - mB - 8) : 0;
+  if (over > 0) ends.forEach(e => { e.y -= over; });
+  ends.forEach(e => svg.append(svgEl("text", {class: "lab", x: W - mR + 10, y: e.y + 4, text: e.s.name})));
+  const legend = el("ul", {class: "pairlegend", "aria-hidden": "true"});
+  series.forEach(s => { const g = svgEl("svg", {viewBox: "0 0 26 10"}, svgEl("line", {x1: 0, x2: 26, y1: 5, y2: 5, stroke: s.color, "stroke-width": 2, "stroke-dasharray": s.dash}), markNode(s.mark, 13, 5, s.color)); legend.append(el("li", {}, g, s.name)); });
+  const say = r => r.year + ": " + series.map(s => s.name + " " + fmt(val(r, s))).join(", ") + ".";
+  const idle = "Point at the chart, or open the table, for each year's numbers.", readout = el("p", {class: "note readout", text: idle});
+  const at = e => { const b = svg.getBoundingClientRect(), px = (e.clientX - b.left) * W / b.width, i = Math.max(0, Math.min(rows.length - 1, Math.round((px - mL) / ((W - mL - mR) / (rows.length - 1))))); cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible"); readout.textContent = say(rows[i]); };
+  svg.addEventListener("pointermove", at); svg.addEventListener("pointerdown", at);
+  svg.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); readout.textContent = idle; });
+  const t = el("table", {class: "plain"}, el("tr", {}, el("th", {scope: "col", text: "Year"}), ...series.map(s => el("th", {scope: "col", class: "num", text: s.name}))));
+  rows.forEach(r => t.append(el("tr", {}, el("th", {scope: "row", text: r.year}), ...series.map(s => el("td", {class: "num", text: fmt(val(r, s))})))));
+  box.append(el("h3", {text: title}), legend, svg, readout, el("details", {}, el("summary", {text: "The chart's numbers as a table"}), el("div", {class: "calwrap"}, t)),
+    el("p", {class: "note", style: "margin:4px 0 0", text: "Complete years both satellites watched; counted detections of presumed vegetation fire." + (series.length === 3 ? " Converted with the factors used on this page (fitted on all these years; the tested error is the second figure of this section)." : " VIIRS is not converted in this region, so there is no converted line.")}));
+  return box;
+}
+function drawHarm() {
+  const box = $("harmbody"), f = harmFacts(D), ok = D.calibration_accepted;
+  $("h-harm").textContent = "Harmonization result: " + D.region.name;
+  box.replaceChildren();
+  // The same result in one line at the top of the page.
+  const head = $("headline"); head.replaceChildren();
+  if (f.all && f.raw) head.append(D.region.name + ": " + (ok
+    ? "VIIRS as recorded is off by " + pct(f.raw.abs_error_pct_of_total) + "; converted, and tested on years left out, " + pct(f.all.abs_error_pct_of_total) + ". "
+    : "not harmonized. The conversion failed its test (off by " + pct(f.all.abs_error_pct_of_total) + "), so only MODIS Aqua is shown. "), el("a", {href: "#h-harm", text: "See the result"}));
+  if (!f.all || !f.raw) { box.append(el("p", {class: "note", text: "Not enough months with both MODIS Aqua and VIIRS to test a conversion in " + inRegion() + "."})); return; }
+  const fig = (label, big, sub, cls) => el("div", {class: "fig" + (cls ? " " + cls : "")}, el("dt", {text: label}), el("dd", {}, el("div", {class: "big", text: big}), sub ? el("div", {class: "sub", text: sub}) : ""));
+  const figs = el("dl", {class: "figs"});
+  figs.append(fig("VIIRS counts taken as they are differ from MODIS Aqua by", pct(f.raw.abs_error_pct_of_total), "of Aqua's total over " + f.raw.months + " shared months"));
+  const periods = f.before && f.after ? f.first + " to " + (f.split - 1) + ": " + pct(f.before.abs_error_pct_of_total) + "; from " + f.split + ": " + pct(f.after.abs_error_pct_of_total) : "";
+  if (ok) {
+    figs.append(fig("After conversion, tested on years left out", pct(f.all.abs_error_pct_of_total), periods));
+    figs.append(fig("Conversion factor by month (VIIRS detections per Aqua detection)", f.kMin.k + " to " + f.kMax.k, "lowest in " + MONTH_FULL[f.kMin.m - 1] + ", highest in " + MONTH_FULL[f.kMax.m - 1]));
+  } else {
+    figs.append(fig("After conversion, tested on years left out", "Not harmonized", "The conversion was off by " + pct(f.all.abs_error_pct_of_total) + (f.limit ? "; the limit is " + f.limit + "%" : "") + ". Only MODIS Aqua is shown here.", "refused"));
+    figs.append(fig("Calendar months with enough detections for a factor", f.own + " of 12", (f.need ? f.need + " are needed. " : "") + (D.region.id === "hawaii" ? "Most heat detected here is volcanic, and the record cannot reliably separate it from vegetation fire." : ""), "refused"));
+  }
+  const left = el("div", {}, figs, el("p", {style: "margin:10px 0 0", text: ok ? "One record: MODIS Aqua where it has data, VIIRS divided by its month's factor elsewhere. " : "The same test that accepts a conversion elsewhere refuses it here, and the page says so rather than show a number it cannot support. "}, el("a", {href: "#h-trust", text: "How these figures were measured, and all regions side by side"})));
+  box.append(el("div", {class: "harmgrid"}, left, pairChart(D)));
+}
+
+// ---------- compare regions ----------
+const regionDocs = new Map();
+function regionDoc(id) {
+  if (!regionDocs.has(id)) regionDocs.set(id, fetch("data/" + id + ".json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(e => { regionDocs.delete(id); throw e; }));
+  return regionDocs.get(id);
+}
+let compareToken = 0;
+async function drawCompare() {
+  const box = $("compare"), token = ++compareToken, ids = [...$("region").options].map(o => o.value);
+  box.replaceChildren(el("p", {class: "note", text: "Loading the other regions' results."}));
+  const docs = await Promise.all(ids.map(id => (id === D.region.id ? Promise.resolve(D) : regionDoc(id)).catch(() => null)));
+  const large = Object.keys(HAS_INSIDE)[0];
+  let inside = null;
+  try { const r = await fetch("data/" + large + "_inside.json"); if (r.ok) inside = await r.json(); } catch (e) { inside = null; }
+  if (token !== compareToken) return;
+  const num = (v, file, suffix) => v == null ? el("td", {class: "num", text: "n/a"}) : el("td", {class: "num"}, el("a", {href: file, text: v + (suffix || ""), title: "Read from " + file}));
+  const t = el("table", {class: "plain"}, el("caption", {class: "sr", text: "The conversion in every region, each tested the same way"}), el("tr", {}, ...[["Region"], ["Shared months", 1], ["VIIRS per Aqua detection, whole year", 1], ["VIIRS as recorded", 1], ["Converted, years left out", 1], ["Earlier years", 1], ["Later years", 1], ["NOAA-20 in place of S-NPP", 1], ["Result"]].map(([text, n]) => el("th", {scope: "col", class: n ? "num" : "", text}))));
+  let split = null, first = null;
+  docs.forEach((d, i) => {
+    if (!d) { t.append(el("tr", {}, el("th", {scope: "row", text: ids[i]}), el("td", {colspan: 8, text: "This region's file could not be loaded."}))); return; }
+    const f = harmFacts(d), file = "data/" + d.region.id + ".json", u = d.noaa20_to_snpp.leave_one_year_out.uncalibrated.all_years;
+    split = split || f.split; first = first || f.first;
+    t.append(el("tr", {class: d.region.id === D.region.id ? "here" : ""}, el("th", {scope: "row", text: d.region.name + (d.region.id === D.region.id ? " (shown)" : "")}),
+      num(f.all && f.all.months, file), num(d.snpp_to_aqua.coefficients.annual_k, file), num(f.raw && f.raw.abs_error_pct_of_total, file, "%"), num(f.all && f.all.abs_error_pct_of_total, file, "%"),
+      num(f.before && f.before.abs_error_pct_of_total, file, "%"), num(f.after && f.after.abs_error_pct_of_total, file, "%"), num(u && u.abs_error_pct_of_total, file, "%"),
+      el("td", {text: d.calibration_accepted ? "Harmonized" : "Not harmonized: fails the test"})));
+  });
+  const kids = [el("div", {class: "calwrap"}, t)];
+  if (inside) {
+    const file = "data/" + large + "_inside.json", o = inside.small_with_large_k, own = inside.small_with_own_k, bk = Object.keys(o).find(k => /^before_/.test(k)), ak = Object.keys(o).find(k => /_onward$/.test(k));
+    const small = docs.find(d => d && d.region.id === inside.small), big = docs.find(d => d && d.region.id === inside.large);
+    const sName = small ? small.region.name : inside.small, bName = big ? big.region.name : inside.large;
+    t.append(el("tr", {}, el("th", {scope: "row", text: sName + ", with the factors of " + bName}), num(o.all_years.months, file), num(inside.annual_k.large, file), el("td", {class: "num", text: ""}),
+      num(o.all_years.abs_error_pct_of_total, file, "%"), num(o[bk] && o[bk].abs_error_pct_of_total, file, "%"), num(o[ak] && o[ak].abs_error_pct_of_total, file, "%"), el("td", {class: "num", text: ""}), el("td", {text: "Comparison only; not shown on the page"})));
+    kids.push(el("p", {text: sName + " inside the larger fit: "}, el("a", {href: file, text: pct(o.all_years.abs_error_pct_of_total)}), " with the factors of " + bName + ", against ", el("a", {href: file, text: pct(own.all_years.abs_error_pct_of_total)}), " with its own. A conversion fitted over a larger area costs accuracy in the smaller one."));
+  }
+  kids.push(el("p", {class: "note", text: "Percentages are the error as a share of all the detections MODIS Aqua recorded, each year predicted from a conversion built without it." + (split ? " Earlier years are " + first + " to " + (split - 1) + ", later years " + split + " onward." : "") + " NOAA-20 in place of S-NPP is the difference when NOAA-20 is used with no further conversion. Each number links to the file it is read from."}));
+  box.replaceChildren(...kids);
+}
+
 const HAS_INSIDE = {conus: "California"};
 let INSIDE = null;
 // What one conversion per calendar month costs when the region is a whole country.
@@ -1247,6 +1413,7 @@ function setupMap() {
   domControl($("legendpanel"), "bottomright");
   const lp = $("legendpanel");
   lp.addEventListener("toggle", () => lp.classList.toggle("collapsed", !lp.open));
+  lp.querySelector("summary").addEventListener("click", () => { panelTouched.legend = true; });
   if (matchMedia("(max-width: 600px)").matches) { setLayersOpen(false); lp.open = false; lp.classList.add("collapsed"); }
 
   syncBasemap();
@@ -1271,6 +1438,17 @@ function domControl(node, position) {
 }
 let coordBox = null;
 function latLonText(ll) { return Math.abs(ll.lat).toFixed(3) + "° " + (ll.lat >= 0 ? "N" : "S") + ", " + Math.abs(ll.lng).toFixed(3) + "° " + (ll.lng >= 0 ? "E" : "W"); }
+// On a wide screen the Layers panel and the legend start open, unless they would lie over the region box as first
+// framed (a region as wide as the map). A panel the reader has opened or closed is left as they set it.
+let boxRect = null, panelCheck = false;
+const panelTouched = {layers: false, legend: false};
+function fitPanels() {
+  if (!boxRect || matchMedia("(max-width: 600px)").matches) return;
+  const m = $("map").getBoundingClientRect(), lp = $("legendpanel");
+  const covers = node => { const r = node.getBoundingClientRect(); return Math.min(r.right - m.left, boxRect.r) - Math.max(r.left - m.left, boxRect.l) > 4 && Math.min(r.bottom - m.top, boxRect.b) - Math.max(r.top - m.top, boxRect.t) > 4; };
+  if (!panelTouched.layers) { setLayersOpen(true); setLayersOpen(!covers($("layerspanel"))); }
+  if (!panelTouched.legend) { lp.open = true; lp.classList.remove("collapsed"); const open = !covers(lp); lp.open = open; lp.classList.toggle("collapsed", !open); }
+}
 function setLayersOpen(open) { $("layersbtn").setAttribute("aria-expanded", String(open)); $("layersbody").hidden = !open; $("layerspanel").classList.toggle("collapsed", !open); }
 
 // ---------- basemap: NASA GIBS, Esri World Imagery, OpenStreetMap ----------
@@ -1514,6 +1692,7 @@ function drawRegionOnMap() {
   L.rectangle(regionBounds, {fill: false, color: "#000", opacity: .55, weight: 5, interactive: false}).addTo(layers.box);
   L.rectangle(regionBounds, {fill: false, color: "#fff", weight: 2, interactive: false}).addTo(layers.box);
   map.fitBounds(regionBounds, {animate: false, paddingTopLeft: [8, 8], paddingBottomRight: [8, 34]});
+  { const a = map.latLngToContainerPoint(regionBounds.getNorthWest()), b = map.latLngToContainerPoint(regionBounds.getSouthEast()); boxRect = {l: a.x, t: a.y, r: b.x, b: b.y}; panelCheck = true; }
   syncBasemap();
   updatePointsButton();
 }
@@ -1714,6 +1893,7 @@ function drawMapLegend(pick) {
     lg.append(el("span", {}, el("span", {class: "sw", style: "background:#3b4a5f;border:2px dashed #fff;width:16px;height:16px"}), "Not counted (hollow dashed square): low confidence or a non-fire heat source"));
     lg.append(el("span", {text: "Squares show the sensor's footprint at nadir: about 1 km for MODIS, 375 m for VIIRS (drawn at least 5 pixels wide)."}));
   }
+  if (panelCheck) { panelCheck = false; fitPanels(); }
 }
 
 function cellKey(ll) { return cellOf(ll.lat + 90) * 10000 + cellOf(ll.lng + 180); }
@@ -2407,6 +2587,7 @@ $("sensor").addEventListener("change", () => { if (D) select(curSel()); });
 ["drawgrid", "drawpts"].forEach(id => $(id).addEventListener("change", () => { pausePlay(); pointsOn = $("drawpts").checked; updatePointsButton(); drawMap(); if (!pointsOn) onView(); }));
 $("basemap").addEventListener("change", () => { $("basenote").textContent = ""; syncBasemap(); if (D) drawMap(); });
 $("outline").addEventListener("change", e => { if (map) toggleLayer(layers.box, e.target.checked); });
+$("layersbtn").addEventListener("click", () => { panelTouched.layers = true; });
 $("layersbtn").addEventListener("click", () => setLayersOpen($("layersbtn").getAttribute("aria-expanded") !== "true"));
 $("whole").addEventListener("click", () => { clearArea(); });
 $("allyears").addEventListener("click", () => showAllYears());
