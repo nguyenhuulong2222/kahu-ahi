@@ -418,3 +418,19 @@ scroll position on list selections, the control tour, drawing an area in Alaska,
 switch, full screen, print, other browsers and real phones. One earlier run in this pass logged a failed request to
 NASA Worldview Snapshots (the card's satellite image) on the phone; it did not recur in the final run.
 
+## Eighth pass: the first screen
+
+Three fixes seen in `qa/rev2/`. No count and no wording decision changed. Measured in Chromium at each size on
+the lower 48, Alaska, New York, the Vietnam region, Texas and Hawaiʻi; screenshots `qa/rev2/first_<view>_<size>.png`
+(re-shot) and `first_covers_open_<size>.png`. Console: no errors.
+
+| # | Change | Measured |
+|---|---|---|
+| 1 Phone: the map starts in the first screen | Region and State share one row; the coverage note is a "What this covers" disclosure under them, closed on load (it now holds the full sentence with the five territories named); the title is smaller, the definition is its first sentence only ("Harmonized: put on one scale."), spacing tightened. The name note is kept. | 390x844: the map starts at 375 to 415 px and all 300 px of it are on the first screen in the six views (before: lower 48 at about 545 px). Page width 390. The Region list shows "United States (lowe" cut by the browser at this width; the full name is in the open list and in every heading. |
+| 2 Desktop: header and fold | The coverage note is the same disclosure; between 601 and 1100 px the title is one line and the header type is tighter. On a wide window the map now takes the height the header leaves (at most 72% of the window), so the timeline ends at the bottom of the first screen and the band starts below it. | 1440x900: map 547 px (412 before), timeline ends at 900, band heading at 941. 1024x768: map 396 px (380 before) and timeline ends at 768 in five views; Hawaiʻi, whose refusal runs to four lines, 376 px. The region outline is inside the map in all 18 cases. No figure of the band is cut at either size: the band is wholly below the fold. |
+| 3 One colon in a refusal | "Alaska is not harmonized: too few detections here. Only 6 of the 12 months ..." The same for New York, Hawaiʻi and every refused state. | Read back for Alaska, New York and Hawaiʻi. |
+
+Not checked: window heights other than 900, 768 and 844 (on a window taller than about 1,250 px the map stops at
+72% of the height and the band shows above the fold again); the disclosure open on load; other browsers; the
+passes listed as not re-run above.
+

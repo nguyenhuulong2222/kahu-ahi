@@ -89,7 +89,9 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .pagehead h1{font-size:clamp(1.3rem,3vw,1.9rem);margin:0;line-height:1.2}
 .pagehead>div:first-child{flex:1 1 520px}
 .brand{display:flex;gap:12px;align-items:flex-start}.brand .mark{flex:0 0 auto;width:42px;height:54px;margin-top:2px}.brand>div{min-width:0}
-.pagehead p.covers{margin:6px 0 0;font-size:.82rem;color:var(--muted);max-width:34ch}
+.covers{margin:6px 0 0;font-size:.82rem;color:var(--muted);max-width:34ch}.covers summary{cursor:pointer;min-height:24px;color:var(--teal,#0b6e6e);font-weight:600;text-decoration:underline}.covers p{margin:4px 0 0}
+.pick{display:block}.pick+.pick{margin-top:4px}.pick[hidden]{display:none}
+@media(max-width:1100px) and (min-width:601px){.pagehead{padding-top:10px}.pagehead h1{font-size:1.5rem;line-height:1.15}.pagehead .lede{font-size:.9rem;line-height:1.38;margin-top:2px}.pagehead .headline{font-size:.92rem;line-height:1.33}.pagehead .namenote{font-size:.82rem;margin-top:0}.define{margin-top:2px}.define .more{display:none}.maplabel{margin-top:6px}}
 .define{margin:3px 0 0;font-size:.88rem;color:var(--muted)}.define dfn{font-style:normal;font-weight:700;color:var(--ink)}
 .namenote{margin:2px 0 0;font-size:.88rem;color:var(--muted);max-width:none}
 .lede{margin:4px 0 0;font-size:.98rem;max-width:none}.headline{max-width:none}
@@ -100,7 +102,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .recordbar{margin:8px 0;padding:8px 12px;background:var(--paper);border-radius:6px}.recordbar fieldset{border:0;margin:0;padding:0;display:block}
 .recordbar legend{float:none;display:block;font-weight:600;margin:0;padding:0}.recordopts{display:flex;flex-wrap:wrap;align-items:center;gap:0 24px}.recordbar label{display:inline-flex;gap:6px;align-items:center;min-height:32px;margin:0}.recordbar label input{min-height:auto;width:18px;height:18px;margin:0}
 @media(max-width:600px){.recordopts{flex-direction:column;align-items:flex-start}}.recordbar p{margin:4px 0 0}
-#statewrap{display:block;margin-top:4px}#statewrap[hidden]{display:none}#statewrap label,.pagehead label[for=region]{display:block}
+#statewrap[hidden]{display:none}#statewrap label,.pagehead label[for=region]{display:block}
 .pagehead>div:last-child{flex:0 0 auto}.pagehead>div:last-child select{min-width:210px}
 .statemap svg{display:block;width:100%;height:auto;max-height:460px}.statemap path{stroke:#fff;stroke-width:.6;cursor:pointer}.statemap path:hover{stroke:#14213d;stroke-width:1.6}
 .statemap text{font:700 9px var(--font);fill:#14213d;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:2.5px}
@@ -319,7 +321,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:4px}
 #layerspanel.collapsed,#legendpanel.collapsed{width:auto}
 @media(min-width:601px) and (max-width:1180px){.mapshell{--tl-h:102px}.mapshell.has-card.layers-open .leaflet-control-attribution{max-width:calc(100vw - 790px)}}
-@media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:300px;height:300px}.lede{display:none}.headline{font-size:.92rem}.pagehead{gap:4px 24px}.brand{gap:9px}.brand .mark{width:34px;height:44px}.namenote{font-size:.82rem}.maplabel{margin-top:8px}
+@media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:300px;height:300px}.lede{display:none}.headline{font-size:.92rem;line-height:1.35}.define .more{display:none}.pagehead{gap:4px 24px}.pagehead>div:last-child{flex:1 1 100%}.pickers{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:0 8px}.pick+.pick{margin-top:0}.pagehead>div:last-child select{min-width:0;width:100%;min-height:40px;padding:6px 8px}.pagehead label{font-size:.82rem}.covers{max-width:none;margin-top:3px}.pagehead h1{font-size:1.25rem}.brand{gap:9px}.brand .mark{width:34px;height:44px}.namenote{font-size:.82rem}.maplabel{margin-top:8px}
   .timeline{gap:5px}.tl-word{display:none}.tl-short{display:inline;font-size:.8rem}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
   #tl-speed{flex:1 1 76px;min-width:76px;max-width:110px;min-height:40px;padding:4px 2px 4px 6px;font-size:.9rem}#tl-range{flex:1 1 100%}
@@ -343,12 +345,12 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <p class="namenote">Kahu Ahi is Hawaiian for 'keeper of the fire': <i lang="haw">kahu</i>, keeper or guardian; <i lang="haw">ahi</i>, fire.</p>
     <p class="lede">NASA plans to begin shutting down Terra and Aqua in late 2026 or early 2027 and encourages users to move to VIIRS. The record shown is MODIS Aqua; VIIRS, corrected to its scale and tested, continues it.</p>
     <p class="headline" id="headline" aria-live="polite"></p>
-    <p class="define"><dfn>Harmonized</dfn>: put on one scale. Here VIIRS counts are corrected to the scale of MODIS Aqua.</p></div></div>
-  <div><label for="region">Region</label>
-    <select id="region"><option value="conus">United States (lower 48 states)</option><option value="alaska">Alaska</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select>
-    <span id="statewrap" hidden><label for="state">State</label>
-    <select id="state"><option value="">All 48 states and DC</option></select></span>
-    <p class="covers">Covers all 50 states and the District of Columbia (the lower 48 and DC state by state, Alaska and Hawaiʻi as regions) and the Vietnam region. US territories are not included in this version.</p></div>
+    <p class="define"><dfn>Harmonized</dfn>: put on one scale.<span class="more"> Here VIIRS counts are corrected to the scale of MODIS Aqua.</span></p></div></div>
+  <div><div class="pickers"><span class="pick"><label for="region">Region</label>
+    <select id="region"><option value="conus">United States (lower 48 states)</option><option value="alaska">Alaska</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select></span>
+    <span id="statewrap" class="pick" hidden><label for="state">State</label>
+    <select id="state"><option value="">All 48 states and DC</option></select></span></div>
+    <details class="covers"><summary>What this covers</summary><p>All 50 states and the District of Columbia (the lower 48 and DC state by state, Alaska and Hawaiʻi as regions) and the Vietnam region. US territories (Puerto Rico, Guam, the U.S. Virgin Islands, American Samoa, the Northern Mariana Islands) are not included in this version.</p></details></div>
 </div>
 
 <div class="wrap"><h2 id="h-map" class="maplabel">Where and when satellites saw fire</h2></div>
@@ -934,7 +936,7 @@ async function load(region, wish) {
   // A region or a state opens on the harmonized view unless the link names a satellite.
   chipFromLink = !!(wish.sensor && [...$("sensor").options].some(o => o.value === wish.sensor)); chipDismissed = "";
   $("sensor").value = chipFromLink ? wish.sensor : "auto";
-  drawHarm(); drawByState(); drawTrust(); drawCompare(); drawRegionOnMap(); await setupDownload();
+  drawHarm(); drawByState(); drawTrust(); drawCompare(); fitFirstScreen(); drawRegionOnMap(); await setupDownload();
   if (token !== loadToken) return;
   // With no time in the link the page opens on the latest complete day that has a counted detection, so the map is never empty on load.
   applySel(startSel(wish));
@@ -1472,9 +1474,9 @@ function drawHarm() {
   box.replaceChildren();
   // The same result in one line at the top of the page.
   const head = $("headline"); head.replaceChildren();
-  if (f.all && f.raw) head.append(D.region.name + ": " + (ok
-    ? "the newer VIIRS satellites record about " + timesK(D.snpp_to_aqua.coefficients.annual_k) + " times as many fire detections as the older MODIS Aqua. Corrected month by month, VIIRS is off by " + pct(f.all.abs_error_pct_of_total) + " in years the method had not seen. "
-    : stateFacts(D).says.replace(/^Not/, "not") + " Only MODIS Aqua is shown. "), el("a", {href: "#h-harm", text: "See the result"}));
+  // A refusal has one colon: "Alaska is not harmonized: too few detections here. ..."
+  if (f.all && f.raw && !ok) head.append(D.region.name + " is not harmonized: " + stateFacts(D).says.replace(/^Not harmonized: /, "") + " Only MODIS Aqua is shown. ", el("a", {href: "#h-harm", text: "See the result"}));
+  else if (f.all && f.raw) head.append(D.region.name + ": the newer VIIRS satellites record about " + timesK(D.snpp_to_aqua.coefficients.annual_k) + " times as many fire detections as the older MODIS Aqua. Corrected month by month, VIIRS is off by " + pct(f.all.abs_error_pct_of_total) + " in years the method had not seen. ", el("a", {href: "#h-harm", text: "See the result"}));
   if (!f.all || !f.raw) { box.append(el("p", {class: "note", text: "Not enough months with both MODIS Aqua and VIIRS to test a correction in " + inRegion() + "."})); return; }
   const fig = (label, big, sub, cls, tag) => el("div", {class: "fig" + (cls ? " " + cls : "")}, el("dt", {}, tag ? el("span", {class: "tag", text: tag}) : "", label), el("dd", {}, el("div", {class: "big", text: big}), sub ? el("div", {class: "sub", text: sub}) : ""));
   const figs = el("dl", {class: "figs"});
@@ -3327,13 +3329,15 @@ function besideOrigin(node) {
   if (row !== cornerRow) { cornerRow = row; const r = row && row.getBoundingClientRect(); cornerTop = !!r && (r.top + r.bottom) / 2 > innerHeight / 2; }
   if (cornerTop) { node.style.top = "16px"; node.style.bottom = "auto"; }
 }
-// The map gives up height when the timeline would otherwise end below the first screen, so the level switch is whole.
+// On a wide window the map takes the height the header leaves, so the timeline ends at the bottom of the first screen:
+// the level switch is whole and the band under the map starts below the fold instead of being cut through a number.
 function fitFirstScreen() {
   const m = $("map"), shell = $("mapshell");
   m.style.height = m.style.minHeight = "";
   if (matchMedia("(max-width: 600px)").matches || shell.classList.contains("is-full") || document.fullscreenElement) return;
   const top = shell.getBoundingClientRect().top + scrollY, tl = shell.querySelector(".timeline").offsetHeight, fit = Math.floor(innerHeight - top - tl);
-  if (fit < m.offsetHeight && fit >= 240) m.style.height = m.style.minHeight = fit + "px";
+  const want = Math.min(fit, Math.floor(innerHeight * .72));
+  if (want !== m.offsetHeight && want >= 240) m.style.height = m.style.minHeight = want + "px";
   if (map) map.invalidateSize();
 }
 addEventListener("resize", fitFirstScreen);
