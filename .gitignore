@@ -9,3 +9,6 @@ data/raw/
 # Playwright test artifacts
 .playwright-mcp/
 qa/
+demo/node_modules/
+demo/build/
+demo/frames/

@@ -1,0 +1,18 @@
+{
+  "team_members": "Long Nguyen, Tiffanie Nguyen, Quynh Thi Kim Do",
+  "site": "nguyenhuulong2222.github.io/kahu-ahi",
+  "repository": "github.com/nguyenhuulong2222/kahu-ahi",
+  "comment": "Narration: AI-generated voice (Google Gemini). Picture: screen recording of the live page.",
+  "notice_sentence": "NASA plans to begin shutting down Terra and Aqua in late 2026 or early 2027 and encourages users to move to VIIRS.",
+  "notice_source": "NASA Earthdata notice “Transition from MODIS to VIIRS”, 2 May 2025, as cited on the page",
+  "captions": [
+    "We're team Kahu Ahi, from Maui.",
+    "NASA is retiring MODIS, its fire record since 2000.",
+    "VIIRS takes over, but sees over six times as many hot spots.",
+    "Kahu Ahi corrects VIIRS month by month with NASA data: about ten percent error on years it never saw.",
+    "Thirty-seven of forty-nine pass the test. Where it fails, it says so.",
+    "Every detection has its place, its time, and NASA's image of that day.",
+    "When MODIS ends, the record continues."
+  ],
+  "scene_state": {"not_harmonized": "NY", "day_state": "CA", "day": "2021-08-18", "play_from": "2021-05"}
+}

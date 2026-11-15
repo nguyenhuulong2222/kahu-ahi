@@ -1,0 +1,28 @@
+1
+00:00:00,000 --> 00:00:02,500
+We're team Kahu Ahi, from Maui.
+
+2
+00:00:02,500 --> 00:00:06,467
+NASA is retiring MODIS, its fire record since 2000.
+
+3
+00:00:06,467 --> 00:00:10,800
+VIIRS takes over, but sees over six times as many hot spots.
+
+4
+00:00:10,800 --> 00:00:17,567
+Kahu Ahi corrects VIIRS month by month with NASA data: about ten percent error on years it never saw.
+
+5
+00:00:17,567 --> 00:00:22,133
+Thirty-seven of forty-nine pass the test. Where it fails, it says so.
+
+6
+00:00:22,133 --> 00:00:26,467
+Every detection has its place, its time, and NASA's image of that day.
+
+7
+00:00:26,467 --> 00:00:28,900
+When MODIS ends, the record continues.
+

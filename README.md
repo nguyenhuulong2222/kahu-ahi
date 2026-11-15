@@ -4,7 +4,7 @@
 
 *Kahu Ahi* is Hawaiian for "keeper of the fire" (*kahu*, keeper or guardian; *ahi*, fire). The mark, `docs/kahu-ahi-mark.svg`, is a flame built from square satellite pixels in the colours of the page's fire ramp; it was made for this project on 14 Nov 2026 and is also the favicon and the basis of the link-preview image `docs/kahu-ahi-og.png`.
 
-NASA Space Apps Challenge 2026 · Challenge: *Harmonization of MODIS and VIIRS Hot Spots* · Local Event: Honolulu, HI · Team: Kahu Ahi
+NASA Space Apps Challenge 2026 · Challenge: *Harmonization of MODIS and VIIRS Hot Spots* · Team: team Kahu Ahi, Maui, Hawaiʻi (Honolulu Local Event)
 
 > **Status:** submission version, built during the hackathon (14–15 Nov 2026, HST). Every figure below is a measured result; an outside audit and what was done about it are in [AUDIT.md](AUDIT.md).
 
