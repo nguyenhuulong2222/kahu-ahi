@@ -90,8 +90,9 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .namenote{margin:2px 0 0;font-size:.88rem;color:var(--muted);max-width:none}
 .lede{margin:4px 0 0;font-size:.98rem;max-width:none}.headline{max-width:none}
 .headline{margin:2px 0 0;font-size:.98rem;font-weight:600}.headline:empty{display:none}
-#layersbody{max-height:max(200px,calc(52vh - var(--tl-h) - 150px));overflow:auto}
-.mapshell:fullscreen #layersbody,.mapshell.is-full #layersbody{max-height:calc(100vh - var(--tl-h) - 150px)}
+/* A panel is never taller than the room it has (set in fitMapPanels); when its content is taller it scrolls, and a
+   shadow at the edge that has more shows it. */
+#layersbody,#maplegend{overflow:auto;background:linear-gradient(#fff 40%,rgba(255,255,255,0)) top,linear-gradient(rgba(255,255,255,0),#fff 60%) bottom,radial-gradient(farthest-side at 50% 0,rgba(20,33,61,.45),rgba(20,33,61,0)) top,radial-gradient(farthest-side at 50% 100%,rgba(20,33,61,.45),rgba(20,33,61,0)) bottom;background-repeat:no-repeat;background-size:100% 28px,100% 28px,100% 10px,100% 10px;background-attachment:local,local,scroll,scroll}
 .recordbar{margin:8px 0;padding:8px 12px;background:var(--paper);border-radius:6px}.recordbar fieldset{border:0;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 18px}
 .recordbar legend{float:left;font-weight:600;margin-right:14px;padding:0}.recordbar label{display:inline-flex;gap:6px;align-items:center;min-height:32px}.recordbar p{margin:4px 0 0}
 #statewrap{display:block;margin-top:4px}#statewrap[hidden]{display:none}#statewrap label,.pagehead label[for=region]{display:block}
@@ -112,7 +113,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 @media(max-width:600px){#previewcard{left:0;right:0;bottom:0;width:auto;max-width:none;max-height:70vh;border-radius:12px 12px 0 0}#previewcard .pvbar button{flex:1 1 45%;min-height:44px}}
 #mostareas tr.on td,#mostdays tr.on td{background:#fff3d6}.mostpin.on{background:#f2a900;color:#14213d;transform:scale(1.35);z-index:1000!important}
 .mostpin{background:#14213d;color:#fff;border:2px solid #fff;border-radius:50%;font:700 12px/18px var(--font);text-align:center;box-shadow:0 0 0 1px #000;cursor:pointer}
-.mostpin.s20{font-size:11px;line-height:16px}.mostpin.s18{font-size:10px;line-height:14px}.mostpin.many{border-radius:10px;letter-spacing:-.2px}
+.mostpin.s20{font-size:11px;line-height:16px}.mostpin.s18{font-size:10px;line-height:14px}.mostpin.many{overflow:visible}.mostpin .more{position:absolute;left:calc(100% - 5px);top:-8px;padding:0 4px;border-radius:8px;background:#f2a900;color:#14213d;border:1.5px solid #14213d;font:700 10px/13px var(--font);white-space:nowrap}
 .mostshow{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font-size:.92rem}.mostshow button{min-width:44px;min-height:36px;padding:4px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink);font-weight:600;cursor:pointer}
 .mostshow button[aria-pressed="true"]{background:#14213d;color:#fff;border-color:#14213d}.mostshow button:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
 .maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
@@ -121,6 +122,14 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #harm,#most{margin-top:20px;padding:20px}#most h2,#harm h2{font-size:1.15rem}
 /* Wide screens: the harmonization result and the busiest places side by side under the timeline, each in one column inside. */
 .pair2{display:grid;grid-template-columns:minmax(0,1fr);gap:0 20px}
+/* Below the map, 1100 px and wider: a section is as wide as the two above it, text sits beside its table or chart and
+   runs of short blocks take two columns. Lines stay near 70 characters. */
+@media(min-width:1100px){.wrap{max-width:1400px}.pagehead p{max-width:78ch}
+  .cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px;align-items:start}.cols2>.howto,.cols2>form{margin-top:0!important}
+  .flow2{columns:2;column-gap:40px}.flow2>*{break-inside:avoid}.flow2 h3{break-after:avoid;margin-top:0}.flow2 table{max-width:100%}
+  #drill{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0 40px;align-items:start}#drill>*{grid-column:2}#drill>.crumbs,#drill>h3,#drill>details{grid-column:1/-1}#drill>.chart{grid-column:1;grid-row:3/span 8}
+  .calgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 40px;align-items:start}.calgrid>div:first-child{max-width:780px}
+  #compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px;align-items:start}#compare>*{grid-column:1/-1}#compare>p{grid-column:auto}}
 @media(min-width:1100px){.widewrap{max-width:1400px}.pair2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
   .pair2 .harmgrid,.pair2 .mostgrid{grid-template-columns:minmax(0,1fr)}.pair2>section:only-child,.pair2>section[hidden]+section{grid-column:1/-1}}
 .harmgrid{display:grid;gap:12px 20px;grid-template-columns:1fr;margin-top:6px}
@@ -175,13 +184,19 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .card .kv{display:grid;grid-template-columns:42% 1fr;gap:2px 8px;padding:3px 0;border-top:1px solid var(--line)}
 .card dt{color:var(--muted)}.card dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .card .note{margin:6px 0 0;font-size:12px}.card button:not(.linkish){min-height:40px}
-#cardsheet{position:absolute;left:8px;right:8px;bottom:calc(var(--tl-h) + 10px);z-index:950;max-height:62%;overflow:auto;padding:10px 12px;border-radius:8px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);font:13px/1.4 var(--font)}
+#cardsheet{position:absolute;left:8px;right:8px;bottom:calc(var(--tl-h) + 10px);z-index:1100;max-height:62%;overflow:auto;padding:10px 12px;border-radius:8px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);font:13px/1.4 var(--font)}
 #cardsheet{max-height:50%}
 .sheetbar{display:flex;gap:8px;justify-content:space-between;margin-bottom:6px}
 .sheetbar button{min-height:36px;padding:4px 10px}
-@media(min-width:601px){#cardsheet{left:auto;right:10px;top:10px;bottom:calc(var(--tl-h) + 10px);width:340px;max-height:none}}
+/* Wide: the card takes the right edge of the map and every map control moves left of it, so it covers none of them. */
+@media(min-width:601px){#cardsheet{left:auto;right:10px;top:10px;bottom:calc(var(--tl-h) + 10px);width:380px;max-height:none}
+  .mapshell.has-card .leaflet-right{right:400px}}
+@media(min-width:601px){.mapshell.has-card #legendpanel{display:none}.mapshell.has-card .leaflet-control-attribution{max-width:calc(100vw - 600px)}
+  #layerspanel{width:320px}#layerspanel.collapsed{width:auto}#layersbody select{min-height:36px;padding:4px 8px}#layersbody label.inline{min-height:26px;margin-top:2px}#drawnote,#basehint{margin:2px 0 4px}.mapshell.layers-open .leaflet-bottom.leaflet-left{left:330px}}
+/* Phone: the card is a block under the timeline, not a sheet over the map. */
+@media(max-width:600px){#cardsheet{position:static;max-height:none;margin:0 8px 10px}}
 .card .town{font-size:1.02rem}.card .country{margin-top:1px}.card .feature{margin-top:3px}.card .kv .note{margin-top:4px;font-size:11.5px}
-.locator{float:right;margin:0 0 4px 8px;line-height:0}
+.locator{display:block;margin:6px 0 2px;line-height:0;text-align:right}.card dl .kv:first-child{grid-template-columns:minmax(0,1fr)}
 /* report for one detection, and its one-page print layout */
 #report dl.card{margin:0;max-width:760px}#report .reportimg{max-width:420px}#report .limits{margin:0;padding-left:1.2em;max-width:72ch}
 .reporttwo{display:grid;grid-template-columns:1fr;gap:0 24px}
@@ -276,13 +291,14 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 .areabar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:14px}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:4px}
 #layerspanel.collapsed,#legendpanel.collapsed{width:auto}
-@media(min-width:601px) and (max-width:1180px){.mapshell{--tl-h:102px}}
+@media(min-width:601px) and (max-width:1180px){.mapshell{--tl-h:102px}.mapshell.has-card.layers-open .leaflet-control-attribution{max-width:calc(100vw - 790px)}}
 @media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:300px;height:300px}.lede{display:none}.headline{font-size:.92rem}.pagehead{gap:4px 24px}.brand{gap:9px}.brand .mark{width:34px;height:44px}.namenote{font-size:.82rem}.maplabel{margin-top:8px}
   .timeline{gap:6px}.tl-word{display:none}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
-  #tl-speed{flex:1 1 calc(100% - 56px)}#tl-range{flex:1 1 60px;min-width:60px}
+  #tl-speed{flex:1 1 76px;min-width:76px;max-width:110px;min-height:40px;padding:4px 2px 4px 6px;font-size:.9rem}#tl-range{flex:1 1 100%}
+  .coordbox{display:none}
   .tl-goto{order:7;flex:1 1 100%}#go-msg{order:7}.tl-goto>span{display:flex;flex:1 1 0;align-items:center;gap:6px;min-width:0}.tl-goto select,.tl-goto input{flex:1 1 auto;min-width:0;min-height:44px}
-  #legendpanel{width:240px}
+  #legendpanel{width:220px}#layerspanel{max-width:calc(100vw - 132px)}
   #map .leaflet-top.leaflet-left{flex-wrap:wrap;max-width:none;right:0}.mchip{max-width:calc(100vw - 30px);flex:0 1 auto;margin-top:6px!important}
   .leaflet-bottom.leaflet-left{bottom:36px}
   #biglabel{top:58px}#mapnotes{top:108px}
@@ -311,7 +327,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <div id="map" aria-label="Map of fire detections. The text below the map describes what it shows." aria-describedby="mapsum"></div>
   <!-- Moved into the map's corners by setupMap(); kept here so the page still makes sense without the map. -->
   <div class="mpanel" id="layerspanel">
-    <button type="button" id="layersbtn" class="mpanel-head" aria-expanded="true" aria-controls="layersbody">Layers</button>
+    <button type="button" id="layersbtn" class="mpanel-head" aria-expanded="false" aria-controls="layersbody">Layers</button>
     <div id="layersbody">
       <label for="basemap">Basemap</label>
       <select id="basemap">
@@ -345,9 +361,9 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <select id="tl-speed" aria-label="Playback speed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select>
     <button type="button" id="tl-py" class="tl-btn" aria-label="Previous year">« <span class="tl-word">Year</span></button>
     <button type="button" id="tl-pm" class="tl-btn" aria-label="Previous month">‹ <span class="tl-word">Month</span></button>
-    <input type="range" id="tl-range" min="0" max="0" value="0" step="1" aria-label="Month shown on the map; the first position is all years">
     <button type="button" id="tl-nm" class="tl-btn" aria-label="Next month"><span class="tl-word">Month</span> ›</button>
     <button type="button" id="tl-ny" class="tl-btn" aria-label="Next year"><span class="tl-word">Year</span> »</button>
+    <input type="range" id="tl-range" min="0" max="0" value="0" step="1" aria-label="Month shown on the map; the first position is all years">
     <output id="tl-label" class="sr" for="tl-range" aria-live="polite">All years</output>
     <span id="tl-goto" class="tl-goto" role="group" aria-label="Go to a year, month or date">
       <span id="go-year-wrap"><label for="go-year">Year</label> <select id="go-year"></select></span>
@@ -389,11 +405,13 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <nav id="monthrow" aria-label="Months of the selected year" hidden></nav>
   <section aria-labelledby="h-what">
     <h2 id="h-what">What you are looking at</h2>
+    <div class="cols2"><div>
     <div id="explain" aria-live="polite"></div>
     <p class="note" id="through"></p>
     <p id="mapsum" class="note" aria-live="polite">Loading the map.</p>
     <p class="note" id="mapview" aria-live="polite"></p>
     <p class="note" id="basenote" aria-live="polite"></p>
+    </div>
     <div class="howto">
       <h3>How to read this</h3>
       <ul>
@@ -406,17 +424,20 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
         <li><strong>Provisional</strong> means near-real-time data: it arrives within hours, has not yet been reprocessed by NASA, and can still change.</li>
         <li>This is a history of what satellites saw. It is not an alert or a forecast.</li>
       </ul>
-    </div>
+    </div></div>
   </section>
 
   <section id="detsec" aria-labelledby="h-det" hidden>
     <h2 id="h-det" tabindex="-1">Detections</h2>
+    <div class="cols2"><div>
     <p id="detsum" aria-live="polite"></p>
     <p id="detplace" aria-live="polite" hidden></p>
     <p class="note"><span id="dettime">Local time and UTC are the time of the satellite pass.</span> Radiative power is the fire radiative power FIRMS reports for the pixel, in megawatts.</p>
+    </div>
     <div class="howto">
       <p><strong>When:</strong> the time is when the satellite passed over and saw the heat, not when the fire started. Each satellite passes about twice a day, so a fire can burn for hours unseen. Dates on this page are UTC dates, so a local evening or early morning can fall on the neighbouring date.</p>
       <p style="margin:0"><strong>Where:</strong> the position is the centre of the satellite pixel: about 375 m across for VIIRS and about 1 km for MODIS, larger at the edge of the swath. The fire is somewhere inside it, not exactly at the point.</p>
+    </div>
     </div>
     <div class="calwrap dettable"><table class="plain" id="dettable"></table></div>
     <div class="areabar"><button type="button" id="detmore" class="secondary" hidden>Show more</button><button type="button" id="detcsv" class="secondary">Download these rows (CSV)</button></div>
@@ -430,17 +451,23 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 
   <section aria-labelledby="h-cal">
     <h2 id="h-cal">The full record, month by month</h2>
+    <div class="cols2"><div>
     <p>How to read it: each row is a year and each box is a month. The number in a box is that month's fire detections on the MODIS Aqua scale; a brighter box means more. Select a box to see that month on the map, or a year to see the whole year.</p>
     <div class="controls" style="margin-top:8px"><div><label for="mode">Colour shows</label>
       <select id="mode"><option value="count">Fire detections</option><option value="anom">Compared with the usual for that month</option></select></div></div>
+    </div><div>
     <p id="recordsays"></p>
     <div class="recordbar" id="record2"></div>
     <p class="note" id="calnote"></p>
+    </div></div>
     <div id="banner"></div>
     <div id="areabanner"></div>
+    <div class="calgrid"><div>
     <div class="calwrap"><table class="cal" id="cal"></table></div>
     <div class="legend" id="legend"></div>
+    </div>
     <div id="detail" aria-live="polite"><p class="note">Select a month to see what each satellite recorded.</p></div>
+    </div>
   </section>
 
   <div class="two">
@@ -457,10 +484,13 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 
   <section aria-labelledby="h-area">
     <h2 id="h-area">Choose an area</h2>
-    <p class="note" style="margin:0">Draw a rectangle on the map, or type its edges in decimal degrees (longitudes west of Greenwich are negative, as in California, Hawaiʻi and the contiguous United States; in the Vietnam region all four edges are positive). The area is widened to whole 0.1° cells and kept inside the region box. The calendar, the comparisons and the download then cover only that area.</p>
+    <div class="cols2"><div>
+    <p class="note" style="margin:0">Draw a rectangle on the map, or type its edges in decimal degrees (longitudes west of Greenwich are negative, as in Hawaiʻi and the contiguous United States; in the Vietnam region all four edges are positive). The area is widened to whole 0.1° cells and kept inside the region box. The calendar, the comparisons and the download then cover only that area.</p>
     <div class="areabar">
       <button id="drawbtn" type="button" class="secondary" aria-pressed="false">Draw an area on the map</button>
       <button id="whole" type="button" class="secondary" disabled title="The whole region is already shown">Whole region</button>
+    </div>
+    <p class="note" id="areanote" aria-live="polite" style="margin-top:10px"></p>
     </div>
     <form id="areaform" style="margin-top:12px" novalidate>
       <fieldset><legend>Area edges, in decimal degrees</legend>
@@ -473,18 +503,19 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
         <button type="submit" style="margin-top:10px">Use this area</button>
       </fieldset>
     </form>
-    <p class="note" id="areanote" aria-live="polite" style="margin-top:10px"></p>
+    </div>
   </section>
 
   <section aria-labelledby="h-trust">
     <h2 id="h-trust">How far to trust the harmonized numbers</h2>
-    <div id="trust"></div>
+    <div id="trust" class="flow2"></div>
     <h3 id="h-compare">Compare regions</h3>
     <div id="compare" aria-live="polite"></div>
   </section>
 
   <section aria-labelledby="h-dl">
     <h2 id="h-dl">Download the hotspots</h2>
+    <div class="cols2"><div>
     <p id="dlintro">Every detection inside the region, from all four satellites, with the flag that says whether it was counted above.</p>
     <div class="controls" style="margin-top:8px">
       <div><label for="y0">From year</label><select id="y0"></select></div>
@@ -492,19 +523,23 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
       <button id="dl" type="button">Download CSV</button>
     </div>
     <p class="note" id="dlnote" aria-live="polite" style="margin-top:10px"></p>
-    <h3 style="font-size:1.05rem;margin:20px 0 4px">The monthly table</h3>
+    </div><div>
+    <h3 style="font-size:1.05rem;margin:0 0 4px">The monthly table</h3>
     <p>One row per month, as in the calendar: the value, its status, each satellite's count, the VIIRS values on the Aqua scale, and the conversion's tested error for that period.</p>
     <button id="dlmonthly" type="button" class="secondary">Download the monthly table (CSV)</button>
+    </div></div>
   </section>
 
   <section aria-labelledby="h-limits">
     <h2 id="h-limits">Method, limits and sources</h2>
-    <p>Method in one paragraph: every detection comes from NASA FIRMS. For each region, the months when MODIS Aqua and VIIRS Suomi NPP both observed (2012 to 2026) give a factor for each calendar month: VIIRS detections divided by Aqua detections. Dividing a VIIRS count by that factor puts it on the MODIS Aqua scale. Each year is then predicted from factors built without it, and the error is reported above. Where that error is too large, the region is not converted.</p>
+    <div class="flow2">
+    <p>Method in one paragraph: every detection comes from NASA FIRMS. For each region, and for each state of the contiguous United States, the months when MODIS Aqua and VIIRS Suomi NPP both observed (2012 to 2026) give a factor for each calendar month: VIIRS detections divided by Aqua detections. Dividing a VIIRS count by that factor puts it on the MODIS Aqua scale. Each year is then predicted from factors built without it, and the error is reported above. Where that error is too large, the region is not converted.</p>
     <p>No detection is not the same as no fire. Clouds, smoke, short-lived fires and the time of the satellite pass all hide burning, and this tool has no record of when a place could not be observed.</p>
     <p>This is a history of satellite detections. It is not an alert, a forecast or a count of fires, and it does not replace official emergency information.</p>
-    <p>Only the regions listed here are supported. Each region is checked on its own data before its VIIRS numbers are converted; where the check fails, they are not converted. An area you choose inside a region uses that region's conversion, which was never tested on the smaller area.</p>
+    <p>Only the regions listed here are supported. Each region is checked on its own data before its VIIRS numbers are converted; where the check fails, they are not converted. Each of the 48 states and DC is checked the same way on its own data. An area you draw inside a region or a state uses that region's or state's conversion, which was never tested on the smaller area.</p>
     <p>A blank map cell means no detection was recorded there, not that nothing burned or that the place is safe.</p>
     <p>Full method, validation numbers, sources and the use of AI: <a href="https://github.com/nguyenhuulong2222/kahu-ahi#readme">README</a>, <a href="https://github.com/nguyenhuulong2222/kahu-ahi/blob/main/SOURCES.md">SOURCES</a>, <a href="https://github.com/nguyenhuulong2222/kahu-ahi/blob/main/THIRD_PARTY_NOTICES.md">third-party notices</a>, <a href="https://github.com/nguyenhuulong2222/kahu-ahi/blob/main/AI_USE.md">AI use</a>.</p>
+    </div>
   </section>
 
   <footer>
@@ -617,7 +652,8 @@ function stateFacts(v) {
   const f = harmFacts(v), e = f.all && f.all.abs_error_pct_of_total, limit = +f.limit, need = +f.need;
   const overError = e == null || e > limit, fewMonths = f.own < need;
   return {f, e, own: f.own, overError, fewMonths, nat: v.with_national_coefficients && v.with_national_coefficients.all_years && v.with_national_coefficients.all_years.abs_error_pct_of_total,
-    why: v.calibration_accepted ? "" : [overError ? (e == null ? "no error can be computed (MODIS Aqua recorded no detection in the shared months)" : "error " + pct(e) + ", over the " + limit + "% limit") : "", fewMonths ? "only " + f.own + " of 12 calendar months have enough detections for a factor (" + need + " needed)" : ""].filter(Boolean).join("; ")};
+    why: v.calibration_accepted ? "" : [overError ? (e == null ? "no error can be computed (MODIS Aqua recorded no detection in the shared months)" : "error " + pct(e) + ", over the " + limit + "% limit") : "", fewMonths ? "only " + f.own + " of 12 calendar months have enough detections for a factor (" + need + " needed)" : ""].filter(Boolean).join("; "),
+    says: v.calibration_accepted ? "" : [overError ? (e == null ? "No error can be computed, because MODIS Aqua recorded no detection in the shared months." : "The tested error is " + pct(e) + ", over the " + limit + "% limit.") : "", fewMonths ? "Only " + f.own + " of 12 calendar months have enough detections for a factor; " + need + " are needed." : ""].filter(Boolean).join(" ")};
 }
 const ERROR_STEPS = [[10, "#cfe8e6"], [20, "#8fc9c5"], [35, "#3f9e98"], [Infinity, "#0b6e6e"]];   // one hue, light to dark; refused states are hatched instead
 let stateSort = {key: "error", dir: 1};
@@ -649,7 +685,7 @@ function drawByState() {
     if (!r.v.calibration_accepted) labels.push(svgEl("text", {x: X((g.bbox[0] + g.bbox[2]) / 2), y: Y((g.bbox[1] + g.bbox[3]) / 2), "text-anchor": "middle", "dominant-baseline": "middle", text: g.id}));
   });
   svg.append(...labels);
-  const legend = el("div", {class: "statelegend", "aria-hidden": "true"}, el("span", {text: "Error of the state's own conversion, tested on years left out:"}));
+  const legend = el("div", {class: "statelegend", "aria-hidden": "true"}, el("span", {text: "Error of the state's own conversion, tested on years left out. Lighter = smaller error; from best to worst:"}));
   ERROR_STEPS.forEach((st, i) => legend.append(el("span", {}, el("span", {class: "sw2", style: "background:" + st[1]}), i === 0 ? "up to " + st[0] + "%" : st[0] === Infinity ? "over " + ERROR_STEPS[i - 1][0] + "% to " + limit + "%" : "over " + ERROR_STEPS[i - 1][0] + "% to " + st[0] + "%")));
   legend.append(el("span", {}, el("span", {class: "sw2", style: "background:repeating-linear-gradient(45deg,#f3ede3 0 3px,#8a4b00 3px 5px)"}), "Not harmonized (hatched, with the state's letters)"));
   // table
@@ -1381,7 +1417,7 @@ function drawHarm() {
   const head = $("headline"); head.replaceChildren();
   if (f.all && f.raw) head.append(D.region.name + ": " + (ok
     ? "VIIRS as recorded is off by " + pct(f.raw.abs_error_pct_of_total) + (f.annual ? "; with one whole-year ratio, " + pct(f.annual.abs_error_pct_of_total) : "") + "; with monthly factors, tested on years left out, " + pct(f.all.abs_error_pct_of_total) + ". "
-    : "not harmonized (" + stateFacts(D).why + "), so only MODIS Aqua is shown. "), el("a", {href: "#h-harm", text: "See the result"}));
+    : "not harmonized. " + stateFacts(D).says + " Only MODIS Aqua is shown. "), el("a", {href: "#h-harm", text: "See the result"}));
   if (!f.all || !f.raw) { box.append(el("p", {class: "note", text: "Not enough months with both MODIS Aqua and VIIRS to test a conversion in " + inRegion() + "."})); return; }
   const fig = (label, big, sub, cls) => el("div", {class: "fig" + (cls ? " " + cls : "")}, el("dt", {text: label}), el("dd", {}, el("div", {class: "big", text: big}), sub ? el("div", {class: "sub", text: sub}) : ""));
   const figs = el("dl", {class: "figs"});
@@ -1415,8 +1451,8 @@ async function drawCompare() {
   let inside = null;
   try { const r = await fetch("data/" + large + "_inside.json"); if (r.ok) inside = await r.json(); } catch (e) { inside = null; }
   if (token !== compareToken) return;
-  const num = (v, file, suffix) => v == null ? el("td", {class: "num", text: "n/a"}) : el("td", {class: "num"}, el("a", {href: file, text: v + (suffix || ""), title: "Read from " + file}));
-  const t = el("table", {class: "plain"}, el("caption", {class: "sr", text: "The conversion in every region, each tested the same way"}), el("tr", {}, ...[["Region"], ["Shared months", 1], ["VIIRS per Aqua detection, whole year", 1], ["VIIRS as recorded", 1], ["One whole-year ratio", 1], ["Monthly factors, years left out", 1], ["Earlier years", 1], ["Later years", 1], ["NOAA-20 in place of S-NPP", 1], ["Result"]].map(([text, n]) => el("th", {scope: "col", class: n ? "num" : "", text}))));
+  const num = (v, file, suffix) => v == null ? el("td", {class: "num", text: "n/a"}) : el("td", {class: "num"}, el("a", {href: file, text: suffix === "%" ? pct(v) : String(v), title: "Read from " + file}));
+  const t = el("table", {class: "plain"}, el("caption", {class: "sr", text: "The conversion in every region, each tested the same way"}), el("tr", {}, ...[["Region"], ["Shared months", 1], ["VIIRS per Aqua detection, whole year", 1], ["VIIRS as recorded", 1], ["One whole-year ratio", 1], ["Monthly factors, years left out", 1], ["Earlier years", 1], ["Later years", 1], ["NOAA-20 in place of Suomi NPP", 1], ["Result"]].map(([text, n]) => el("th", {scope: "col", class: n ? "num" : "", text}))));
   let split = null, first = null;
   docs.forEach((d, i) => {
     if (!d) { t.append(el("tr", {}, el("th", {scope: "row", text: ids[i]}), el("td", {colspan: 9, text: "This region's file could not be loaded."}))); return; }
@@ -1437,8 +1473,8 @@ async function drawCompare() {
     kids.push(el("p", {text: sName + " inside the larger fit: "}, el("a", {href: file, text: pct(o.all_years.abs_error_pct_of_total)}), " with the factors of " + bName + ", against ", el("a", {href: file, text: pct(own.all_years.abs_error_pct_of_total)}), " with its own. A conversion fitted over a larger area costs accuracy in the smaller one. " + sName + " lies inside " + bName + " and its detections are part of the larger fit, so the first figure is a lower bound, and the table holds three independent areas, not four."));
   }
   const boxDoc = docs.find(d => d && d.region.id === "california"), bb = boxDoc && boxDoc.region.bbox;
-  if (bb) kids.push(el("p", {id: "boxnote", text: "The California test box is the rectangle this project was first calibrated on (" + bb.south + "° to " + bb.north + "° north, " + Math.abs(bb.west) + "° to " + Math.abs(bb.east) + "° west). It is not the state: it also takes in parts of Nevada, Arizona and Mexico. The state of California is in the State list under United States, and its numbers differ."}));
-  kids.push(el("p", {class: "note", text: "Percentages are the error as a share of all the detections MODIS Aqua recorded, each year predicted from a conversion built without it." + (split ? " Earlier years are " + first + " to " + (split - 1) + ", later years " + split + " onward." : "") + " NOAA-20 in place of S-NPP is the difference when NOAA-20 is used with no further conversion. Each number links to the file it is read from."}));
+  if (bb) kids.push(el("p", {id: "boxnote", text: "The California test box is the rectangle this project was first calibrated on (" + bb.south + "° to " + bb.north + "° north, " + Math.abs(bb.west) + "° to " + Math.abs(bb.east) + "° west). It is not the state: it also takes in parts of Nevada, Arizona and Mexico. The state of California is in the State list under Contiguous United States, and its numbers differ."}));
+  kids.push(el("p", {class: "note", text: "Percentages are the error as a share of all the detections MODIS Aqua recorded, each year predicted from a conversion built without it." + (split ? " Earlier years are " + first + " to " + (split - 1) + ", later years " + split + " onward." : "") + " NOAA-20 in place of Suomi NPP is the difference when NOAA-20 is used with no further conversion. Each number links to the file it is read from."}));
   box.replaceChildren(...kids);
 }
 
@@ -1453,7 +1489,13 @@ function drawMixed(box) {
   if (bm) { const v = Object.values(bm).map(e => e.abs_error_pct_of_total); text += ", and by between " + pct(Math.min(...v)) + " and " + pct(Math.max(...v)) + " depending on the calendar month"; }
   kids.push(el("p", {text: text + ". That number describes the country as a whole, not any one part of it."}));
   const own = INSIDE && INSIDE.small_with_own_k.all_years, out = INSIDE && INSIDE.small_with_large_k.all_years;
-  if (own && out) kids.push(el("p", {text: "Measured for one part: applied to this page's " + HAS_INSIDE[D.region.id] + " region over the same " + own.months + " months, the national conversion is off by " + pct(out.abs_error_pct_of_total) + " and runs " + pct(Math.abs(out.bias_pct)) + (out.bias_pct >= 0 ? " high" : " low") + ", where " + HAS_INSIDE[D.region.id] + "'s own conversion is off by " + pct(own.abs_error_pct_of_total) + ". Other parts of the country were not measured this way. For a single state or a smaller area, treat a converted number as rougher than the national error suggests."}));
+  // Every state is measured with the national factors (the By state table); the range is read from the same file.
+  if (ST) {
+    const nat = Object.keys(ST.states).map(id => ({name: ST.states[id].name, e: stateFacts(ST.states[id]).nat})).filter(x => x.e != null).sort((x, y) => x.e - y.e), n = Object.keys(ST.states).length;
+    if (nat.length) { const link = el("a", {href: "#h-bystate", text: "By state table"});
+      kids.push(el("p", {id: "natstates"}, "Measured for every part: the ", link, " gives, for each of the " + n + " (48 states and DC), the error of the national factors applied to that state beside the error of the state's own factors. With the national factors the error runs from " + pct(nat[0].e) + " (" + nat[0].name + ") to " + pct(nat[nat.length - 1].e) + " (" + nat[nat.length - 1].name + ")" + (nat.length < n ? "; in " + N(n - nat.length, "state") + " no error can be computed, because MODIS Aqua recorded no detection in the shared months" : "") + ".")); }
+  }
+  if (own && out) kids.push(el("p", {text: "The same test on the California test box, the rectangle this project was first calibrated on (not the state): over the same " + own.months + " months the national conversion is off by " + pct(out.abs_error_pct_of_total) + " and runs " + pct(Math.abs(out.bias_pct)) + (out.bias_pct >= 0 ? " high" : " low") + ", where the test box's own conversion is off by " + pct(own.abs_error_pct_of_total) + ". For a single state or a smaller area, treat a converted number as rougher than the national error suggests."}));
   box.append(...kids);
 }
 function drawTrust() {
@@ -1767,9 +1809,12 @@ function setupMap() {
   domControl(coordBox, "bottomleft");
   domControl($("legendpanel"), "bottomright");
   const lp = $("legendpanel");
-  lp.addEventListener("toggle", () => lp.classList.toggle("collapsed", !lp.open));
+  lp.addEventListener("toggle", () => { lp.classList.toggle("collapsed", !lp.open); if (lp.open && matchMedia("(max-width: 600px)").matches && !$("layersbody").hidden) setLayersOpen(false); fitMapPanels(); });
+  map.on("resize", fitMapPanels);
   lp.querySelector("summary").addEventListener("click", () => { panelTouched.legend = true; });
-  if (matchMedia("(max-width: 600px)").matches) { setLayersOpen(false); lp.open = false; lp.classList.add("collapsed"); }
+  // The Layers panel starts as a button at every width; the legend starts open only where it covers no data (fitPanels).
+  setLayersOpen(false);
+  if (matchMedia("(max-width: 600px)").matches) { lp.open = false; lp.classList.add("collapsed"); }
 
   syncBasemap();
   map.on("zoomend", syncBasemap);
@@ -1793,18 +1838,29 @@ function domControl(node, position) {
 }
 let coordBox = null;
 function latLonText(ll) { return Math.abs(ll.lat).toFixed(3) + "° " + (ll.lat >= 0 ? "N" : "S") + ", " + Math.abs(ll.lng).toFixed(3) + "° " + (ll.lng >= 0 ? "E" : "W"); }
-// On a wide screen the Layers panel and the legend start open, unless they would lie over the region box as first
-// framed (a region as wide as the map). A panel the reader has opened or closed is left as they set it.
+// The Layers panel starts as a button. On a wide screen the legend starts open, unless it would lie over the region
+// box as first framed (a region as wide as the map). A panel the reader has opened or closed is left as they set it.
 let boxRect = null, panelCheck = false;
 const panelTouched = {layers: false, legend: false};
 function fitPanels() {
   if (!boxRect || matchMedia("(max-width: 600px)").matches) return;
   const m = $("map").getBoundingClientRect(), lp = $("legendpanel");
   const covers = node => { const r = node.getBoundingClientRect(); return Math.min(r.right - m.left, boxRect.r) - Math.max(r.left - m.left, boxRect.l) > 4 && Math.min(r.bottom - m.top, boxRect.b) - Math.max(r.top - m.top, boxRect.t) > 4; };
-  if (!panelTouched.layers) { setLayersOpen(true); setLayersOpen(!covers($("layerspanel"))); }
-  if (!panelTouched.legend) { lp.open = true; lp.classList.remove("collapsed"); const open = !covers(lp); lp.open = open; lp.classList.toggle("collapsed", !open); }
+  if (!panelTouched.legend) { lp.open = true; lp.classList.remove("collapsed"); fitMapPanels(); const open = !covers(lp); lp.open = open; lp.classList.toggle("collapsed", !open); }
 }
-function setLayersOpen(open) { $("layersbtn").setAttribute("aria-expanded", String(open)); $("layersbody").hidden = !open; $("layerspanel").classList.toggle("collapsed", !open); }
+function setLayersOpen(open) { $("layersbtn").setAttribute("aria-expanded", String(open)); $("layersbody").hidden = !open; $("layerspanel").classList.toggle("collapsed", !open); $("mapshell").classList.toggle("layers-open", open);
+  // On a phone there is room for one open panel: opening Layers puts the legend away.
+  if (open && matchMedia("(max-width: 600px)").matches) { const lp = $("legendpanel"); lp.open = false; lp.classList.add("collapsed"); }
+  fitMapPanels(); }
+// The room each panel has inside the map: Layers down to the bottom edge (the scale and the coordinates move aside
+// when it is open), the legend up to the zoom buttons. Neither can then lie over a map control.
+function fitMapPanels() {
+  if (!map) return;
+  const box = $("map").getBoundingClientRect(), lb = $("layersbody"), lg = $("maplegend"), lp = $("legendpanel"), zoom = document.querySelector("#map .leaflet-control-zoom"), phone = matchMedia("(max-width: 600px)").matches;
+  if (!box.height) return;
+  if (!lb.hidden) { let room = box.bottom - lb.getBoundingClientRect().top - 14; if (phone) { const low = document.querySelector("#map .leaflet-bottom.leaflet-left"); if (low && low.offsetHeight) room = low.getBoundingClientRect().top - lb.getBoundingClientRect().top - 10; } lb.style.maxHeight = Math.max(80, Math.round(room)) + "px"; }
+  if (zoom && lp.open) { const r = lp.getBoundingClientRect(), head = lp.querySelector("summary").getBoundingClientRect().height; lg.style.maxHeight = Math.max(60, Math.round(r.bottom - zoom.getBoundingClientRect().bottom - 10 - head)) + "px"; }
+}
 
 // ---------- basemap: NASA GIBS, Esri World Imagery, OpenStreetMap ----------
 // Automatic: GIBS Blue Marble at zoom 8 and below, Esri World Imagery (with Esri's reference labels) at 9 and closer.
@@ -2002,7 +2058,7 @@ function updateTimeline() {
 // (dates inside a month, the busiest area of a day) is filled in after the first paint.
 const AREA_R = 3, AREA_KM = (2 * AREA_R + 1) * 11, MOST_CHOICES = [5, 10, 20], MOST_MAX_BYTES = 12e6;
 // How many areas and days are listed: the reader's choice, else 10 for the whole United States and 5 elsewhere.
-let mostChoice = null, mostPins = null;
+let mostChoice = null, mostPins = null, pvOrder = null;
 function mostCount() { return mostChoice || (D.region.id === "conus" && !STATE ? 10 : 5); }
 // Numbered markers for the listed areas. Numbers that would overlap at this zoom are drawn as one marker ("3+2": area 3 and
 // two more), which opens the first of them; Next in the card reaches the others.
@@ -2015,15 +2071,20 @@ function layoutPins() {
   const size = c.areas.length > 10 ? 18 : c.areas.length > 5 ? 20 : 22, groups = [];
   c.areas.forEach((a, i) => { const ll = [a.bounds[1][0], a.bounds[0][1]]; groups.push({pt: map.latLngToContainerPoint(ll), ll, items: [i]}); });
   // Merge markers whose boxes would touch, lowest number first, until none do (a merged marker is wider, so check again).
-  const width = g => g.items.length > 1 ? size + 16 : size, hit = (a, b) => Math.abs(a.pt.x - b.pt.x) < (width(a) + width(b)) / 2 + 3 && Math.abs(a.pt.y - b.pt.y) < size + 3;
+  const width = g => g.items.length > 1 ? size + 14 : size, hit = (a, b) => Math.abs(a.pt.x - b.pt.x) < (width(a) + width(b)) / 2 + 3 && Math.abs(a.pt.y - b.pt.y) < size + 3;
   for (let again = true; again;) {
     again = false;
     for (let i = 0; i < groups.length && !again; i++) for (let j = i + 1; j < groups.length; j++) if (hit(groups[i], groups[j])) { groups[i].items.push(...groups[j].items); groups[i].items.sort((x, y) => x - y); groups.splice(j, 1); again = true; break; }
   }
   groups.forEach(g => {
-    const first = g.items[0], many = g.items.length > 1, w = many ? size + 16 : size;
-    const m = L.marker(g.ll, {icon: L.divIcon({className: "mostpin s" + size + (many ? " many" : ""), html: many ? (first + 1) + "+" + (g.items.length - 1) : String(first + 1), iconSize: [w, size], iconAnchor: [w / 2, size / 2]}),
-      keyboard: false, title: g.items.map(i => (i + 1) + ". " + c.areas[i].name).join("; ")}).on("click", () => openPreview("area", first, null)).addTo(mostPins);
+    const first = g.items[0], many = g.items.length > 1;
+    // A group shows its lowest rank with a small "+n" badge; its name lists every area under it, and Next in the card
+    // goes through the group before the rest of the list.
+    const says = many ? "Areas " + listWords(g.items.map(i => String(i + 1))) : "Area " + (first + 1) + ", " + c.areas[first].name;
+    const m = L.marker(g.ll, {icon: L.divIcon({className: "mostpin s" + size + (many ? " many" : ""), html: many ? (first + 1) + '<span class="more">+' + (g.items.length - 1) + "</span>" : String(first + 1), iconSize: [size, size], iconAnchor: [size / 2, size / 2]}),
+      keyboard: false, title: says + (many ? ": " + g.items.map(i => (i + 1) + ". " + c.areas[i].name).join("; ") : "")})
+      .on("click", () => { pvOrder = many ? g.items.concat(c.areas.map((_, k) => k).filter(k => !g.items.includes(k))) : null; openPreview("area", first, null); }).addTo(mostPins);
+    if (m._icon) { m._icon.setAttribute("role", "button"); m._icon.setAttribute("aria-label", says + ": preview"); }
     g.items.forEach(i => { c.areas[i].pin = m; });
   });
   if (preview && preview.kind === "area" && c.areas[preview.i] && c.areas[preview.i].pin._icon) c.areas[preview.i].pin._icon.classList.add("on");
@@ -2077,7 +2138,7 @@ function listHead(shown, all, word, lv, period) {
 function drawMost(pick) { drawMostIn(pick); const lm = $("leg-most"); if (lm) lm.hidden = !mostCtx; }
 function drawMostIn(pick) {
   const sec = $("most"), box = $("mostbody"), lv = level(), token = ++mostToken;
-  closePreview(true); mostCtx = null;
+  closePreview(true); mostCtx = null; pvOrder = null;
   if (layers.most) layers.most.clearLayers();
   if (mostPins) mostPins.clearLayers();
   if (!pick || !pick.s || !daily || (lv === "day" ? !mostDayRows : !pick.flying)) { sec.hidden = true; box.replaceChildren(); return; }
@@ -2106,7 +2167,7 @@ function drawMostIn(pick) {
   areas.forEach((a, i) => {
     const t = nearTown(a.lat, a.lon), short = t ? "near " + t.name : a.name;
     const b = el("button", {type: "button", class: "linkish", text: short, "aria-label": "Area " + (i + 1) + ", " + a.name + ": preview"});
-    b.addEventListener("click", () => openPreview("area", i, b));
+    b.addEventListener("click", () => { pvOrder = null; openPreview("area", i, b); });
     a.when = dateHead ? el("span", {class: "when", text: lv === "month" ? "Loading" : ""}) : null;
     a.row = el("tr"); a.note = note; a.rank = i + 1;
     const lit = on => { if (a.pin && a.pin._icon) a.pin._icon.classList.toggle("on", on || (preview && preview.kind === "area" && preview.i === i)); };
@@ -2324,11 +2385,12 @@ function openPreview(kind, i, opener) {
   if (o.row) o.row.classList.add("on");
   if (o.pin && o.pin._icon) o.pin._icon.classList.add("on");
   const nav = el("div", {class: "pvnav"}), prev = el("button", {type: "button", class: "secondary", text: "‹ Previous"}), next = el("button", {type: "button", class: "secondary", text: "Next ›"});
-  prev.disabled = i === 0; next.disabled = i === list.length - 1;
+  const order = kind === "area" && pvOrder && pvOrder.length === list.length ? pvOrder : list.map((_, k) => k), pos = order.indexOf(i);
+  prev.disabled = pos === 0; next.disabled = pos === list.length - 1;
   if (prev.disabled) prev.title = list.length === 1 ? "This is the only one in the list" : "This is the first in the list";
   if (next.disabled) next.title = list.length === 1 ? "This is the only one in the list" : "This is the last in the list";
-  prev.addEventListener("click", () => { openPreview(kind, i - 1, null); $("previewcard").querySelector(".pvnav button").focus({preventScroll: true}); });
-  next.addEventListener("click", () => { openPreview(kind, i + 1, null); const b = $("previewcard").querySelectorAll(".pvnav button"); (b[1].disabled ? b[0] : b[1]).focus({preventScroll: true}); });
+  prev.addEventListener("click", () => { openPreview(kind, order[pos - 1], null); $("previewcard").querySelector(".pvnav button").focus({preventScroll: true}); });
+  next.addEventListener("click", () => { openPreview(kind, order[pos + 1], null); const b = $("previewcard").querySelectorAll(".pvnav button"); (b[1].disabled ? b[0] : b[1]).focus({preventScroll: true}); });
   nav.append(prev, el("span", {class: "note", text: (kind === "area" ? "Area " : "Day ") + (i + 1) + " of " + list.length}), next);
   const title = el("h3", {id: "pv-title", tabindex: "-1"}), body = el("div"), more = el("div", {id: "pv-more"}, el("p", {class: "note", text: "Loading the rest of this card."})), bar = el("div", {class: "pvbar"});
   const act = (text, fn, id) => { const b = el("button", {type: "button", text, id}); b.addEventListener("click", fn); bar.append(b); return b; };
@@ -2688,7 +2750,7 @@ async function drawMap() {
   // For totals over a year or more, say how many of the coloured cells are in the faintest step.
   // The faintest step is the first one the legend lists (a small scale may not reach the ramp's first colour).
   const low = legendSteps(pick.max, !!pick.k)[0];
-  cellNote = (lv === "all" || lv === "year") && c > 0 ? {share: Math.round(100 * perStep[MAP_RAMP.indexOf(low.c)] / c), cells: c, range: low.text, half: median(inView), period: lv === "all" ? pick.span : "the whole of " + selYear} : null;
+  cellNote = (lv === "all" || lv === "year") && c > 0 ? {share: (100 * perStep[MAP_RAMP.indexOf(low.c)] / c).toFixed(1), cells: c, range: low.text, half: median(inView), period: lv === "all" ? pick.span : "the whole of " + selYear} : null;
   drawExplain();
   drawMapLegend(pick); viewNote();
   mostKey = ""; drawMost(pick);
@@ -2705,7 +2767,7 @@ function drawMapLegend(pick) {
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:transparent;border:1px dashed #55627a"}), "Blank: no detection recorded, which is not the same as no fire"));
   lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px solid #fff;box-shadow:0 0 0 2px #333"}), (STATE ? "Outline of " + STATE.name : "Region with data: " + D.region.name)));
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8d9097"}), (STATE ? "Dimmed: outside " + STATE.name : "Dimmed: outside the region, no data here")));
-  lg.append(el("span", {id: "leg-most", hidden: !mostCtx}, el("span", {class: "sw", style: "background:#14213d;border:2px solid #fff;border-radius:50%;width:14px;height:14px"}), "Numbered marker and dashed square: a listed area with the most detections"));
+  lg.append(el("span", {id: "leg-most", hidden: !mostCtx}, el("span", {class: "sw", style: "background:#14213d;border:2px solid #fff;border-radius:50%;width:14px;height:14px"}), "Numbered marker and dashed square: a listed area with the most detections. A small +3 on a marker: three more listed areas are under it at this zoom"));
   if (area) lg.append(el("span", {}, el("span", {class: "sw", style: "border:3px dashed #f2a900"}), "Chosen area"));
   if (base.dayInfo) lg.append(el("span", {class: "legtitle", text: "Basemap: NASA true-colour image of " + dayName(base.dayInfo.date) + " from " + SENSOR[base.dayInfo.sat] + ", " + base.dayInfo.res + ". " + IMAGE_SHOWS}));
   if (pointsOn || level() === "day") {
@@ -3052,10 +3114,11 @@ function placeRow(lat, lon, sensor) {
     if (f.own) own.replaceChildren("The point itself is in ", el("strong", {text: f.own})); else own.textContent = "The point's own county and country: not stated.";
     if (f.features) feature.replaceChildren("Nearest named feature: ", el("strong", {text: f.features}));
   });
-  return [locator(lat, lon),
+  return [
     el("div", {class: "town"}, el("strong", {text: t ? t.where : "The list of towns for this region could not be loaded."}), t ? t.townIn : ""),
     own, feature,
-    el("div", {class: "note", text: "The place is the centre of a satellite pixel about " + (sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not the exact spot of the fire. Towns: GeoNames, CC BY 4.0. Named features: © OpenStreetMap contributors, via Nominatim."})];
+    el("div", {class: "note", text: "The place is the centre of a satellite pixel about " + (sensor.startsWith("VIIRS") ? "375 m" : "1 km") + " across, not the exact spot of the fire. Towns: GeoNames, CC BY 4.0. Named features: © OpenStreetMap contributors, via Nominatim."}),
+    locator(lat, lon)];
 }
 function cardNode(r) {
   const d = det(r), zone = zoneNow(), row = (k, ...v) => el("div", {class: "kv"}, el("dt", {text: k}), el("dd", {}, ...v));
@@ -3091,8 +3154,10 @@ function openCard(r) {
   const x = el("button", {type: "button", class: "secondary", text: "Close"}), back = el("button", {type: "button", class: "secondary", text: "Back to the whole region"});
   x.addEventListener("click", closeCard);
   back.addEventListener("click", () => { const v = prevView; closeCard(); if (v) map.setView(v.c, v.z, {animate: !REDUCE}); else map.fitBounds(regionBounds, {animate: !REDUCE}); });
-  sheet.replaceChildren(el("div", {class: "sheetbar"}, back, x), cardNode(r)); sheet.hidden = false; sheet.scrollTop = 0;
-  const z = Math.max(11, map.getZoom()), shift = phone ? [0, sheet.offsetHeight / 2] : [(sheet.offsetWidth + 20) / 2, 0];
+  sheet.replaceChildren(el("div", {class: "sheetbar"}, back, x), cardNode(r)); sheet.hidden = false; sheet.scrollTop = 0; $("mapshell").classList.add("has-card"); if (matchMedia("(max-width: 1180px)").matches) setLayersOpen(false); fitMapPanels();
+  const z = Math.max(11, map.getZoom()), shift = phone ? [0, 0] : [(sheet.offsetWidth + 20) / 2, 0];
+  // Phone: the card is under the timeline; bring the map, the timeline and the top of the card into view together.
+  if (phone) $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"});
   const target = map.unproject(map.project([r[0], r[1]], z).add(shift), z);
   if (REDUCE) map.setView(target, z, {animate: false}); else map.flyTo(target, z, {duration: .8});
   // The table under the map names the opened detection too.
@@ -3101,7 +3166,7 @@ function openCard(r) {
   L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#111", weight: 5, fill: false, interactive: false}).addTo(layers.pick);
   L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#f2a900", weight: 3, fill: false, interactive: false}).addTo(layers.pick);
 }
-function closeCard() { if (!map) return; map.closePopup(); $("cardsheet").hidden = true; $("cardsheet").replaceChildren(); layers.pick.clearLayers(); prevView = null; }
+function closeCard() { if (!map) return; map.closePopup(); $("mapshell").classList.remove("has-card"); $("cardsheet").hidden = true; $("cardsheet").replaceChildren(); layers.pick.clearLayers(); prevView = null; }
 // The drawn detection nearest to a click or tap, if one is within reach.
 let drawnRows = [], drawnSide = 0, fitNext = false;
 function nearestDetection(e) {
