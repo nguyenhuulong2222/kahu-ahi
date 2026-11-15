@@ -576,3 +576,24 @@ Not checked: 1024x768, Hawaiʻi and Alaska in this combination (each side was ch
 Firefox; the flash of the bar (reduced motion was on); the card under its row together with a chosen area or an open
 report.
 
+## Thirteenth pass: the note under the calendar in a state view
+
+In a state view the note said "Area: a rectangle from ..." and went on about Canada, Mexico, Alaska and Hawaiʻi. A
+state is counted by its outline, so it now says "Area: the state of <name>, by its Census outline." (for DC, "the
+District of Columbia, by its Census outline."). Regions defined by a box keep the rectangle wording. No count changes.
+
+Checked with Playwright at 1440x900, console clean:
+
+| View | Note says |
+|---|---|
+| Lower 48 | a rectangle from 24.4° to 49.5° latitude ..., with the sentence about Canada, Mexico, Alaska and Hawaiʻi |
+| Each of the 49 state views, chosen one after another from the State list | the state's own name and "by its Census outline", never "rectangle" (49 of 49) |
+| Back to "All 48 states and DC" | the rectangle wording again |
+| An old `#region=california` link (it opens the state of California) | the state of California, by its Census outline |
+| Hawaiʻi | a rectangle from 18.7° to 22.5° latitude ... |
+| Alaska | a rectangle from 51° to 71.6° latitude ..., then the sentence that only detections inside the state's outline are counted (unchanged: Alaska is a box cut to an outline) |
+| Vietnam region | a rectangle ..., which also takes in parts of Laos, Cambodia and southern China |
+
+Not checked: other window sizes (the sentence is text only), and a state view with a chosen area (the note then adds
+"Counted inside the chosen area only.", as before).
+
