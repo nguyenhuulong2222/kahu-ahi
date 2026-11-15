@@ -434,3 +434,24 @@ Not checked: window heights other than 900, 768 and 844 (on a window taller than
 72% of the height and the band shows above the fold again); the disclosure open on load; other browsers; the
 passes listed as not re-run above.
 
+## Ninth pass: no cut text in the phone's lists
+
+On a phone Region now has its own full-width row and State the row below it (the eighth pass had put them side by
+side, and the browser cut "United States (lower 48 states)" to "United States (lowe").
+
+| Check | 390x844 | 360x800 |
+|---|---|---|
+| Room for text in each list (box width less padding and the arrow) | 318 px | 288 px |
+| Widest Region option, "United States (lower 48 states)" | 220 px | 220 px |
+| Widest State option, "All 48 states and DC" (50 options) | 148 px | 148 px |
+| Options wider than the room, both lists (4 + 50) | none | none |
+| Map on load: lower 48, Texas, Alaska, Hawaiʻi, Vietnam region (map top; visible) | 458, 438, 395, 415, 375; all 300 px | 458, 438, 415, 435, 395; all 300 px |
+| Map on load, each of the 49 states chosen in turn (least visible) | 300 px | 300 px |
+| Page width | 390 | 360 |
+
+Option widths are measured with the list's own font on a canvas, not read off the screen; the two re-shot screens
+(`qa/rev2/first_us_phone.png`, `first_texas_phone.png`) and `first_us_360.png` show the names whole. The 49 states
+were stepped through with 0.7 s each, so a state whose result line had not yet been redrawn would have been
+measured with the previous header. Console: no errors. Other selects on the page (speed, year, month, Layers) were
+not measured in this pass; widths other than 390 and 360 were not checked.
+
