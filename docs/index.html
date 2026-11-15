@@ -111,7 +111,10 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .pvchart{display:flex;align-items:flex-end;gap:1px;height:54px;margin:4px 0 2px;border-bottom:1px solid var(--line)}.pvchart i{flex:1 1 0;min-width:2px;background:#14213d;border-radius:2px 2px 0 0}.pvchart i.top{background:#c2410c}
 @media(max-width:600px){#previewcard{left:0;right:0;bottom:0;width:auto;max-width:none;max-height:70vh;border-radius:12px 12px 0 0}#previewcard .pvbar button{flex:1 1 45%;min-height:44px}}
 #mostareas tr.on td,#mostdays tr.on td{background:#fff3d6}.mostpin.on{background:#f2a900;color:#14213d;transform:scale(1.35);z-index:1000!important}
-.mostpin{background:#14213d;color:#fff;border:2px solid #fff;border-radius:50%;font:700 12px/18px var(--font);text-align:center;box-shadow:0 0 0 1px #000}
+.mostpin{background:#14213d;color:#fff;border:2px solid #fff;border-radius:50%;font:700 12px/18px var(--font);text-align:center;box-shadow:0 0 0 1px #000;cursor:pointer}
+.mostpin.s20{font-size:11px;line-height:16px}.mostpin.s18{font-size:10px;line-height:14px}.mostpin.many{border-radius:10px;letter-spacing:-.2px}
+.mostshow{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font-size:.92rem}.mostshow button{min-width:44px;min-height:36px;padding:4px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink);font-weight:600;cursor:pointer}
+.mostshow button[aria-pressed="true"]{background:#14213d;color:#fff;border-color:#14213d}.mostshow button:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
 .maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
 .mapshell{margin-top:6px!important}
 /* Harmonization result: three figures and a small chart, straight under the map. */
@@ -1988,7 +1991,34 @@ function updateTimeline() {
 // Places and days with the most detections in the period on the map, for the satellite and the region or state shown.
 // Areas come from the grid cells already drawn, days from the daily counts; anything that needs a hotspot file
 // (dates inside a month, the busiest area of a day) is filled in after the first paint.
-const AREA_R = 3, AREA_KM = (2 * AREA_R + 1) * 11, MOST_N = 5, MOST_MAX_BYTES = 12e6;
+const AREA_R = 3, AREA_KM = (2 * AREA_R + 1) * 11, MOST_CHOICES = [5, 10, 20], MOST_MAX_BYTES = 12e6;
+// How many areas and days are listed: the reader's choice, else 10 for the whole United States and 5 elsewhere.
+let mostChoice = null, mostPins = null;
+function mostCount() { return mostChoice || (D.region.id === "conus" && !STATE ? 10 : 5); }
+// Numbered markers for the listed areas. Numbers that would overlap at this zoom are drawn as one marker ("3+2": area 3 and
+// two more), which opens the first of them; Next in the card reaches the others.
+function layoutPins() {
+  if (!map) return;
+  if (!mostPins) { mostPins = L.layerGroup().addTo(map); map.on("zoomend", layoutPins); }
+  mostPins.clearLayers();
+  const c = mostCtx;
+  if (!c) return;
+  const size = c.areas.length > 10 ? 18 : c.areas.length > 5 ? 20 : 22, groups = [];
+  c.areas.forEach((a, i) => { const ll = [a.bounds[1][0], a.bounds[0][1]]; groups.push({pt: map.latLngToContainerPoint(ll), ll, items: [i]}); });
+  // Merge markers whose boxes would touch, lowest number first, until none do (a merged marker is wider, so check again).
+  const width = g => g.items.length > 1 ? size + 16 : size, hit = (a, b) => Math.abs(a.pt.x - b.pt.x) < (width(a) + width(b)) / 2 + 3 && Math.abs(a.pt.y - b.pt.y) < size + 3;
+  for (let again = true; again;) {
+    again = false;
+    for (let i = 0; i < groups.length && !again; i++) for (let j = i + 1; j < groups.length; j++) if (hit(groups[i], groups[j])) { groups[i].items.push(...groups[j].items); groups[i].items.sort((x, y) => x - y); groups.splice(j, 1); again = true; break; }
+  }
+  groups.forEach(g => {
+    const first = g.items[0], many = g.items.length > 1, w = many ? size + 16 : size;
+    const m = L.marker(g.ll, {icon: L.divIcon({className: "mostpin s" + size + (many ? " many" : ""), html: many ? (first + 1) + "+" + (g.items.length - 1) : String(first + 1), iconSize: [w, size], iconAnchor: [w / 2, size / 2]}),
+      keyboard: false, title: g.items.map(i => (i + 1) + ". " + c.areas[i].name).join("; ")}).on("click", () => openPreview("area", first, null)).addTo(mostPins);
+    g.items.forEach(i => { c.areas[i].pin = m; });
+  });
+  if (preview && preview.kind === "area" && c.areas[preview.i] && c.areas[preview.i].pin._icon) c.areas[preview.i].pin._icon.classList.add("on");
+}
 let mostToken = 0, mostDayRows = null, mostKey = "", mostLast = null;
 function keyAt(lat, lon) { return cellOf(lat + 90) * 10000 + cellOf(lon + 180); }
 // The n squares of 7 x 7 cells holding the most detections, largest first, never overlapping.
@@ -2033,6 +2063,7 @@ function drawMost(pick) {
   const sec = $("most"), box = $("mostbody"), lv = level(), token = ++mostToken;
   closePreview(true); mostCtx = null;
   if (layers.most) layers.most.clearLayers();
+  if (mostPins) mostPins.clearLayers();
   if (!pick || !pick.s || !daily || (lv === "day" ? !mostDayRows : !pick.flying)) { sec.hidden = true; box.replaceChildren(); return; }
   const period = selLabel(), sat = SENSOR[pick.s], f = v => pick.k ? fmt1(v) : fmt(v), cells = new Map();
   if (lv === "day") mostDayRows.forEach(r => { if (r[2]) { const k = keyAt(r[0], r[1]); cells.set(k, (cells.get(k) || 0) + 1); } });
@@ -2043,9 +2074,13 @@ function drawMost(pick) {
   const intro = el("p", {id: "mostintro", class: "note", text: "The places and days with the most satellite detections in " + inRegion() + (lv === "day" ? " on " : lv === "all" ? ", " + (pick.span ? pick.span : "all years") : " in ") + (lv === "all" ? "" : period)
     + ", for " + pick.label + "." + (D.calibration_accepted ? "" : " VIIRS is not converted in " + inRegion() + ", so these are MODIS Aqua's own counts, as recorded.")
     + " This is not a ranking of fires by size or damage: one large fire gives many detections, a small or short one may give none, and cloud and smoke hide others."});
+  const count = mostCount();
   const kids = [el("p", {id: "mostlead", style: "margin:0", text: "Most satellite detections, for " + pick.label + (D.calibration_accepted ? "" : " as recorded") + ". Not a ranking of fires by size or damage."})];
+  const show = el("div", {class: "mostshow", role: "group", "aria-label": "How many areas and days to list"}, el("span", {text: "Show:"}));
+  MOST_CHOICES.forEach(v => { const b = el("button", {type: "button", class: "tl-btn2", "aria-pressed": String(v === count), text: String(v)}); b.addEventListener("click", () => { mostChoice = v; mostKey = ""; drawMost(pick); const again = [...document.querySelectorAll(".mostshow button")].find(x => x.textContent === String(v)); if (again) again.focus({preventScroll: true}); }); show.append(b); });
+  kids.push(show);
   if (!total) { box.replaceChildren(intro, el("p", {class: "note", text: "No detection was recorded for this satellite in this period, which is not the same as no fire."})); return; }
-  const areas = topAreas(cells, MOST_N);
+  const areas = topAreas(cells, count);
   areas.forEach(a => { a.name = areaName(a); });
   // ---- areas ----
   const dateHead = lv === "month" ? "First and last day with detections" : lv === "year" ? "First and last month with detections" : lv === "day" ? "" : "";
@@ -2062,18 +2097,17 @@ function drawMost(pick) {
     a.row.addEventListener("mouseenter", () => lit(true)); a.row.addEventListener("mouseleave", () => lit(false)); b.addEventListener("focus", () => lit(true)); b.addEventListener("blur", () => lit(false));
     at.append(a.row); a.row.append(...[el("td", {text: i + 1}), el("td", {}, b, ...(t && t.townIn ? [el("span", {class: "note", text: t.townIn.trim()})] : []), ...(a.when ? [el("span", {class: "note"}, dateHead + ": ", a.when)] : [])),
       el("td", {class: "num", text: f(a.count)}), el("td", {class: "num", text: (100 * a.count / total).toFixed(1) + "%"})]);
-    if (map) {
-      L.rectangle(a.bounds, {fill: false, color: "#fff", weight: 1.5, dashArray: "4 3", interactive: false}).addTo(layers.most);
-      a.pin = L.marker([a.bounds[1][0], a.bounds[0][1]], {icon: L.divIcon({className: "mostpin", html: String(i + 1), iconSize: [22, 22], iconAnchor: [11, 11]}), keyboard: false, title: (i + 1) + ". " + a.name})
-        .on("click", () => openPreview("area", i, null)).addTo(layers.most);
-    }
+    if (map) L.rectangle(a.bounds, {fill: false, color: "#fff", weight: areas.length > 10 ? 1 : 1.5, dashArray: "4 3", interactive: false}).addTo(layers.most);
   });
-  const left = el("div", {}, el("h3", {text: lv === "day" ? "Top " + areas.length + " places of the day" : "Top " + areas.length + " areas"}), el("div", {class: "calwrap"}, at), note);
+  const listed = areas.reduce((x, a) => x + a.count, 0);
+  const share = el("p", {id: "mostshare", style: "margin:6px 0 0", text: (areas.length === 1 ? "This one area holds " : "These " + areas.length + " areas together hold ") + (100 * listed / total).toFixed(1) + "% of the period's detections on this map (" + f(listed) + " of " + f(total) + "); "
+    + (total - listed > 0 ? f(total - listed) + " are outside the list." : "none are outside the list.") + (areas.length < count ? " There are no more areas with detections." : "")});
+  const left = el("div", {}, el("h3", {text: lv === "day" ? "Top " + areas.length + " places of the day" : "Top " + areas.length + " areas"}), el("div", {class: "calwrap"}, at), share, note);
   // ---- days ----
   let right = null, days = [];
   if (lv !== "day") {
     const want = lv === "month" ? d => d.startsWith(selected) : lv === "year" ? d => d.startsWith(selYear) : d => !pick.years || pick.years.map(String).includes(d.slice(0, 4));
-    days = daily.dates.filter(want).map(d => ({d, n: dayCounts(d)[pick.i]})).filter(x => x.n > 0).sort((a, b) => b.n - a.n || (a.d < b.d ? -1 : 1)).slice(0, MOST_N);
+    days = daily.dates.filter(want).map(d => ({d, n: dayCounts(d)[pick.i]})).filter(x => x.n > 0).sort((a, b) => b.n - a.n || (a.d < b.d ? -1 : 1)).slice(0, count);
     const dt = el("table", {class: "plain", id: "mostdays"}, el("caption", {class: "sr", text: "The " + days.length + " days with the most detections"}),
       el("tr", {}, el("th", {scope: "col", text: "#"}), el("th", {scope: "col", text: "Day (UTC date)"}), el("th", {scope: "col", class: "num", text: "Detections"})));
     days.forEach((x, i) => {
@@ -2104,6 +2138,7 @@ function drawMost(pick) {
       + (lv === "all" ? " First and last dates are given when a year or a month is selected." : "")}));
   box.replaceChildren(...kids);
   mostCtx = {token, lv, pick, areas, days, total, period, f};
+  layoutPins();
   // ---- what needs more than the files already loaded: after the first paint ----
   // While playing, nothing more is fetched; the details load when play stops on a period.
   mostLast = [token, lv, pick, areas, days];
