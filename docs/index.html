@@ -939,6 +939,8 @@ function curSel() { return selDay ? {day: selDay} : selected ? {month: selected}
 function daysIn(m) { return new Date(Date.UTC(+m.slice(0, 4), +m.slice(5), 0)).getUTCDate(); }
 function dayName(d) { return +d.slice(8) + " " + MONTHS[+d.slice(5, 7) - 1] + " " + d.slice(0, 4); }
 function selLabel() { return selDay ? dayName(selDay) : selected ? monthName(selected) : selYear || "All years"; }
+// The last date of a download was still being received when the files were made (README, "Partial-month comparison").
+function lastDayNote(d) { return d === D.data_through ? " " + dayName(d) + " is the last day in this download and was still being received when the files were made, so its count is not complete." : ""; }
 function validDay(d) { return !!daily && /^\d{4}-\d\d-\d\d$/.test(d) && D.months.some(x => x.m === d.slice(0, 7)) && +d.slice(8) >= 1 && +d.slice(8) <= daysIn(d.slice(0, 7)) && d <= D.data_through; }
 function applySel(sel) {
   const day = sel.day && validDay(sel.day) ? sel.day : null;
@@ -1070,7 +1072,7 @@ function drawExplain() {
     const m = +selected.slice(5), med = S.medians[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
     if (lv === "day") {
       const pick = mapSensor(x), ok = !!pick.s && flyingOn(pick.s, selDay) && !!daily, n = ok ? dayCounts(selDay)[pick.i] : null;
-      s.push(ok ? "On " + dayName(selDay) + " " + SENSOR[pick.s] + " recorded " + fmt(n) + (n === 1 ? " detection" : " detections") + " in " + inRegion() + "." + (area ? " Daily counts cover the whole region, not the chosen area." : "")
+      s.push(ok ? "On " + dayName(selDay) + " " + SENSOR[pick.s] + " recorded " + fmt(n) + (n === 1 ? " detection" : " detections") + " in " + inRegion() + "." + lastDayNote(selDay) + (area ? " Daily counts cover the whole region, not the chosen area." : "")
         : (pick.s ? SENSOR[pick.s] : "The chosen satellite") + " has no record for " + dayName(selDay) + ".");
       if (ok && n < FEW_DETECTIONS) {
         // A quiet day is said in words, with one-click jumps to busy ones.
@@ -2730,10 +2732,12 @@ async function drawMap() {
     setEmpty(text, $("sensor").value !== "auto");
     layers.points.clearLayers(); drawnRows = []; if (tbl) hideTable(); drawMapLegend(pick); drawMost(null); viewNote(); return;
   }
-  const nothing = SENSOR[pick.s] + " has data for this period but recorded no detection in " + inRegion() + (lv === "day" ? " on " : " in ") + name + ". That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
+  const nothing = (lv === "day" && selDay === D.data_through
+    ? SENSOR[pick.s] + " has recorded no detection in " + inRegion() + " on " + name + " so far." + lastDayNote(selDay)
+    : SENSOR[pick.s] + " has data for this period but recorded no detection in " + inRegion() + (lv === "day" ? " on " : " in ") + name + ".") + " That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
   if (lv === "day") {
     const n = daily ? dayCounts(selDay)[pick.i] : null;
-    sum.textContent = name + ", " + pick.label + ": " + (n == null ? "the daily counts could not be loaded." : fmt(n) + (n === 1 ? " detection" : " detections") + " counted across " + inRegion() + ".")
+    sum.textContent = name + ", " + pick.label + ": " + (n == null ? "the daily counts could not be loaded." : fmt(n) + (n === 1 ? " detection" : " detections") + " counted across " + inRegion() + "." + lastDayNote(selDay))
       + " Each detection is drawn as a square. Places with no square had no detection recorded, which is not the same as no fire.";
     if (n === 0) setEmpty(nothing);
     drawMapLegend(pick); viewNote();
