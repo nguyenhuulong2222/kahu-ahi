@@ -2,6 +2,8 @@
 
 **One consistent satellite fire record across the MODIS → VIIRS transition, honest about what satellites cannot see.**
 
+*Kahu Ahi* is Hawaiian for "keeper of the fire" (*kahu*, keeper or guardian; *ahi*, fire). The mark, `docs/kahu-ahi-mark.svg`, is a flame built from square satellite pixels in the colours of the page's fire ramp; it was made for this project on 14 Nov 2026 and is also the favicon and the basis of the link-preview image `docs/kahu-ahi-og.png`.
+
 NASA Space Apps Challenge 2026 · Challenge: *Harmonization of MODIS and VIIRS Hot Spots* · Local Event: Honolulu, HI · Team: Kahu Ahi
 
 > **Status:** in progress. Built during the hackathon (Nov 14–15, 2026, HST). Sections marked `TBD` are filled only with measured results.

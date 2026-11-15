@@ -42,3 +42,7 @@ The Esri static basemap tiles service was tried first for imagery: on 14 Nov 202
 ## Fonts, icons, images
 
 None. The page uses the reader's system fonts and no icon or image files.
+
+## Not third-party
+
+- The Kahu Ahi mark (`docs/kahu-ahi-mark.svg`) and the link-preview image made from it (`docs/kahu-ahi-og.png`) are original work made for this project on 14 Nov 2026 with AI assistance. They contain no third-party artwork and are not derived from any other logo. The text in the preview image was rendered with a system font; no font file is distributed.

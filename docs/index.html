@@ -3,9 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/svg+xml" href="kahu-ahi-mark.svg">
 <title>Kahu Ahi: one fire record across MODIS and VIIRS</title>
-<meta name="description" content="A burning-activity calendar that puts VIIRS fire detections on the MODIS Aqua scale and shows how far that can be trusted.">
+<meta name="description" content="One fire record across MODIS and VIIRS: VIIRS fire detections put on the MODIS Aqua scale, with the measured error of doing so.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Kahu Ahi: one fire record across MODIS and VIIRS">
+<meta property="og:description" content="VIIRS fire detections put on the MODIS Aqua scale, region by region, with the measured error of doing so. Kahu Ahi is Hawaiian for 'keeper of the fire'.">
+<meta property="og:image" content="https://nguyenhuulong2222.github.io/kahu-ahi/kahu-ahi-og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Kahu Ahi mark, a flame built from square satellite pixels, beside the words Kahu Ahi, Hawaiian for 'keeper of the fire', one fire record across MODIS and VIIRS.">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
@@ -78,9 +86,11 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .pagehead{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:end;justify-content:space-between}
 .pagehead h1{font-size:clamp(1.3rem,3vw,1.9rem);margin:0;line-height:1.2}
 .pagehead>div:first-child{flex:1 1 520px}
+.brand{display:flex;gap:12px;align-items:flex-start}.brand .mark{flex:0 0 auto;width:42px;height:54px;margin-top:2px}.brand>div{min-width:0}
+.namenote{margin:2px 0 0;font-size:.88rem;color:var(--muted);max-width:none}
 .lede{margin:4px 0 0;font-size:.98rem;max-width:none}.headline{max-width:none}
 .headline{margin:2px 0 0;font-size:.98rem;font-weight:600}.headline:empty{display:none}
-#layersbody{max-height:max(200px,calc(55vh - var(--tl-h) - 150px));overflow:auto}
+#layersbody{max-height:max(200px,calc(52vh - var(--tl-h) - 150px));overflow:auto}
 .mapshell:fullscreen #layersbody,.mapshell.is-full #layersbody{max-height:calc(100vh - var(--tl-h) - 150px)}
 .maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
 .mapshell{margin-top:6px!important}
@@ -100,9 +110,9 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .pair details{font-size:.85rem}.pair details table{margin-top:4px}
 #compare table a{color:inherit;text-decoration-color:var(--action);text-underline-offset:2px}#compare td.num,#compare th.num{text-align:right}
 #compare tr.here td:first-child{font-weight:700}
-/* The map and the timeline together take about 55% of the window height, so the harmonization result under them is on the first screen. */
+/* The map and the timeline together take about 52% of the window height, so the harmonization result under them is on the first screen. */
 .mapshell{--tl-h:56px}
-#map{height:calc(55vh - var(--tl-h));min-height:380px;isolation:isolate;background:#0d1b2a}
+#map{height:calc(52vh - var(--tl-h));min-height:380px;isolation:isolate;background:#0d1b2a}
 .mapshell:fullscreen,.mapshell.is-full{display:flex;flex-direction:column;width:100%;height:100%;margin:0;border:0}
 .mapshell.is-full{position:fixed;inset:0;z-index:2000;height:100dvh}
 .mapshell:fullscreen #map,.mapshell.is-full #map{flex:1;height:auto;min-height:0}
@@ -234,7 +244,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 .areabar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:14px}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:4px}
 #layerspanel.collapsed,#legendpanel.collapsed{width:auto}
-@media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:300px;height:300px}.lede,.headline{font-size:.92rem}.pagehead{gap:4px 24px}.maplabel{margin-top:8px}
+@media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:300px;height:300px}.lede{display:none}.headline{font-size:.92rem}.pagehead{gap:4px 24px}.brand{gap:9px}.brand .mark{width:34px;height:44px}.namenote{font-size:.82rem}.maplabel{margin-top:8px}
   .timeline{gap:6px}#tl-range{order:-1;flex-basis:100%}.tl-word{display:none}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
   #tl-play{order:-3}#tl-range{order:-2;flex:1 1 52%}#tl-speed{order:-1}
@@ -251,9 +261,11 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 <body>
 <main>
 <div class="wrap pagehead">
-  <div><h1>Kahu Ahi: one fire record across MODIS and VIIRS</h1>
+  <div class="brand"><img class="mark" src="kahu-ahi-mark.svg" alt="" aria-hidden="true" width="42" height="54">
+    <div><h1>Kahu Ahi: one fire record across MODIS and VIIRS</h1>
+    <p class="namenote">Kahu Ahi is Hawaiian for 'keeper of the fire': <i lang="haw">kahu</i>, keeper or guardian; <i lang="haw">ahi</i>, fire.</p>
     <p class="lede">VIIRS counts put on the MODIS Aqua scale, region by region, with the measured error of doing so.</p>
-    <p class="headline" id="headline" aria-live="polite"></p></div>
+    <p class="headline" id="headline" aria-live="polite"></p></div></div>
   <div><label for="region">Region</label>
     <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option><option value="conus">Contiguous United States</option></select></div>
 </div>
@@ -439,6 +451,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </section>
 
   <footer>
+    <p>Built by the team behind <a href="https://kahuola.org">Kahu Ola (kahuola.org)</a>, a civic hazard platform for Hawaiʻi.</p>
     <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; street map above zoom 8 and the GIBS overlays © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS). Daily satellite images: NASA GIBS and NASA Worldview Snapshots. Town names: <a href="https://www.geonames.org">GeoNames</a>, CC BY 4.0. Named features: <a href="https://nominatim.org">Nominatim</a>, © OpenStreetMap contributors. Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p>
   </footer>
 </div>
