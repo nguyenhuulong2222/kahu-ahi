@@ -261,3 +261,72 @@ Not verified: 1024x768; with motion allowed (the fly animation itself); a real t
 overlap check was not repeated after the card became a fixed panel on phones; other states than California. The
 phone card is a fixed sheet over the lower part of the window (at most 55% of its height), which replaces the
 block under the timeline described in the second pass, because that block could not be seen without scrolling.
+
+## Fifth pass: two loose ends (grid-cell taps on the phone; cards and panels)
+
+Date: 14 Nov 2026. No count or data file was touched; `audit/recompute.py` was not run again.
+
+### 1. A tap on a drawn grid cell showed nothing on the phone
+
+Cause, found by tapping 40 drawn cells of the whole country at 390x844 (12 of 40 showed nothing at the year level):
+two things together.
+- Zoomed out, a 0.1° cell is one or two pixels wide. A fingertip, and often a mouse, lands on the blank cell beside
+  it, and the page looked up exactly the cell under the press.
+- After a tap the browser sends made-up mouse events. The hover handler read them as the pointer resting on a
+  blank cell and removed the label the tap had just put up. (The month-level popup is not a hover label, which is
+  why months mostly worked.)
+
+Fix: a press now selects the nearest drawn cell within reach (14 px for touch, 6 px for a mouse, plus half a
+cell); with none in reach it is the cell under the press, as before. The hover uses the same choice, so what is
+labelled is what a click selects, and mouse events that follow a touch are ignored for 1.2 s.
+
+Test (kept as a described procedure; the scripts are not in the repository): three drawn cells per region, clear
+of panels and spread through the list, tapped at 390x844 and clicked at 1440x900, in the whole country,
+California, Texas, New York, West Virginia, Hawaiʻi and the Vietnam region, at month, year and all-years levels.
+- Run after the first half of the fix (nearest cell), before the hover fix: 126 taps, 125 showed a count (124 the
+  cell aimed at, 1 the drawn neighbour), 1 showed nothing (phone, whole country, year); none moved the map.
+- After the hover fix: the failing case re-run with 40 taps: 40 of 40 show a count. The month popup on the phone
+  was re-shot. **The full 126-tap run was not repeated after the hover fix.**
+
+Screenshots: `before5/still_phone_cell.png`; after `still_phone_cell.png` (month popup), `still_phone_cell-year.png`.
+
+### 2. Cards and panels
+
+The phone card had become a sheet fixed to the bottom 55% of the window, which could lie over the map and the
+timeline's level switch. Changes:
+- Both cards (one detection; the preview card of "burned most") follow one placement. Wide window with the map on
+  screen: docked on the map's right edge, map controls moved left of it. Otherwise fixed to the window; while
+  part of the map or timeline is on screen the card takes the larger free space above or below them and is no
+  taller than that space. Placement is redone when the page scrolls or the window changes.
+- Only one of the two cards is open at a time.
+- While a detection is ringed the legend is put away at every width (it was already on wide screens).
+
+Check: 147 cells (7 regions x 7 levels x 1440x900, 1024x768, 390x844), 1,970 probes. States: as loaded; legend
+open; Layers open; preview card open at four scroll positions (map shell at the top of the window, page top,
+shell half out of the window, shell low in the window) and with Layers and legend opened; on day cells a
+detection card opened by a tap on the rightmost and the leftmost free detection, at the same four scroll
+positions and with Layers and legend opened; a card from a table row. Measured: any card or panel over the zoom
+buttons, Expand, scale, coordinates, attribution or any timeline control (the level switch included), over
+another panel, a fixed card over the map, a card outside the window, the ringed detection under a card or panel.
+
+Result of that run, made with the new placement but before the legend rule: 26 issues of two kinds, console clean.
+- Phone, 14 day cells: with a detection card open, a legend the reader then opened lay over the ring. Fixed by
+  the legend rule above.
+- 1024x768, 12 day cells: "card did not open on a tap". This was the test, not the page: the first card slid the
+  map (the card-over-its-detection rule), and the second tap used coordinates taken before the slide.
+No card over the map, a control, the level switch or another panel was found in any cell at any scroll position.
+
+**The full run was started again after the legend fix and the test correction, and was stopped before it finished,
+so there is no complete 147-cell result for the final page.** What was checked on the final page instead:
+- Phone, whole country, card opened by a tap: legend not displayed; card top 8 px below the map shell's bottom;
+  card not over the shell; every button of the level switch is the top element at its own centre.
+- 1024x768, whole country: two taps with fresh coordinates, both open the card, ring clear of the card.
+Screenshots: `before5/still_phone_map-card.png`; after `still_phone_map-card.png`,
+`still_phone_map-card_page-top.png` (card above the map when the map is low in the window; this one was taken
+before the legend rule and still shows an open legend).
+
+Not fixed, noted: at 1024x768 in 4 cells (Texas month, year, all years; Hawaiʻi all years) the docked preview
+card lies over the highlighted marker of the area it describes. The map is not slid for a preview, because the
+preview's rule is that it moves nothing and Next would make the map jump at every step.
+The grid-cell popup opens upward and, near the top right of a small map, part of it sits under the zoom buttons;
+the buttons stay usable.

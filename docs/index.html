@@ -202,8 +202,14 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 @media(min-width:601px){.mapshell.has-card #legendpanel{display:none}.mapshell.has-card .leaflet-control-attribution{max-width:calc(100vw - 600px)}
   #layerspanel{width:320px}#layerspanel.collapsed{width:auto}#layersbody select{min-height:36px;padding:4px 8px}#layersbody label.inline{min-height:26px;margin-top:2px}#drawnote,#basehint{margin:2px 0 4px}.mapshell.layers-open .leaflet-bottom.leaflet-left{left:330px}}
 /* When the map is not on screen, and on a phone, the card is fixed to the window, so reading it scrolls nothing. */
+/* Both cards follow one placement (placeCards): docked on the map's right edge while the map is on screen on a wide
+   window; otherwise fixed to the window, in the free space above or below the map when part of it shows, so a card
+   never lies over the map, its controls or the timeline. */
+.mapshell.card-open #legendpanel{display:none}
 #cardsheet.floating{position:fixed;left:auto;right:16px;top:auto;bottom:16px;width:380px;max-width:calc(100vw - 32px);max-height:min(70vh,560px);z-index:2400;box-shadow:0 4px 18px rgba(0,0,0,.45)}
-@media(max-width:600px){#cardsheet,#cardsheet.floating{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-width:none;max-height:55vh;margin:0;border-radius:10px 10px 0 0;z-index:2400;box-shadow:0 -3px 14px rgba(0,0,0,.4)}}
+#previewcard.docked{position:absolute;left:auto;right:10px;top:10px;bottom:calc(var(--tl-h) + 10px);width:380px;max-height:none;z-index:1100;box-shadow:0 2px 10px rgba(0,0,0,.45)}
+@media(max-width:600px){#cardsheet,#cardsheet.floating{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-width:none;max-height:55vh;margin:0;border-radius:10px 10px 0 0;z-index:2400;box-shadow:0 -3px 14px rgba(0,0,0,.4)}
+  #cardsheet.attop,#previewcard.attop{border-radius:0 0 10px 10px;box-shadow:0 3px 14px rgba(0,0,0,.4)}}
 .card .town{font-size:1.02rem}.card .country{margin-top:1px}.card .feature{margin-top:3px}.card .kv .note{margin-top:4px;font-size:11.5px}
 .locator{display:block;margin:4px 0 2px;line-height:0;text-align:right}.placefoot{display:flex;gap:12px;align-items:flex-start;margin-top:4px}.placefoot .note{flex:1 1 0;min-width:0;margin:0!important}.placefoot .locator{flex:0 0 auto;margin:2px 0 0}.card dl .kv:first-child{grid-template-columns:minmax(0,1fr)}
 /* report for one detection, and its one-page print layout */
@@ -387,6 +393,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </div>
   <div id="biglabel" aria-hidden="true" hidden></div>
   <div id="cardsheet" class="detpop" role="dialog" aria-label="One detection" hidden></div>
+  <div id="previewcard" role="dialog" aria-labelledby="pv-title" hidden></div>
   <div id="mapnotes">
     <div id="mapempty" class="mapnote" role="status" aria-live="polite" hidden><p></p><button type="button" id="toauto">Switch to the harmonized view</button></div>
   </div>
@@ -554,7 +561,6 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </footer>
 </div>
 </main>
-<div id="previewcard" role="dialog" aria-labelledby="pv-title" hidden></div>
 
 <script>
 "use strict";
@@ -1826,14 +1832,21 @@ function setupMap() {
   map.on("zoomend", syncBasemap);
   map.on("moveend", onView);
   map.on("moveend", () => { if (cardRelabel) cardRelabel(); });
-  map.on("click", e => { if (drawing) return; pausePlay(); const r = nearestDetection(e); if (r) openCard(r); else showCell(cellKey(e.latlng), true); });
-  let frame = 0;
+  map.on("click", e => { if (drawing) return; pausePlay(); const r = nearestDetection(e); if (r) openCard(r); else showCell(nearCell(e.latlng, e.originalEvent), true); });
+  // A touch is followed by mouse events the browser makes up; they must not be read as the pointer moving off the
+  // cell that was just tapped, or its label would vanish as soon as it appeared.
+  let frame = 0, lastTouch = 0;
+  const fromTouch = () => Date.now() - lastTouch < 1200;
+  map.getContainer().addEventListener("touchstart", () => { lastTouch = Date.now(); }, {passive: true});
+  map.getContainer().addEventListener("touchend", () => { lastTouch = Date.now(); }, {passive: true});
   map.on("mousemove", e => {
+    if (fromTouch()) return;
     coordBox.textContent = latLonText(e.latlng);
     if (drawing || frame) return;
-    frame = requestAnimationFrame(() => { frame = 0; const k = cellKey(e.latlng); if (shown.has(k)) showCell(k, false); else layers.hover.clearLayers(); });
+    // The pointer picks a cell the same way a click does (nearCell), so what is labelled is what a click selects.
+    frame = requestAnimationFrame(() => { frame = 0; const k = nearCell(e.latlng, e.originalEvent); if (shown.has(k)) showCell(k, false); else layers.hover.clearLayers(); });
   });
-  map.on("mouseout", () => { layers.hover.clearLayers(); coordBox.textContent = "Centre " + latLonText(map.getCenter()); });
+  map.on("mouseout", () => { if (fromTouch()) return; layers.hover.clearLayers(); coordBox.textContent = "Centre " + latLonText(map.getCenter()); });
   map.on("moveend", () => { if (!coordBox.matches(":hover")) coordBox.textContent = "Centre " + latLonText(map.getCenter()); });
   setupDrawing(); setupExpand(); setupTimeline();
 }
@@ -2318,7 +2331,7 @@ function closePreview(quiet) {
   const card = $("previewcard");
   if (!preview) { card.hidden = true; return; }
   const p = preview, c = mostCtx;
-  preview = null; card.hidden = true; card.replaceChildren();
+  preview = null; card.hidden = true; card.replaceChildren(); card.classList.remove("floating", "docked", "attop"); $("mapshell").classList.remove("has-card"); fitMapPanels();
   if (c) [...c.areas, ...c.days].forEach(o => { if (o.row) o.row.classList.remove("on"); if (o.pin && o.pin._icon) o.pin._icon.classList.remove("on"); });
   if (!quiet && p.opener && document.contains(p.opener)) p.opener.focus({preventScroll: true});
 }
@@ -2386,6 +2399,7 @@ function openPreview(kind, i, opener) {
   const list = kind === "area" ? c.areas : c.days, o = list[i];
   if (!o) return;
   const keepOpener = preview && preview.opener;
+  if (map && !$("cardsheet").hidden) closeCard();
   if (preview) closePreview(true);
   preview = {kind, i, opener: opener || keepOpener || null, token: c.token};
   const card = $("previewcard"), mine = preview, live = () => preview === mine;
@@ -2450,7 +2464,8 @@ function openPreview(kind, i, opener) {
   }
   act("Close", () => closePreview(false), "pv-close");
   card.replaceChildren(nav, title, el("p", {class: "note", text: "Most satellite detections, not a ranking of fires by size or damage. Nothing on the page has moved; the buttons below do that."}), body, more, bar);
-  card.hidden = false;
+  card.hidden = false; placeCards();
+  if (card.classList.contains("docked") && matchMedia("(max-width: 1180px)").matches) setLayersOpen(false);
   title.focus({preventScroll: true});
 }
 document.addEventListener("keydown", e => {
@@ -2787,6 +2802,24 @@ function drawMapLegend(pick) {
 }
 
 function cellKey(ll) { return cellOf(ll.lat + 90) * 10000 + cellOf(ll.lng + 180); }
+// The cell a click or tap means. Zoomed out, a cell is a pixel or two wide, smaller than a fingertip or a pointer can
+// hit, so a press that lands just beside a drawn cell is taken as that cell: the nearest drawn cell within reach
+// (14 px for touch, 6 px for a mouse, plus half a cell). With no drawn cell in reach it is the cell under the press.
+function nearCell(ll, ev) {
+  const key = cellKey(ll);
+  if (shown.has(key) || !map) return key;
+  const touch = !!ev && (ev.pointerType === "touch" || ev.pointerType === "pen" || (ev.pointerType == null && matchMedia("(pointer: coarse)").matches));
+  const p = map.latLngToContainerPoint(ll), cellPx = map.options.crs.scale(map.getZoom()) / 3600, reach = (touch ? 14 : 6) + cellPx / 2, n = Math.min(40, Math.ceil(reach / cellPx));
+  const row = Math.floor(key / 10000), col = key % 10000;
+  let best = key, bd = reach * reach;
+  for (let dr = -n; dr <= n; dr++) for (let dc = -n; dc <= n; dc++) {
+    const k = (row + dr) * 10000 + col + dc;
+    if (!(shown.get(k) > 0)) continue;
+    const q = map.latLngToContainerPoint([(row + dr) / 10 - 90 + .05, (col + dc) / 10 - 180 + .05]), dx = q.x - p.x, dy = q.y - p.y, dd = dx * dx + dy * dy;
+    if (dd <= bd) { bd = dd; best = k; }
+  }
+  return best;
+}
 function cellName(key) {
   const row = Math.floor(key / 10000), col = key % 10000;
   return deg(row / 10 - 90 + .05, "N", "S") + ", " + deg(col / 10 - 180 + .05, "E", "W");
@@ -3162,10 +3195,7 @@ function moveMap(center, zoom) { if (REDUCE) map.setView(center, zoom, {animate:
 function openCard(r) {
   if (!map) return;
   const phone = matchMedia("(max-width: 600px)").matches, sheet = $("cardsheet"), shell = $("mapshell"), d = det(r), at = [r[0], r[1]];
-  map.closePopup(); prevView = null;
-  // The card sits on the map's right edge when the map is on screen; otherwise (a row chosen far down the page, or a
-  // phone) it is a panel fixed to the window, so it can be read without the page scrolling.
-  const floating = phone || !mapOnScreen();
+  map.closePopup(); prevView = null; closePreview(true);
   const x = el("button", {type: "button", class: "secondary", text: "Close"}), go = el("button", {type: "button", id: "card-go"}), rep = el("button", {type: "button", class: "secondary", text: "Report for this place and day"});
   const where = el("p", {class: "note", id: "card-where", role: "status", hidden: true});
   const label = () => {
@@ -3188,10 +3218,10 @@ function openCard(r) {
     label();
   });
   sheet.replaceChildren(el("div", {class: "sheetbar"}, go, rep, x), where, cardNode(r));
-  sheet.classList.toggle("floating", floating); shell.classList.toggle("has-card", !floating);
-  sheet.hidden = false; sheet.scrollTop = 0; cardCue();
+  sheet.hidden = false; sheet.scrollTop = 0; placeCards();
+  const floating = sheet.classList.contains("floating");
   if (!floating && matchMedia("(max-width: 1180px)").matches) setLayersOpen(false);
-  fitMapPanels(); label(); cardRelabel = label;
+  label(); cardRelabel = label;
   // The table under the map names the opened detection too.
   if (tbl) { $("detplace").hidden = false; fillPlace($("detplace"), d.lat, d.lon, "Opened: " + localText(d, zoneNow(), true) + ", " + pointText(d) + ". "); }
   layers.pick.clearLayers();
@@ -3203,12 +3233,40 @@ function openCard(r) {
     if (pt.x > edge && pt.x < m.width + 14 && pt.y > c.top - m.top - 20 && pt.y < c.bottom - m.top + 20) map.panBy([Math.ceil(pt.x - edge), 0], {animate: !REDUCE});
   }
 }
+// Where the open card goes (the detection card or the preview card; one is open at a time).
+// Wide window, map on screen: docked on the map's right edge, and the map's controls move left of it.
+// Otherwise it is fixed to the window. When part of the map shell (map and timeline) is on screen, the card takes
+// the larger free space above or below it and is no taller than that space, so it covers neither the map, nor a
+// control, nor the timeline. Re-run when the page scrolls or the window changes.
+function placeCards() {
+  if (!map) return;
+  const phone = matchMedia("(max-width: 600px)").matches, shell = $("mapshell"), r = shell.getBoundingClientRect(), vh = innerHeight;
+  const partly = r.bottom > 0 && r.top < vh, gap = phone ? 0 : 16;
+  let docked = false;
+  [$("cardsheet"), $("previewcard")].forEach(node => {
+    if (node.hidden) return;
+    node.style.top = node.style.bottom = node.style.maxHeight = ""; node.classList.remove("attop");
+    const dock = !phone && mapOnScreen();
+    node.classList.toggle("docked", dock); node.classList.toggle("floating", !dock);
+    if (dock) { docked = true; return; }
+    if (!partly) return;
+    const above = Math.max(0, r.top), below = Math.max(0, vh - r.bottom);
+    if (Math.max(above, below) < 150) return;   // no room clear of the map: the default corner is used
+    if (below >= above) { node.style.top = "auto"; node.style.bottom = gap + "px"; node.style.maxHeight = Math.floor(below - gap - 8) + "px"; }
+    else { node.style.top = gap + "px"; node.style.bottom = "auto"; node.style.maxHeight = Math.floor(above - gap - 8) + "px"; node.classList.add("attop"); }
+  });
+  shell.classList.toggle("has-card", docked);
+  // While a detection is ringed the legend is put away at every width, so it cannot lie over the ring.
+  shell.classList.toggle("card-open", !$("cardsheet").hidden);
+  fitMapPanels(); cardCue();
+}
+{ let wait = 0; const later = () => { if (wait) return; wait = requestAnimationFrame(() => { wait = 0; if (!$("cardsheet").hidden || !$("previewcard").hidden) placeCards(); }); }; addEventListener("scroll", later, {passive: true}); addEventListener("resize", later); }
 // The cue at the card's bottom edge is on while there is more below.
 function cardCue() { const s = $("cardsheet"); s.classList.toggle("more", !s.hidden && s.scrollHeight - s.scrollTop - s.clientHeight > 6); }
 $("cardsheet").addEventListener("scroll", cardCue);
 new MutationObserver(cardCue).observe($("cardsheet"), {childList: true, subtree: true, characterData: true});
 $("cardsheet").addEventListener("load", cardCue, true); addEventListener("resize", cardCue);
-function closeCard() { if (!map) return; map.closePopup(); cardRelabel = null; $("mapshell").classList.remove("has-card"); $("cardsheet").classList.remove("floating"); $("cardsheet").hidden = true; $("cardsheet").replaceChildren(); layers.pick.clearLayers(); prevView = null; }
+function closeCard() { if (!map) return; map.closePopup(); cardRelabel = null; $("mapshell").classList.remove("has-card", "card-open"); $("cardsheet").classList.remove("floating", "docked", "attop"); $("cardsheet").hidden = true; $("cardsheet").replaceChildren(); layers.pick.clearLayers(); prevView = null; }
 // The drawn detection nearest to a click or tap, if one is within reach.
 let drawnRows = [], drawnSide = 0, fitNext = false;
 function nearestDetection(e) {
