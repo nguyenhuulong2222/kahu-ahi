@@ -55,6 +55,30 @@
       "calibration_accepted": true,
       "raw_dir": "data/raw/usa",
       "hotspot_files": "one per month"
+    },
+    {
+      "id": "alaska",
+      "name": "Alaska",
+      "role": "one state as a region, cut from the country downloads with the Census outline; calibration refused (too few months with enough MODIS Aqua detections)",
+      "bbox": {
+        "lat_min": 51.0,
+        "lat_max": 71.6,
+        "lon_min": -170.0,
+        "lon_max": -129.9
+      },
+      "data_through": "2026-11-14",
+      "calibration_accepted": false,
+      "raw_dir": "data/raw/usa",
+      "inputs": "the downloads listed under region conus (the same three files)",
+      "outline": {
+        "file": "docs/data/alaska_geo.json",
+        "state": "AK",
+        "source": "US Census Bureau cartographic boundary file, states, 1:5,000,000, 2023 (see state_boundaries)",
+        "rows_in_region": 1059429,
+        "rows_in_box_outside_outline": 262,
+        "not_covered": "the part of the state west of 170 W (Aleutian and Bering Sea islands out to and past the 180 meridian) is outside the box"
+      },
+      "time_zone": "UTC only: the state's GeoNames places carry more than one time-zone record and the page has no time-zone boundaries"
     }
   ],
   "inputs": [
@@ -619,7 +643,8 @@
       "california": 1524,
       "hawaii": 254,
       "vietnam": 1941,
-      "conus": 25032
+      "conus": 25032,
+      "alaska": 135
     }
   },
   "state_boundaries": {

@@ -360,3 +360,61 @@ checked on them. Full screen was checked only through the page's fallback class 
 102 px timeline fill the window), not through the browser's own full screen. Console: no errors in the runs made.
 Screenshots are in `qa/rev/` (`b_` before, `a_` after).
 
+## Seventh pass: REVIEW.md item by item, the region name, Alaska
+
+Four commits: wording (A), design (B), region name (C), Alaska and coverage (D). No count, factor or acceptance rule
+changed. Every file of the existing regions in `data/processed/` and `docs/data/` is byte-identical (sha256 of 546
+files before and after), and `audit/recompute.py` gives 0 differences for all regions, the 49 states and Alaska.
+Screenshots: `qa/rev2/` (`first_<view>_<size>`, `band_`, `calendar_`, `card_phone`, `card_foot_phone`,
+`report_phone`, `preview_phone`, and `b_`/`d_` shots made while working).
+
+| REVIEW.md item | Outcome | What was done, or why not |
+|---|---|---|
+| D1 phone wider than the screen | done (sixth pass) | Page 390 px wide in every view of this pass, with a card, a preview card and a report open. |
+| D2 opens on a day still being received | done (sixth pass) | Opens on 13 Nov; Texas 13 Nov, New York 10 Nov, Alaska 20 Aug, Hawaiʻi 27 Sep, Vietnam region 13 Nov; no empty map on opening. |
+| D3 message over Legend on a phone | done (sixth pass) | |
+| D4 card over the list it came from | done | The preview card takes the side of the window its own list leaves free (1440: left; 1024: right for the areas list, left for the days list). Where neither side is free (800 px wide) it is shown inline under the selected row and returns to the map when the map is on screen or the card closes. Scroll position unchanged (0 px). The detection card opened from the full-width table still takes a short corner card away from the selected row: changed, not removed. |
+| D5 level switch cut at 1024x768 | done (sixth pass) | Timeline ends at 767 of 768 in all six views. |
+| D6 Close on its own line | done (sixth pass) | |
+| D7 two totals for 2026 | done (sixth pass) | |
+| D8 letters on hatched states | done (sixth pass) | |
+| D9 calendar "11k" | done | Exact numbers everywhere; five digits and more in smaller type (9 cells for the lower 48); none overflows its cell. |
+| D9 locator dot on the edge | done (sixth pass) | |
+| D9 phone step buttons without words | done | "« Mo", "‹ Day", "Day ›", "Mo »" (and "Yr" at the month level); all on one row at 390 px. Play keeps its symbol only. |
+| Wording 1, headline | changed | The team's sentence, built from the files: "<Region>: the newer VIIRS satellites record about <k> times as many fire detections as the older MODIS Aqua. Corrected month by month, VIIRS is off by <error> in years the method had not seen." k is the whole-year factor (6.6 lower 48, 8.7 Texas, 6.2 Vietnam region). A refused region or state gets its refusal instead. |
+| Wording 2 and 3, band steps | done | Step 2: "off, tested the same way. This simpler correction is what step 3 has to beat." Step 3: "VIIRS records between 4.536 (February) and 9.204 (August) detections for every one MODIS Aqua records." Factors keep the digits of the file, not the review's rounding. |
+| Wording 4, "tested on years left out" | done | "years the method had not seen" wherever the phrase stood. |
+| Wording 5, refused states | changed | Leads with the part of the rule that failed, then the other part and whether it passed: "Not harmonized: too few detections here. Only 8 of the 12 months have enough MODIS Aqua detections to work out a correction; 9 are needed. The error test passed: off by 49.9%, under the 50% limit." The banner, the month detail and "What you are looking at" no longer say "wrong by X%" as the reason. "Not converted" was not taken: the word stays "harmonized". |
+| Wording 6, 7, 8, legends and "swath" | done | As the review suggests. |
+| Wording 9, "Combined record" | declined | "Harmonized" is the challenge's word. It is defined once on the first screen ("Harmonized: put on one scale") and the Layers option reads "Harmonized record (as in the calendar)". |
+| Wording 10, counted detections | done | |
+| Wording 11, "NOAA-20, converted ... gives about" | changed | "corrected" replaces "converted" in every reader-facing sentence; "suggests" was not taken, the sentence keeps "gives". |
+| Wording 12, 13, 14, card rows | done | Local time, "Heat given off (fire radiative power)", "How sure the satellite was (NASA FIRMS confidence)". The value keeps the digits FIRMS gives (58.58 MW), not rounded. |
+| Wording 15, 16, By state headings | done | "Months with their own correction", "Error with the whole-country correction". |
+| Wording 17, successor sentence | done | "Corrected VIIRS data, available from 2012, is ready to take over when Aqua stops." |
+| Wording 18, UTC | changed | "UTC (Greenwich time)" at the first use ("Data through ..."), "UTC" after; "Hawaiʻi is 10 hours behind" was not added, since the page serves other regions too. |
+| W1 first screen weights | done | Lede in body colour; step 3 tinted with a heavier border and a "Result" label, steps 1 and 2 labelled "Baseline". The headline keeps its weight: it is now the plain sentence. On a phone the lede stays hidden; the definition line and the coverage line are shown. |
+| W2 faint data, loud markers | done | Lowest colour step 60% for a month, 30% unchanged for a year and all years; markers 2 px smaller, translucent, thinner ring; one day of the lower 48 lists 5, its month, year and all years 10. |
+| W3 narrow two-column grids | done | Under 600 px every label sits above its value on the card, the preview card and the report. The card's fixed caveats are one line at its foot; with no local time the row is gone and the foot says "Local time: not shown (...). Times are in UTC." |
+
+**Region name.** "United States (lower 48 states)" in the region list and ten headings, "the lower 48 states" in
+sentences, "All 48 states and DC" as the first entry of the State list. "Contiguous United States" appears once on
+the page, in the method paragraph, defined. The data file keeps the formal name; the page maps it for display.
+
+**Alaska.** k = 8.562. VIIRS as recorded 756.3%; one whole-year ratio 17.8%; monthly factors 17.8% (16.6% before
+2022, 20.3% from 2022). As used: 15.0% on NOAA-20 standard data, 10.3% over the three near-real-time months.
+Not harmonized: 6 of 12 months have their own factor, 9 needed; the error test passed. 1,059,429 rows in the region,
+262 in the box outside the outline, 654 rows of the state beyond the box. UTC only.
+
+**Coverage.** Under the region list and in the footer: "all 50 states and the District of Columbia". Territories:
+no row of the US downloads is in any of them, and the footer sentence says so.
+
+Checked in this pass, at 1440x900, 1024x768 and 390x844: the first screen of the lower 48, Texas, New York,
+Alaska, Hawaiʻi and the Vietnam region; the band and the calendar for the lower 48 and Alaska; on the phone one
+detection card (Alaska, 17 Aug 2026), its foot, its report and one preview card. Console: no errors.
+
+Not checked: the 147-cell overlap run, the 126-tap grid test, the "select moves nothing" measurements beyond
+scroll position on list selections, the control tour, drawing an area in Alaska, Alaska's downloads and VIIRS-only
+switch, full screen, print, other browsers and real phones. One earlier run in this pass logged a failed request to
+NASA Worldview Snapshots (the card's satellite image) on the phone; it did not recur in the final run.
+

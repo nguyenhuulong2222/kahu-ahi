@@ -64,8 +64,9 @@ def sha256_of(path):
 
 
 # ---------- boundaries ----------
-def read_census(zip_path):
-    """[{id, fips, name, rings}] for the 48 states and DC from the shapefile inside the Census zip."""
+def read_census(zip_path, only=None):
+    """[{id, fips, name, rings}] for the 48 states and DC from the shapefile inside the Census zip
+    (or for the postal codes in `only`, which pipeline/outline.py uses for a region that is one state)."""
     with zipfile.ZipFile(zip_path) as z:
         shp, dbf = z.read(CENSUS + ".shp"), z.read(CENSUS + ".dbf")
     nrec, hlen, rlen = struct.unpack("<IHH", dbf[4:12])
@@ -87,7 +88,7 @@ def read_census(zip_path):
         pos += 8 + clen
         r = recs[i]
         i += 1
-        if struct.unpack("<i", body[:4])[0] != 5 or r["STUSPS"] in NOT_CONTIGUOUS:
+        if struct.unpack("<i", body[:4])[0] != 5 or (r["STUSPS"] not in only if only else r["STUSPS"] in NOT_CONTIGUOUS):
             continue
         nparts, npts = struct.unpack("<2i", body[36:44])
         parts = list(struct.unpack(f"<{nparts}i", body[44:44 + 4 * nparts])) + [npts]

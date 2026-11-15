@@ -1,0 +1,116 @@
+{
+ "cell_deg": 0.1,
+ "origin": [
+  1410,
+  100
+ ],
+ "sensors": [
+  "MODIS_AQUA",
+  "MODIS_TERRA",
+  "VIIRS_SNPP",
+  "VIIRS_NOAA20"
+ ],
+ "max_cell": {
+  "MODIS_AQUA": 197,
+  "MODIS_TERRA": 201,
+  "VIIRS_SNPP": 1104,
+  "VIIRS_NOAA20": 1020
+ },
+ "max_cell_year": {
+  "MODIS_AQUA": 197,
+  "MODIS_TERRA": 219,
+  "VIIRS_SNPP": 1105,
+  "VIIRS_NOAA20": 1102
+ },
+ "mtd": {
+  "month": "2026-11",
+  "days": [
+   1,
+   13
+  ]
+ },
+ "years": {
+  "2000": {
+   "bytes": 146
+  },
+  "2001": {
+   "bytes": 641
+  },
+  "2002": {
+   "bytes": 9663
+  },
+  "2003": {
+   "bytes": 4296
+  },
+  "2004": {
+   "bytes": 33993
+  },
+  "2005": {
+   "bytes": 25811
+  },
+  "2006": {
+   "bytes": 2003
+  },
+  "2007": {
+   "bytes": 5509
+  },
+  "2008": {
+   "bytes": 1845
+  },
+  "2009": {
+   "bytes": 15398
+  },
+  "2010": {
+   "bytes": 8364
+  },
+  "2011": {
+   "bytes": 2743
+  },
+  "2012": {
+   "bytes": 4637
+  },
+  "2013": {
+   "bytes": 11901
+  },
+  "2014": {
+   "bytes": 3328
+  },
+  "2015": {
+   "bytes": 36577
+  },
+  "2016": {
+   "bytes": 6943
+  },
+  "2017": {
+   "bytes": 7373
+  },
+  "2018": {
+   "bytes": 7736
+  },
+  "2019": {
+   "bytes": 23979
+  },
+  "2020": {
+   "bytes": 5214
+  },
+  "2021": {
+   "bytes": 5609
+  },
+  "2022": {
+   "bytes": 25103
+  },
+  "2023": {
+   "bytes": 6983
+  },
+  "2024": {
+   "bytes": 9801
+  },
+  "2025": {
+   "bytes": 13719
+  },
+  "2026": {
+   "bytes": 4179
+  }
+ },
+ "checked": "per sensor per month totals equal monthly_series.csv; month-to-date equals calibration.json"
+}

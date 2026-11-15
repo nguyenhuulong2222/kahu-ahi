@@ -66,6 +66,8 @@ def export_summary(region_id, name, bbox, processed, out_dir):
         "sensors": schema["sensors"],
         "months": months,
     }
+    if "outline" in schema:
+        summary["region"]["outline"] = schema["outline"]
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / f"{region_id}.json").write_text(json.dumps(summary, separators=(",", ":")), encoding="utf-8")
     return summary
@@ -123,7 +125,7 @@ def export_daily(region_id, processed, out_dir):
     return sum(len(r) for r in days.values()), path.stat().st_size
 
 
-def detections(bbox, raw_dir):
+def detections(bbox, raw_dir, outline=None):
     """Yield (row, lat, lon, sensor, quality, has_type, counted) for every detection inside the region.
 
     This is the one place that decides which detections are inside a region and which are counted
@@ -131,6 +133,10 @@ def detections(bbox, raw_dir):
     The hotspot CSVs and the map grid (grid.py) both read it, so they cannot disagree.
     """
     west, south, east, north = bbox
+    inside = None
+    if outline:
+        from outline import predicate
+        inside = predicate(outline)
     paths = sorted(p for p in raw_dir.iterdir() if p.suffix.lower() in (".csv", ".zip"))
     mask = build_static_mask(paths)
     for path in paths:
@@ -149,6 +155,8 @@ def detections(bbox, raw_dir):
                 sensor = sensor_code(row["satellite"])
                 if sensor is None or not (west <= lon <= east and south <= lat <= north):
                     continue
+                if inside and not inside(lat, lon):
+                    continue
                 if has_type:
                     veg = row["type"].strip() in ("0", "")
                 else:
@@ -157,7 +165,7 @@ def detections(bbox, raw_dir):
                 yield row, lat, lon, sensor, quality, has_type, counted
 
 
-def export_hotspots(region_id, bbox, raw_dir, out_dir, by_month=False):
+def export_hotspots(region_id, bbox, raw_dir, out_dir, by_month=False, outline=None):
     """Write every detection inside the region, with the flag that says whether it was counted.
 
     One file per year, or one per month (by_month) for a region whose year files would be too heavy to read
@@ -170,7 +178,7 @@ def export_hotspots(region_id, bbox, raw_dir, out_dir, by_month=False):
     size = 7 if by_month else 4          # "2020-08" or "2020"
     buffers = {}
     rows_by = {}
-    for row, _, _, sensor, quality, has_type, counted in detections(bbox, raw_dir):
+    for row, _, _, sensor, quality, has_type, counted in detections(bbox, raw_dir, outline):
         part = row["acq_date"][:size]
         if part not in buffers:
             buffers[part] = io.StringIO()
@@ -213,6 +221,7 @@ def main():
     ap.add_argument("--out", type=Path, default=Path("docs/data"))
     ap.add_argument("--skip-hotspots", action="store_true", help="write only <region>.json and <region>_daily.json")
     ap.add_argument("--hotspots-by-month", action="store_true", help="one hotspot file per month instead of per year")
+    ap.add_argument("--outline", type=Path, default=None, help="outline file from pipeline/outline.py: keep only rows inside it")
     args = ap.parse_args()
     processed = args.processed or Path("data/processed") / args.id
     summary = export_summary(args.id, args.name, args.bbox, processed, args.out)
@@ -222,7 +231,7 @@ def main():
     print(f"daily: {n_days:,} day entries with counted detections, {size / 1e3:.1f} kB; days add up to monthly_series.csv")
     if args.skip_hotspots:
         return
-    doc = export_hotspots(args.id, args.bbox, args.raw, args.out, args.hotspots_by_month)
+    doc = export_hotspots(args.id, args.bbox, args.raw, args.out, args.hotspots_by_month, args.outline)
     files = doc.get("months", doc["years"])
     total_rows = sum(v["rows"] for v in files.values())
     total_mb = sum(v["bytes_gz"] for v in files.values()) / 1e6

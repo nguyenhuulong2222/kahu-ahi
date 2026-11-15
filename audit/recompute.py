@@ -6,7 +6,7 @@ Where the README does not say enough to fix a choice, the choice made here is li
 and reported, and the alternatives that matter are tried (see VARIANTS).
 
 Reads   data/raw/*.zip          (California, Hawaii, Vietnam region; the mask pools all nine files)
-        data/raw/usa/*.zip      (contiguous United States; its own mask)
+        data/raw/usa/*.zip      (contiguous United States and Alaska; their own mask)
 Writes  audit/out/<region>_monthly.csv, audit/out/recomputed.json, audit/out/differences.json
 Prints  every difference against data/processed/<region>/{monthly_series.csv,calibration.json}
         and docs/data/<region>.json.
@@ -33,11 +33,14 @@ SETS = {
         "vietnam": (102.1, 8.4, 109.5, 23.4)}},
     "usa": {"dir": ROOT / "data/raw/usa", "regions": {
         "conus": (-125.0, 24.4, -66.9, 49.5),      # must stay first: the states are cut from it
+        # Alaska: the box, and only rows inside the state's outline (README "Alaska"); see "outlines" below.
+        "alaska": (-170.0, 51.0, -129.9, 71.6),
         # Not published regions: the same boxes cut from the US download, to look for double counting
         # and to see whether two downloads of the same place agree.
         "california_from_usa": (-124.5, 32.5, -114.0, 42.0),
         "hawaii_from_usa": (-160.6, 18.7, -154.5, 22.5)},
-        "states": ROOT / "docs/data/conus_states_geo.json"},
+        "states": ROOT / "docs/data/conus_states_geo.json",
+        "outlines": {"alaska": ROOT / "docs/data/alaska_geo.json"}},
 }
 
 ASSUMPTIONS = [
@@ -148,6 +151,10 @@ def read_set(spec):
     types = {r: defaultdict(int) for r in regions}                           # (sensor, type) counts, standard
     files, edge, dup = [], defaultdict(int), {r: defaultdict(int) for r in regions}
     boxes = [(r, box) for r, box in regions.items() if box is not None]
+    # A region that is one state: the audit's own point-in-polygon over the region's outline file.
+    outlines = {r: StateFinder(path) for r, path in spec.get("outlines", {}).items()}
+    outside_outline = defaultdict(int)       # rows inside the box but in no polygon of the outline: not in the region
+    beyond_box = defaultdict(int)            # rows of the state the box leaves out (Alaska: west of 170 W, to and past 180)
     seen = {r: set() for r in regions}
     last_date = ""
     utc = {r: defaultdict(int) for r in regions}                             # (sensor, hour) of counted standard rows
@@ -174,9 +181,14 @@ def read_set(spec):
                             if date < "2024":
                                 nonveg_to2023[c] += 1
                         targets = []
+                        if lat >= 50 and (lon < -170.0 or lon > 0):
+                            beyond_box["alaska"] += 1
                         for r, box in boxes:
                             w, s, e, nn = box
                             if not (w <= lon <= e and s <= lat <= nn):
+                                continue
+                            if r in outlines and outlines[r].find(lat, lon) is None:
+                                outside_outline[r] += 1
                                 continue
                             if lon in (w, e) or lat in (s, nn):
                                 edge[r] += 1
@@ -208,7 +220,8 @@ def read_set(spec):
                 files.append({"zip": z.name, "member": member, "quality": quality, "rows": n, "has_type": has_type})
                 print(f"  read {z.name}:{member}  {n:,} rows", flush=True)
     return {"finder": finder, "std": std, "nrt": nrt_rows, "nonveg_all": nonveg_all, "nonveg_to2023": nonveg_to2023, "late": late, "stdcells": stdcells,
-            "types": types, "files": files, "edge": edge, "dup": dup, "last_date": last_date, "utc": utc}
+            "types": types, "files": files, "edge": edge, "dup": dup, "last_date": last_date, "utc": utc,
+            "outlines": outlines, "outside_outline": outside_outline, "beyond_box": beyond_box}
 
 
 def monthly_counts(S, region, mask):
@@ -582,6 +595,16 @@ def main():
             A = analyse(S, region, mask)
             A["mask"] = mask_checks(S, region, mask)
             A["rows_exactly_on_box_edge"] = S["edge"][region]
+            if region in S["outlines"]:
+                A["rows_in_box_outside_outline"] = S["outside_outline"][region]
+                A["rows_of_the_state_beyond_the_box"] = S["beyond_box"][region]
+                A["rows_in_region"] = sum(d["all"] for d in S["std"][region].values()) + len(S["nrt"][region])
+                theirs = json.loads((ROOT / "docs/data" / f"{region}.json").read_text(encoding="utf-8"))["region"].get("outline", {})
+                for what, mine in (("rows_in_region", A["rows_in_region"]), ("rows_in_box_outside_outline", A["rows_in_box_outside_outline"])):
+                    if theirs.get(what) != mine:
+                        diffs.append({"region": region, "what": "outline " + what, "recomputed": mine, "project": theirs.get(what), "difference": None, "file": f"docs/data/{region}.json"})
+                summary.append(f"{region}: {A['rows_in_region']:,} rows inside the outline, {A['rows_in_box_outside_outline']:,} inside the box but outside it, "
+                               f"{A['rows_of_the_state_beyond_the_box']:,} rows of the download at latitude 50 or more and west of 170 W or east of 0 (the part of the state the box leaves out)")
             A["exact_duplicate_rows_since_2026_06"] = dict(S["dup"][region])
             A["standard_rows_by_sensor_and_type"] = {f"{s}/{t or 'blank'}": n for (s, t), n in sorted(S["types"][region].items())}
             hours = defaultdict(int)

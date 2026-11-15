@@ -89,6 +89,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .pagehead h1{font-size:clamp(1.3rem,3vw,1.9rem);margin:0;line-height:1.2}
 .pagehead>div:first-child{flex:1 1 520px}
 .brand{display:flex;gap:12px;align-items:flex-start}.brand .mark{flex:0 0 auto;width:42px;height:54px;margin-top:2px}.brand>div{min-width:0}
+.pagehead p.covers{margin:6px 0 0;font-size:.82rem;color:var(--muted);max-width:34ch}
 .define{margin:3px 0 0;font-size:.88rem;color:var(--muted)}.define dfn{font-style:normal;font-weight:700;color:var(--ink)}
 .namenote{margin:2px 0 0;font-size:.88rem;color:var(--muted);max-width:none}
 .lede{margin:4px 0 0;font-size:.98rem;max-width:none}.headline{max-width:none}
@@ -344,9 +345,10 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <p class="headline" id="headline" aria-live="polite"></p>
     <p class="define"><dfn>Harmonized</dfn>: put on one scale. Here VIIRS counts are corrected to the scale of MODIS Aqua.</p></div></div>
   <div><label for="region">Region</label>
-    <select id="region"><option value="conus">United States (lower 48 states)</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select>
+    <select id="region"><option value="conus">United States (lower 48 states)</option><option value="alaska">Alaska</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select>
     <span id="statewrap" hidden><label for="state">State</label>
-    <select id="state"><option value="">Whole country</option></select></span></div>
+    <select id="state"><option value="">All 48 states and DC</option></select></span>
+    <p class="covers">Covers all 50 states and the District of Columbia (the lower 48 and DC state by state, Alaska and Hawaiʻi as regions) and the Vietnam region. US territories are not included in this version.</p></div>
 </div>
 
 <div class="wrap"><h2 id="h-map" class="maplabel">Where and when satellites saw fire</h2></div>
@@ -569,6 +571,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 
   <footer>
     <p>Built by the team behind <a href="https://kahuola.org">Kahu Ola (kahuola.org)</a>, a civic hazard platform for Hawaiʻi.</p>
+    <p id="coverage">This page covers all 50 states and the District of Columbia (the lower 48 and DC state by state, Alaska and Hawaiʻi as regions) and the Vietnam region. US territories (Puerto Rico, Guam, the U.S. Virgin Islands, American Samoa, the Northern Mariana Islands) are not included in this version: the FIRMS download for the United States that this page reads holds no detection for any of them. Two parts of the states are also outside the regions: Alaska west of 170° W and the Northwestern Hawaiian Islands.</p>
     <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; from zoom 9, Esri World Imagery (Powered by Esri), drawn with esri-leaflet and esri-leaflet-vector (Apache 2.0) and MapLibre GL JS (BSD 3-Clause), with the OpenStreetMap street map as the fallback; the GIBS overlays and the street map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS). Daily satellite images: NASA GIBS and NASA Worldview Snapshots. Town names: <a href="https://www.geonames.org">GeoNames</a>, CC BY 4.0. Named features: <a href="https://nominatim.org">Nominatim</a>, © OpenStreetMap contributors. Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>. Code: <a href="https://github.com/nguyenhuulong2222/kahu-ahi/blob/main/LICENSE">Apache License 2.0</a>; the fire data are NASA FIRMS data and the town list is GeoNames data (CC BY 4.0), not covered by that licence.</p>
   </footer>
 </div>
@@ -627,6 +630,8 @@ function shownDoc(d) { if (d && d.region && SHOWN_NAME[d.region.id]) d.region.na
 // region. A state view swaps the region file for a document of the same shape built from ST, and reads the national grid,
 // hotspot and place files, keeping only what lies in the state's polygon. NAT is the national document.
 let ST = null, GEO = null, STATE = null, NAT = null;
+// REGION_RINGS: the outline of a region that is one state (Alaska), from data/<region>_geo.json; null for a box region.
+let REGION_RINGS = null;
 const stateFiles = {}, BAND = 10;
 function stateFile(name) {
   if (!stateFiles[name]) stateFiles[name] = fetch("data/" + name).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(e => { delete stateFiles[name]; throw e; });
@@ -893,9 +898,11 @@ async function load(region, wish) {
     const r = await fetch("data/" + region + ".json");
     if (!r.ok) throw new Error(r.status);
     const d = shownDoc(await r.json());
+    let ringsOf = null;
+    if (d.region.outline) { try { const g = await fetch("data/" + region + "_geo.json"); if (g.ok) ringsOf = (await g.json()).states[0].rings; } catch (e) { ringsOf = null; } }
     if (region === "conus") { try { [ST, GEO] = await Promise.all([stateFile("conus_states.json"), stateFile("conus_states_geo.json")]); } catch (e) { ST = GEO = null; } }
     if (token !== loadToken) return;
-    D = NAT = d; STATE = null;
+    D = NAT = d; STATE = null; REGION_RINGS = ringsOf;
     if (region === "conus" && wish.state && ST && GEO && ST.states[wish.state]) { D = stateDoc(d, wish.state); STATE = makeState(GEO.states.find(g => g.id === wish.state)); }
     fillStateList(); $("statewrap").hidden = !(region === "conus" && ST); $("state").value = STATE ? STATE.id : "";
     $("moved").hidden = !moved;
@@ -1132,7 +1139,7 @@ function drawExplain() {
     + " coloured squares are in the faintest step (" + cellNote.range.replace("–", " to ") + (cellNote.range === "1" ? " detection" : " detections") + "), and half of them have " + fmt(cellNote.half) + " or fewer. Faint squares had few detections; solid bright ones had many.");
   if (!D.calibration_accepted) s.push(D.region.id === "hawaii"
     ? "In Hawaiʻi most of the heat satellites detect comes from the volcano, and the newer VIIRS counts could not be corrected reliably, so only MODIS Aqua is shown."
-    : "In this region the newer VIIRS counts could not be corrected reliably, so only MODIS Aqua is shown.");
+    : stateFacts(D).says + " So only MODIS Aqua is shown.");
   box.replaceChildren(...s.map(t => typeof t === "string" ? el("p", {text: t}) : t));
 }
 
@@ -1280,7 +1287,8 @@ function drawCalendarIn() {
   });
   t.append(body);
   const bb = D.region.bbox;
-  $("calnote").textContent = "Each cell is one month, on the MODIS Aqua scale. Newest year first. Area: a rectangle from " + bb.south + "° to " + bb.north + "° latitude and " + bb.west + "° to " + bb.east + "° longitude" + (D.region.id === "vietnam" ? ", which also takes in parts of Laos, Cambodia and southern China." : D.region.id === "conus" ? ". The FIRMS downloads for this region are limited to the United States, so the rectangle holds no detections in Canada or Mexico; Alaska and Hawaiʻi lie outside it." : ".") + (area ? " Counted inside the chosen area only." : "");
+  $("calnote").textContent = "Each cell is one month, on the MODIS Aqua scale. Newest year first. Area: a rectangle from " + bb.south + "° to " + bb.north + "° latitude and " + bb.west + "° to " + bb.east + "° longitude" + (D.region.id === "vietnam" ? ", which also takes in parts of Laos, Cambodia and southern China." : D.region.id === "conus" ? ". The FIRMS downloads for this region are limited to the United States, so the rectangle holds no detections in Canada or Mexico; Alaska and Hawaiʻi lie outside it and are regions of their own."
+    : D.region.outline ? ". Only detections inside the state's outline (US Census Bureau) are in the region: " + fmt(D.region.outline.rows_in_region) + " are, and " + fmt(D.region.outline.rows_in_box_outside_outline) + " inside the rectangle fall outside the outline (offshore, or land the simplified coastline cuts off) and are left out. The part of the state west of " + Math.abs(bb.west) + "° W, the Aleutian and Bering Sea islands out to and past the 180° meridian, is outside the rectangle and is not covered." : ".") + (area ? " Counted inside the chosen area only." : "");
   const lg = $("legend"); lg.replaceChildren();
   if ($("mode").value === "anom") {
     lg.append(el("span", {}, "Far below usual ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + DIVERGE.join(",") + ")"}), " far above usual"));
@@ -1293,7 +1301,7 @@ function drawCalendarIn() {
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:repeating-linear-gradient(45deg,#dfe4ea 0 4px,#fff 4px 8px)"}), "Terra only, not on this scale"));
   if (!D.calibration_accepted) {
     const e = D.snpp_to_aqua.leave_one_year_out.monthly_k.all_years;
-    $("banner").replaceChildren(el("p", {class: "banner", text: "VIIRS is not corrected in " + inRegion() + ". When tested, the correction was wrong by " + pct(e && e.abs_error_pct_of_total) + " of the total, so only MODIS Aqua is shown here. " + (D.region.id === "hawaii" ? "Most heat detected here is volcanic, and recent near-real-time data cannot reliably separate it from vegetation fire." : "")}));
+    $("banner").replaceChildren(el("p", {class: "banner", text: stateFacts(D).says + " So VIIRS is not corrected in " + inRegion() + " and only MODIS Aqua is shown here. " + (D.region.id === "hawaii" ? "Most heat detected here is volcanic, and recent near-real-time data cannot reliably separate it from vegetation fire." : "")}));
   } else $("banner").replaceChildren();
   $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
 }
@@ -1327,7 +1335,7 @@ function validationFor(x) {
   if (x.snpp == null && x.n20 == null) return null;   // no VIIRS satellite flying
   const L = D.snpp_to_aqua.leave_one_year_out.monthly_k, key = y < 2022 ? "before_2022" : "2022_onward", e = L[key];
   const period = y < 2022 ? "2012 to 2021" : "2022 onward";
-  if (!D.calibration_accepted) return {period: "all years (not harmonized, VIIRS not corrected)", e: L.all_years, text: "VIIRS is not corrected in " + inRegion() + ": when tested, the correction was wrong by " + pct(L.all_years && L.all_years.abs_error_pct_of_total) + " of the total."};
+  if (!D.calibration_accepted) return {period: "all years (not harmonized, VIIRS not corrected)", e: L.all_years, text: "VIIRS is not corrected in " + inRegion() + ". " + stateFacts(D).says};
   if (!e) return null;
   return {period, e, text: "VIIRS values on the Aqua scale for this period: tested year by year " + (y < 2022 ? "over 2012 to 2021" : "from 2022 onward") + ", the correction was off by " + pct(e.abs_error_pct_of_total) + " of the total and ran " + (e.bias_pct >= 0 ? "high" : "low") + " by " + pct(Math.abs(e.bias_pct)) + ". That test covers all of " + inRegion() + (area ? ", not the chosen area." : ".")};
 }
@@ -1532,8 +1540,8 @@ let INSIDE = null;
 // What one correction per calendar month costs when the region is a whole country.
 function drawMixed(box) {
   const a = D.snpp_to_aqua.leave_one_year_out.monthly_k.all_years;
-  const kids = [el("h3", {text: "One correction for a whole country"})];
-  let text = "This region is a whole country. It takes in areas whose fires differ in season, in what burns and in the time of day they burn, and the ratio between VIIRS and MODIS differs with them. One correction per calendar month averages over all of that. Tested as above, it is off by " + pct(a.abs_error_pct_of_total) + " of the national total";
+  const kids = [el("h3", {text: "One correction for 48 states"})];
+  let text = "This region is 48 states and the District of Columbia. It takes in areas whose fires differ in season, in what burns and in the time of day they burn, and the ratio between VIIRS and MODIS differs with them. One correction per calendar month averages over all of that. Tested as above, it is off by " + pct(a.abs_error_pct_of_total) + " of the national total";
   const bm = INSIDE && INSIDE.large_by_calendar_month;
   if (bm) { const v = Object.values(bm).map(e => e.abs_error_pct_of_total); text += ", and by between " + pct(Math.min(...v)) + " and " + pct(Math.max(...v)) + " depending on the calendar month"; }
   kids.push(el("p", {text: text + ". That number describes the country as a whole, not any one part of it."}));
@@ -2617,11 +2625,12 @@ function drawRegionOnMap() {
   ["mask", "box", "points", "area", "hover", "pick"].forEach(k => layers[k].clearLayers());
   // Outside the region box is dimmed slightly: nothing is shown there.
   // A state is its outline, not its box: everything outside the outline is dimmed more strongly.
-  const rings = STATE ? STATE.rings.map(f => { const r = []; for (let i = 0; i < f.length; i += 2) r.push([f[i + 1], f[i]]); return r; }) : [[[R.s, R.w], [R.n, R.w], [R.n, R.e], [R.s, R.e]]];
+  const shape = STATE ? STATE.rings : REGION_RINGS;
+  const rings = shape ? shape.map(f => { const r = []; for (let i = 0; i < f.length; i += 2) r.push([f[i + 1], f[i]]); return r; }) : [[[R.s, R.w], [R.n, R.w], [R.n, R.e], [R.s, R.e]]];
   L.polygon([[[-85, -360], [85, -360], [85, 360], [-85, 360]], ...rings],
-    {stroke: false, fillColor: "#000", fillOpacity: STATE ? .5 : .22, interactive: false}).addTo(layers.mask);
+    {stroke: false, fillColor: "#000", fillOpacity: shape ? .5 : .22, interactive: false}).addTo(layers.mask);
   // A white outline on a dark halo reads on both the satellite basemap and the street map.
-  const outline = o => STATE ? L.polygon(rings.map(r => [r]), o) : L.rectangle(regionBounds, o);
+  const outline = o => shape ? L.polygon(rings.map(r => [r]), o) : L.rectangle(regionBounds, o);
   outline({fill: false, color: "#000", opacity: .55, weight: 5, interactive: false}).addTo(layers.box);
   outline({fill: false, color: "#fff", weight: 2, interactive: false}).addTo(layers.box);
   map.fitBounds(regionBounds, {animate: false, paddingTopLeft: [8, 8], paddingBottomRight: [8, 34]});
@@ -2916,14 +2925,16 @@ function updateAllYearsButton() { $("allyears").setAttribute("aria-pressed", Str
 
 // ---------- one detection: when, where and what the satellite recorded ----------
 // Times in the hotspot files are UTC (acq_date, acq_time). Each region also gets its own local time.
-const TIMEZONE = {california: "America/Los_Angeles", hawaii: "Pacific/Honolulu", vietnam: "Asia/Ho_Chi_Minh", conus: "UTC"};
+// Alaska: its places in the bundled list carry six time-zone records (GeoNames), and the Aleutians west of 169°30′ W keep
+// another time, so without boundaries a local time could be wrong; it shows UTC only.
+const TIMEZONE = {california: "America/Los_Angeles", hawaii: "Pacific/Honolulu", vietnam: "Asia/Ho_Chi_Minh", conus: "UTC", alaska: "UTC"};
 // The contiguous United States spans four time zones. Telling which one a point is in needs time-zone boundaries,
 // which this page does not carry, and guessing from longitude would be wrong near every boundary. So that region shows UTC only.
 const NO_LOCAL = "not shown (this region spans several time zones). Times are in UTC.";
 // A state has a local time only when all its towns share one zone (pipeline/states.py, from GeoNames).
 function zoneNow() { return D.region.state ? (D.tz || "UTC") : TIMEZONE[D.region.id]; }
 function hasLocal() { return zoneNow() !== "UTC"; }
-function noLocal() { return D.region.state ? "not shown (" + D.region.name + " spans more than one time zone). Times are in UTC." : NO_LOCAL; }
+function noLocal() { return D.region.state || D.region.outline ? "not shown (" + D.region.name + " spans more than one time zone). Times are in UTC." : NO_LOCAL; }
 const localLabel = () => hasLocal() ? "Local time of the satellite pass" : "Local time";
 const PLATFORM = {MODIS_AQUA: "Aqua satellite, MODIS sensor", MODIS_TERRA: "Terra satellite, MODIS sensor", VIIRS_SNPP: "Suomi NPP satellite, VIIRS sensor", VIIRS_NOAA20: "NOAA-20 satellite, VIIRS sensor"};
 const FIRMS_TYPE = {"1": "an active volcano", "2": "another static land source", "3": "an offshore source"};
