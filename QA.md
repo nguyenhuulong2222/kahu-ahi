@@ -547,3 +547,32 @@ Not checked, or known limits
 - Print, the report view, a chosen area's locator rectangle and the VIIRS-only record with the new layout were not
   looked at.
 
+## Twelfth pass: linked views together with the card-under-its-row and new-tab links (main)
+
+`main` now holds the linked views (eleventh pass) and pull requests #2 and #3 (the detection card shown in the table
+under its row; the compare-table links open the source JSON in a new tab). Both sides changed `openCard`. This pass
+checks the combination; nothing in the page needed changing, so the only file in this commit is this one.
+
+Checked with Playwright (`qa/combo.mjs` and `qa/combo2.mjs`, screenshots in `qa/combo/`) at 1440x900 and 390x844 on
+the lower 48, California (state) and the Vietnam region: 6 runs of each script, reduced motion on.
+
+| Check | Result |
+|---|---|
+| Page script parses; console clean on load and to the end of the run | 6 of 6 |
+| Row selected in the detections table with the map out of view: the card is in the table directly under its row | 6 of 6 |
+| ... the card is clear of the bar (card top 327 to 348 px, bar bottom 52 px at 1440 and 96 px at 390) | 6 of 6 |
+| ... the row stays where it was in the window, map centre and zoom unchanged | 6 of 6, and again for a row deep in the table (row 40) |
+| ... page not wider than the window; the table's heading row is not under the bar | 6 of 6 |
+| The card's "Zoom in here" (detection inside the map view): map comes to the top of the window, zooms to 11 with the detection in view, the card docks beside the map (a sheet on the phone) | 6 of 6 |
+| The card's "Show on the map" (map first moved away, so the card says the detection is outside the view): the same | 6 of 6 |
+| "Back to the previous view" restores the map; closing the card leaves no empty row in the table | 6 of 6 |
+| Detection selected on the map: card docked at 1440, a sheet at 390, never in the table; nothing moves; "Zoom in here" zooms | 6 of 6 |
+| Month selected in the calendar: one bar per day; beside the calendar and in the window at 1440 (under the calendar at 390); nothing moves | 6 of 6 |
+| Day selected in that chart: day in the address, the bar's period and locator change; nothing moves | 6 of 6 |
+| "Show on map": map top at 0, bar gone, map view unchanged | 6 of 6 |
+| Compare table: every figure link has a new-tab target (47, or 55 in a state view); one pressed opens a `.json` file that parses, in a new tab; the page itself stays where it was | 6 of 6 |
+
+Not checked: 1024x768, Hawaiʻi and Alaska in this combination (each side was checked there separately); Safari and
+Firefox; the flash of the bar (reduced motion was on); the card under its row together with a chosen area or an open
+report.
+
