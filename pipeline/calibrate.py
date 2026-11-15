@@ -40,7 +40,7 @@ SNPP_LAST_FULL_MONTH = "2026-10"  # S-NPP delivered no new observations after 2 
 # Calibration is refused for a region when it cannot be shown to work there.
 MAX_LOYO_ERROR_PCT = 50   # leave-one-year-out absolute error, as % of the observed total
 MIN_MONTHS_WITH_OWN_K = 9  # calendar months that have enough data for their own coefficient
-DRIFT_YEAR = 2022  # Aqua orbit drift: approximate, see README (to be verified)
+DRIFT_YEAR = 2022  # Aqua made its last drag make-up manoeuvre in December 2021 and has been in free drift since (NASA Science, Aqua mission page; see SOURCES.md)
 
 
 def load_monthly(path):

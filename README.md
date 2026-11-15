@@ -39,9 +39,9 @@ All fire data come from NASA FIRMS. Details, access dates and citations are in [
 
 ## Sensor timeline that shapes the method
 
-- MODIS Terra and Aqua are near end of life. The archive is unaffected.
+- Aqua has far exceeded its six-year design life and no longer holds its orbit (NASA Science, Aqua; SOURCES.md); Terra, launched in 1999, is older still. The archive is unaffected.
 - Suomi NPP stopped delivering new observations on 2 Nov 2026, so current months come from NOAA-20.
-- Aqua's orbit has drifted in recent years. The pipeline splits validation at **2022** (`DRIFT_YEAR` in `pipeline/calibrate.py`); that start year is an approximation and has not been checked against NASA documentation. Validation is reported separately before and after.
+- Aqua's orbit is changing. NASA reports that Aqua "completed the last of its drag makeup maneuvers in December 2021 and is now in a free-drift mode, slowly descending below the A-Train and drifting to later equatorial crossing times, and lower altitudes"; by January 2025 its crossing time had moved about 50 minutes later (sources in SOURCES.md). The pipeline therefore splits validation at **2022** (`DRIFT_YEAR` in `pipeline/calibrate.py`), the first year of free drift, and reports the error before and after. Whether the drift causes the higher error after 2022 is not established by this project.
 - Standard-quality monthly files lag by about 2–3 months. Newer months are near-real-time and labelled provisional.
 
 ## Metrics (never mixed)
