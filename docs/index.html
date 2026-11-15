@@ -187,7 +187,11 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #tl-speed{min-height:40px;padding:6px 8px;font-size:14px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 #biglabel{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:900;pointer-events:none;padding:4px 16px;border-radius:6px;background:rgba(20,33,61,.82);color:#fff;font-weight:700;font-size:clamp(1.6rem,5vw,3rem);font-variant-numeric:tabular-nums;white-space:nowrap}
-#mapnotes{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:900;width:min(440px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;pointer-events:none}
+/* Narrow enough to clear the open legend (right) and Layers panel (left): 340 px and 320 px plus margins. */
+#mapnotes{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:900;width:clamp(260px,calc(100% - 720px),440px);display:flex;flex-direction:column;gap:8px;pointer-events:none}
+#mapnotes>.mapnote{min-height:0;overflow:auto}
+/* With Layers open the coordinates move right, under the note: stop above them. */
+.mapshell.layers-open #mapnotes{max-height:calc(100% - var(--tl-h) - 140px)}
 .mapnote{pointer-events:auto;padding:10px 14px;border-radius:6px;background:rgba(255,255,255,.96);box-shadow:0 1px 6px rgba(0,0,0,.35);border-left:4px solid var(--warn);font-size:.95rem}
 .mapnote p{margin:0 0 8px}.mapnote button{min-height:40px;margin:0 6px 4px 0}
 #map .leaflet-top.leaflet-left{display:flex;align-items:flex-start;gap:0 8px;max-width:calc(100% - 160px)}
@@ -338,6 +342,11 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   #map .leaflet-top.leaflet-left{flex-wrap:wrap;max-width:none;right:0}.mchip{max-width:calc(100vw - 30px);flex:0 1 auto;margin-top:6px!important}
   .leaflet-bottom.leaflet-left{bottom:36px}
   #biglabel{top:58px}#mapnotes{top:60px;left:10px;right:58px;width:auto;transform:none}#biglabel:not([hidden])~#mapnotes{top:108px}.mapnote{font-size:.84rem;line-height:1.35;padding:7px 10px;max-height:150px;overflow:auto}.mapnote p{margin:0 0 5px}.mapnote button{min-height:36px;padding:4px 8px}
+  /* Stop above the scale and Legend row (225 px) while playing; start below the satellite chip and the zoom buttons when the chip is shown;
+     step aside while the legend or Layers is open, as other phone panels do (one at a time). */
+  #biglabel:not([hidden])~#mapnotes .mapnote{max-height:111px}
+  .mapshell:has(#sensorchip:not([hidden])) #mapnotes{top:124px;right:10px}.mapshell:has(#sensorchip:not([hidden])) .mapnote{max-height:95px}
+  .mapshell.layers-open #mapnotes,.mapshell:has(#legendpanel[open]) #mapnotes{display:none}
   .mapshell{--tl-h:200px}.tl-levels{order:8;flex:1 1 100%}.tl-levels .tl-btn{flex:1 1 0;padding:6px 4px;font-size:.9rem;min-width:0}
   #monthrow{grid-template-columns:repeat(6,minmax(0,1fr))}#monthrow strong{grid-column:1/-1}
   .leaflet-control-attribution{font-size:10px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
