@@ -1322,7 +1322,7 @@ function areaSeries(docs) {
   });
   const months = D.months.map(x => {
     const c = tot[x.m] || [0, 0, 0, 0], k = coeff(+x.m.slice(5));
-    const keep = (region, n) => region == null ? null : n;   // a satellite not flying stays "not flying"
+    const keep = (region, n) => region == null ? null : n;   // a satellite with no data in the region file stays without a value
     const y = {m: x.m, terra: keep(x.terra, c[1]), aqua: keep(x.aqua, c[0]), snpp: keep(x.snpp, c[2]), n20: keep(x.n20, c[3]), src: x.src, status: x.status};
     y.snpp_eq = y.snpp != null && k ? round1(y.snpp / k) : null;
     const kn = coeffN20(+x.m.slice(5));
@@ -1876,7 +1876,7 @@ function yearSensor(y) {
   return {s, i: GRID_SENSORS.indexOf(s), k: null, flying: has(s), span: y + " total",
     label: SENSOR[s] + (s === "MODIS_AQUA" ? "" : auto ? " (before Aqua; not on the Aqua scale)" : ", as recorded (not converted)")};
 }
-// Words for the map when the chosen satellite has nothing to show: not flying is different from flying and seeing nothing.
+// Words for the map when the chosen satellite has nothing to show: having no data is different from having data and seeing nothing.
 function setEmpty(text, offerAuto) {
   const box = $("mapempty"), s = $("sensor").value, note = $("sensornote");
   box.hidden = !text;
@@ -1971,7 +1971,7 @@ async function drawMap() {
     setEmpty(text, $("sensor").value !== "auto");
     layers.points.clearLayers(); drawnRows = []; if (tbl) hideTable(); drawMapLegend(pick); drawTopCells(pick); viewNote(); return;
   }
-  const nothing = SENSOR[pick.s] + " was flying but recorded no detection in " + inRegion() + (lv === "day" ? " on " : " in ") + name + ". That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
+  const nothing = SENSOR[pick.s] + " has data for this period but recorded no detection in " + inRegion() + (lv === "day" ? " on " : " in ") + name + ". That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
   if (lv === "day") {
     const n = daily ? dayCounts(selDay)[pick.i] : null;
     sum.textContent = name + ", " + pick.label + ": " + (n == null ? "the daily counts could not be loaded." : fmt(n) + (n === 1 ? " detection" : " detections") + " counted across " + inRegion() + ".")

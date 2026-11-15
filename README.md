@@ -212,7 +212,7 @@ Lessons the team took from these trainings and where each is applied. ARSET and 
 
 **Monitoring Surface Water with SAR (OPERA DSWx)**
 - DSWx-NI, DSWx-S1 and DSWx-HLS share grid, spacing and format so the source stops mattering. Here every sensor is reduced to the same filter, month and 0.1° grid ([pipeline/grid.py](pipeline/grid.py), `export.detections()`).
-- DSWx keeps separate codes for not water, masked, cloud and no data. Here statuses stay distinct and are never collapsed to 0: measured, provisional, partial month, not on this scale, not converted, satellite not flying (`status` in `monthly_series.csv`; `STATUS` in [docs/index.html](docs/index.html)).
+- DSWx keeps separate codes for not water, masked, cloud and no data. Here statuses stay distinct and are never collapsed to 0: measured, provisional, partial month, not on this scale, not converted, no data from the satellite (`status` in `monthly_series.csv`; `STATUS` in [docs/index.html](docs/index.html)).
 - DSWx ships simple, confidence and diagnostic layers. The month detail shows the value, its status, the conversion's tested error for that period and the per-sensor counts, and the same columns are in the monthly table download ([docs/index.html](docs/index.html), `drawDetail()`, `downloadMonthly()`).
 - Radar shadow is masked as a known false source. Here the static-source mask removes known non-fire heat and reports its measured hit and false-removal rates ([pipeline/ingest.py](pipeline/ingest.py), trust card on the page).
 - NISAR data is released as provisional before validated reprocessing. Near-real-time months are labelled provisional ([pipeline/calibrate.py](pipeline/calibrate.py), `provisional_nrt`).
@@ -284,7 +284,7 @@ The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location
 - **Reaching a day.** In a month, Days selects the month's busiest day for the satellite on the map, and a daily bar selects that day; both move the map to where the day's detections are.
 - **Finding a month or a day.** The timeline has a Days | Months | Years | All years switch. Days goes to the busiest day of the selected month or year, or from All years to the most recent day with data; Months goes to the selected year's first month with data, or from All years to the latest month. When a year is selected, its twelve months are a row of buttons under the map.
 - **Satellite.** The harmonized view is the default. When a link or the Layers panel sets another satellite, the map says so ("Showing VIIRS S-NPP as recorded, not converted") with a button back.
-- **Empty states** are in words on the map: "not flying yet" or "no longer sending data", with the satellite's first or last date and a button back to the harmonized view, is kept apart from "was flying but recorded no detection", which is never called no fire.
+- **Empty states** are in words on the map, from documented dates rather than from the files: "had not been launched" (with the launch date), "in orbit, but FIRMS has no fire data from it before ...", "no data received yet for this date" after the last row of a download, and "stopped delivering new data" only for Suomi NPP, which FIRMS states. Each is kept apart from "has data for this period but recorded no detection", which is never called no fire. A button leads back to the harmonized view.
 
 ### Map display
 
