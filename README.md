@@ -140,7 +140,7 @@ Months: 174 paired months per region (February 2012 to July 2026, standard data)
 
 ### The United States, state by state
 
-The page's region list is Contiguous United States, Hawaiʻi and Vietnam region. With Contiguous United States selected a second list offers "Whole country" and the 48 states and DC. `pipeline/states.py` does the work:
+The page's region list is United States (lower 48 states), Hawaiʻi and Vietnam region. With United States (lower 48 states) selected a second list offers "Whole country" and the 48 states and DC. `pipeline/states.py` does the work:
 
 - **Boundaries.** US Census Bureau cartographic boundary file for states, 1:5,000,000, 2023 (public domain; source and sha256 in `data/manifest.json` and SOURCES.md). Coordinates are rounded to 4 decimals and written to `docs/data/conus_states_geo.json` (1.3 MB), which both the pipeline and the page read.
 - **Assignment.** Every national detection is given to the state whose outline contains its position (even-odd ray casting; not a bounding box). The page repeats the same test on the same numbers, so a state's table, map squares and CSV hold exactly the detections the pipeline counted for it. Of 14,077,544 detections, 27,962 (0.2%; 2,410 of them counted) fall in no state: offshore, or land the simplified coastline cuts off (for example the Lake Michigan shore of Indiana). They are kept under `outside` in the file and stay in the national numbers. Against the Census 1:500,000 file, 3 of 2,000 sampled detections were assigned differently, all three of this kind.
@@ -321,7 +321,7 @@ One name for one thing, on the page, in the CSV files and here. `QA.md` records 
 
 | Word | Meaning |
 |---|---|
-| Contiguous United States | The 48 states and DC; the name in the region list, the headings and the data file. Alaska and Hawaiʻi are outside it. |
+| United States (lower 48 states) | The name in the region list and every heading; in a sentence, "the lower 48 states". Its formal name is the contiguous United States: the 48 adjoining states and DC, without Alaska and Hawaiʻi. The data file, its id `conus`, the pipeline commands and the method sections of this file keep the formal name. |
 | Hawaiʻi, Vietnam region | The two other regions. "Vietnam region" is a rectangle that also holds parts of neighbouring countries. |
 | MODIS Aqua, MODIS Terra, VIIRS Suomi NPP, VIIRS NOAA-20 | The four satellites, always written this way on the page. "S-NPP" appears only in this file's method notes and in data field names. |
 | detection | One hot spot in a FIRMS file. Never "fire": one fire gives many detections or none. |

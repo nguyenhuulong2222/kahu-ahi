@@ -344,7 +344,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <p class="headline" id="headline" aria-live="polite"></p>
     <p class="define"><dfn>Harmonized</dfn>: put on one scale. Here VIIRS counts are corrected to the scale of MODIS Aqua.</p></div></div>
   <div><label for="region">Region</label>
-    <select id="region"><option value="conus">Contiguous United States</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select>
+    <select id="region"><option value="conus">United States (lower 48 states)</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select>
     <span id="statewrap" hidden><label for="state">State</label>
     <select id="state"><option value="">Whole country</option></select></span></div>
 </div>
@@ -510,7 +510,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <section aria-labelledby="h-area">
     <h2 id="h-area">Choose an area</h2>
     <div class="cols2"><div>
-    <p class="note" style="margin:0">Draw a rectangle on the map, or type its edges in decimal degrees (longitudes west of Greenwich are negative, as in Hawaiʻi and the contiguous United States; in the Vietnam region all four edges are positive). The area is widened to whole 0.1° cells and kept inside the region box. The calendar, the comparisons and the download then cover only that area.</p>
+    <p class="note" style="margin:0">Draw a rectangle on the map, or type its edges in decimal degrees (longitudes west of Greenwich are negative, as in Hawaiʻi and the lower 48 states; in the Vietnam region all four edges are positive). The area is widened to whole 0.1° cells and kept inside the region box. The calendar, the comparisons and the download then cover only that area.</p>
     <div class="areabar">
       <button id="drawbtn" type="button" class="secondary" aria-pressed="false">Draw an area on the map</button>
       <button id="whole" type="button" class="secondary" disabled title="The whole region is already shown">Whole region</button>
@@ -558,7 +558,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <section aria-labelledby="h-limits">
     <h2 id="h-limits">Method, limits and sources</h2>
     <div class="flow2">
-    <p>Method in one paragraph: every detection comes from NASA FIRMS. For each region, and for each state of the contiguous United States, the months when MODIS Aqua and VIIRS Suomi NPP both observed (2012 to 2026) give a factor for each calendar month: VIIRS detections divided by Aqua detections. Dividing a VIIRS count by that factor puts it on the MODIS Aqua scale. Each year is then predicted from factors built without it, and the error is reported above. Where that error is too large, the region is not corrected.</p>
+    <p>Method in one paragraph: every detection comes from NASA FIRMS. For each region, and for each state of the contiguous United States (the formal name for the 48 adjoining states and DC, without Alaska and Hawaiʻi; this page calls it the lower 48 states), the months when MODIS Aqua and VIIRS Suomi NPP both observed (2012 to 2026) give a factor for each calendar month: VIIRS detections divided by Aqua detections. Dividing a VIIRS count by that factor puts it on the MODIS Aqua scale. Each year is then predicted from factors built without it, and the error is reported above. Where that error is too large, the region is not corrected.</p>
     <p>No detection is not the same as no fire. Clouds, smoke, short-lived fires and the time of the satellite pass all hide burning, and this tool has no record of when a place could not be observed.</p>
     <p>This is a history of satellite detections. It is not an alert, a forecast or a count of fires, and it does not replace official emergency information.</p>
     <p>Only the regions listed here are supported. Each region is checked on its own data before its VIIRS numbers are corrected; where the check fails, they are not corrected. Each of the 48 states and DC is checked the same way on its own data. An area you draw inside a region or a state uses that region's or state's correction, which was never tested on the smaller area.</p>
@@ -617,7 +617,10 @@ const pct = n => n == null ? "n/a" : Number(n).toLocaleString("en-US", {minimumF
 // A count with its noun, singular for exactly one: "1 detection", "2 detections".
 const N = (n, word, f) => (f || fmt)(n) + " " + (Number(n) === 1 ? word : word + "s");
 // The region's name as it reads inside a sentence.
-function inRegion() { return D.region.state ? D.region.name : D.region.id === "conus" ? "the contiguous United States" : D.region.name; }
+function inRegion() { return D.region.state ? D.region.name : D.region.id === "conus" ? "the lower 48 states" : D.region.name; }
+// The name a reader sees. The data file keeps the formal name, "Contiguous United States"; readers know it as the lower 48.
+const SHOWN_NAME = {conus: "United States (lower 48 states)"};
+function shownDoc(d) { if (d && d.region && SHOWN_NAME[d.region.id]) d.region.name = SHOWN_NAME[d.region.id]; return d; }
 
 // ---------- the contiguous United States, state by state ----------
 // ST: per-state statistics (pipeline/states.py). GEO: the state polygons. STATE: the selected state, or null for the whole
@@ -889,7 +892,7 @@ async function load(region, wish) {
   try {
     const r = await fetch("data/" + region + ".json");
     if (!r.ok) throw new Error(r.status);
-    const d = await r.json();
+    const d = shownDoc(await r.json());
     if (region === "conus") { try { [ST, GEO] = await Promise.all([stateFile("conus_states.json"), stateFile("conus_states_geo.json")]); } catch (e) { ST = GEO = null; } }
     if (token !== loadToken) return;
     D = NAT = d; STATE = null;
@@ -1483,7 +1486,7 @@ function drawHarm() {
 // ---------- compare regions ----------
 const regionDocs = new Map();
 function regionDoc(id) {
-  if (!regionDocs.has(id)) regionDocs.set(id, fetch("data/" + id + ".json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(e => { regionDocs.delete(id); throw e; }));
+  if (!regionDocs.has(id)) regionDocs.set(id, fetch("data/" + id + ".json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(shownDoc).catch(e => { regionDocs.delete(id); throw e; }));
   return regionDocs.get(id);
 }
 let compareToken = 0;
@@ -1519,7 +1522,7 @@ async function drawCompare() {
     kids.push(el("p", {text: sName + " inside the larger fit: "}, el("a", {href: file, text: pct(o.all_years.abs_error_pct_of_total)}), " with the factors of " + bName + ", against ", el("a", {href: file, text: pct(own.all_years.abs_error_pct_of_total)}), " with its own. A correction fitted over a larger area costs accuracy in the smaller one. " + sName + " lies inside " + bName + " and its detections are part of the larger fit, so the first figure is a lower bound, and the table holds three independent areas, not four."));
   }
   const boxDoc = docs.find(d => d && d.region.id === "california"), bb = boxDoc && boxDoc.region.bbox;
-  if (bb) kids.push(el("p", {id: "boxnote", text: "The California test box is the rectangle this project was first calibrated on (" + bb.south + "° to " + bb.north + "° north, " + Math.abs(bb.west) + "° to " + Math.abs(bb.east) + "° west). It is not the state: it also takes in parts of Nevada, Arizona and Mexico. The state of California is in the State list under Contiguous United States, and its numbers differ."}));
+  if (bb) kids.push(el("p", {id: "boxnote", text: "The California test box is the rectangle this project was first calibrated on (" + bb.south + "° to " + bb.north + "° north, " + Math.abs(bb.west) + "° to " + Math.abs(bb.east) + "° west). It is not the state: it also takes in parts of Nevada, Arizona and Mexico. The state of California is in the State list under United States (lower 48 states), and its numbers differ."}));
   kids.push(el("p", {class: "note", text: "Percentages are the error as a share of all the detections MODIS Aqua recorded, each year predicted from a correction built without it." + (split ? " Earlier years are " + first + " to " + (split - 1) + ", later years " + split + " onward." : "") + " NOAA-20 in place of Suomi NPP is the difference when NOAA-20 is used with no further correction. Each number links to the file it is read from."}));
   box.replaceChildren(...kids);
 }
