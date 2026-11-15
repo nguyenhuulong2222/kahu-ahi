@@ -23,6 +23,7 @@ AI tools were used in this project. This file records which tools and how.
 - `docs/index.html`: the map (Leaflet; NASA GIBS Blue Marble, Esri World Imagery at close zoom with an OpenStreetMap fallback; an all-years default view), sensor switch, individual detections at high zoom, area of interest with URL sharing, area CSV download, the month detail's validation line, the monthly table download, and the explanation of the November gap.
 - `pipeline/export.py` daily export with its check against the monthly series; `max_cell_year` in the grid index.
 - `docs/index.html`, later the same day: the fire colour ramp (checked numerically for lightness order, simulated colour-vision deficiency and text contrast), the year, month and day charts, the shared selection, play through time, the generated "What you are looking at" sentences, the "How to read this" box and the empty states.
+- `docs/index.html`, same day: the detection card and table, place names from Nominatim, the NASA image of the day (GIBS and Worldview Snapshots), and the one-page report for a detection. Each outside service was checked against its documentation and with real requests before use.
 - Documentation: README method, validation, limits and run instructions; THIRD_PARTY_NOTICES; SOURCES; `data/manifest.json`.
 
 The team set the requirements, the rules the code must keep (one metric, no zero shown as "no fire", no change to calibration), and reviewed the results.

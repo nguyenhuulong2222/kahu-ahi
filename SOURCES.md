@@ -69,6 +69,10 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Pages read when choosing t
 - Esri attribution guidance — https://developers.arcgis.com/documentation/esri-and-data-attribution/
 - Esri terms: Master Agreement — https://www.esri.com/en-us/legal/terms/full-master-agreement; Product-Specific Terms — https://www.esri.com/en-us/legal/terms/product-specific-scope-of-use
 - esri-leaflet and esri-leaflet-vector source and licences — https://github.com/Esri/esri-leaflet and https://github.com/Esri/esri-leaflet-vector
+- Nominatim usage policy, read before adding place names — https://operations.osmfoundation.org/policies/nominatim/ ; reverse geocoding endpoint `https://nominatim.openstreetmap.org/reverse` (checked with real requests, 14 Nov 2026)
+- NASA GIBS daily Corrected Reflectance layers: names, date ranges and tile matrix set from the capabilities document above; one tile per satellite fetched to confirm (14 Nov 2026)
+- NASA Worldview Snapshots — https://wvs.earthdata.nasa.gov/ (`/api/v1/snapshot`, checked with real requests including a day with no imagery)
+- NASA Worldview configuration, for the fire layer names used in the links — https://worldview.earthdata.nasa.gov/config/wv.json
 - OpenStreetMap copyright and licence — https://www.openstreetmap.org/copyright
 - OSMF Tile Usage Policy — https://operations.osmfoundation.org/policies/tiles/
 - CARTO basemap terms (not used: free use requires a CARTO API key) — https://carto.com/legal/basemap-terms/ and https://github.com/CartoDB/basemap-styles
