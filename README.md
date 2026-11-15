@@ -73,6 +73,7 @@ The current month is compared with the median of the **same day range** (day 1 t
 |---|---:|---:|---|
 | California | 137 | 199.8 (raw 1,223, k(11) = 6.122) | 147 (49–642) |
 | Vietnam region | 180 | 98.8 (raw 686, k(11) = 6.942) | 180.5 (56–453) |
+| Contiguous United States | 1,356 | 1,880.7 (raw 9,681, k(11) = 5.148) | 2,181 (1,146–3,090) |
 | Hawaiʻi | 0 | not converted (raw 1) | 0 (0–9) |
 
 **Why the two estimates disagree in November 2026.** Checked day by day in `daily_counts.csv`:
@@ -92,9 +93,10 @@ Leave-one-year-out: each year is predicted from coefficients fitted without it a
 |---|---:|---:|---:|---:|---:|---|---:|---:|---|
 | California | 174 | 8.47 | 747.1% | 19.0% | **15.2%** | 14.0% / 21.2% | +0.9% | 5.8% | yes |
 | Vietnam region | 174 | 6.25 | 524.7% | 16.8% | **12.0%** | 10.5% / 15.8% | +0.1% | 3.4% | yes |
+| Contiguous United States | 174 | 6.64 | 563.8% | 28.2% | **10.4%** | 10.1% / 10.9% | +0.3% | 4.5% | yes |
 | Hawaiʻi | 174 | 169.08 | 16,808.2% | 168.0% | **256.2%** | 308.7% / 136.2% | +124.5% | 15.8% | **no** |
 
-Forward test (fit up to 2018, predict later years with monthly k): California 13.5% for 2019–2021 and 22.8% from 2022; Vietnam region 9.4% and 18.1%; Hawaiʻi 98.5% and 114.1%.
+Forward test (fit up to 2018, predict later years with monthly k): California 13.5% for 2019–2021 and 22.8% from 2022; Vietnam region 9.4% and 18.1%; contiguous United States 14.6% and 13.3%; Hawaiʻi 98.5% and 114.1%.
 
 Months: 174 paired months per region (February 2012 to July 2026, standard data). Excluded: January 2012 (S-NPP's first, partial month), every near-real-time month (August 2026 onward for VIIRS, September 2026 onward for MODIS), and the current month. Hawaiʻi has only 5 calendar months with enough Aqua detections for their own coefficient (needs 9).
 
@@ -105,6 +107,19 @@ Months: 174 paired months per region (February 2012 to July 2026, standard data)
 | California | Calibration and validation | lat 32.5–42.0, lon −124.5–−114.0 |
 | Hawaiʻi | Case study of a low-detection region | lat 18.7–22.5, lon −160.6–−154.5 |
 | Vietnam region | Second calibration and validation region | lat 8.4–23.4, lon 102.1–109.5 (also takes in parts of Laos, Cambodia and southern China) |
+| Contiguous United States (`conus`) | Whole-country region | lat 24.4–49.5, lon −125.0–−66.9. Its FIRMS downloads are limited to the United States, so the rectangle holds no detections in Canada or Mexico; Alaska and Hawaiʻi lie outside it |
+
+### One conversion for a whole country
+
+The contiguous United States takes in areas whose fires differ in season, in what burns and in the time of day they burn, and the VIIRS:Aqua ratio differs with them. One coefficient per calendar month averages over all of that. The acceptance rule is the same as for every region and it passes (10.4%, 12 months with their own coefficient), but that number describes the country as a whole:
+
+- By calendar month the leave-one-year-out error ranges from 5.9% (February) to 15.7% (October).
+- `pipeline/inside.py` applies the national coefficients, fitted without the year being predicted, to this project's California region over the same 174 months: the error is **20.0%** with a bias of +10.0% (18.2% before 2022, 28.9% from 2022), against **15.2%** and +0.9% for California's own coefficients. National k is 6.64 for the year against California's 8.47; in October 5.61 against 8.50. The numbers are in `docs/data/conus_inside.json` and the page states them under "Can I trust the numbers?".
+- No other part of the country was measured this way. The California box comes from a separate download and also covers parts of Nevada and Arizona and a strip of Mexico, so the two regions' rows are not an exact subset of one another.
+
+The US downloads overlap the California and Hawaiʻi ones, so they live in `data/raw/usa/` and are only read with `--raw data/raw/usa`; the other regions keep reading `data/raw/` (which is not searched recursively). The static-source mask for this region is built from the US files alone: 7,832 cells of 2 km; checked against the standard record it removes 99.0% of non-fire rows and wrongly removes 4.2% of fire rows.
+
+Times for this region are shown in UTC only. It spans four time zones, and telling which one a point is in needs time-zone boundaries, which the page does not carry; longitude bands would be wrong near every boundary.
 
 ## Map grid (pipeline step 4)
 
@@ -113,10 +128,10 @@ Months: 174 paired months per region (February 2012 to July 2026, standard data)
 - Which detections are inside a region and which are counted comes from `export.detections()`, the same function that sets the `counted` column in the hotspot CSVs: type 0 (or, for near-real-time rows without `type`, outside the static-source mask), low confidence removed. The map, the calendar and the CSV therefore use one rule.
 - Each year file holds, per month, every cell with at least one counted detection, with separate counts for MODIS Aqua, MODIS Terra, VIIRS Suomi NPP and VIIRS NOAA-20, split into standard and near-real-time lists. Cells are flat arrays of integers relative to the region's south-west cell. Each file also holds the cells for days 1 to D of the current calendar month, for the month-to-date comparison.
 - Before writing, the step checks that the cells add up, per sensor and per month, to `monthly_series.csv`, that the month-to-date cells reproduce the month-to-date numbers in `calibration.json`, and that the all-years cells add up to `monthly_series.csv` over the same years. If any check fails it stops, lists the mismatches and writes nothing.
-- `all_years.json` is the map's default view: each cell's total over every complete standard year, per satellite. A year counts for a satellite when all 12 months are complete standard data under `calibrate.usable()`: MODIS Aqua 2003–2025 (23 years, the same years as the calendar's "usual"), Terra 2001–2025, Suomi NPP 2013–2025, NOAA-20 2019–2025 in all three regions. The step checks that these totals equal `monthly_series.csv` summed over the same years. Sizes: California 87 kB, Hawaiʻi 3 kB, Vietnam region 160 kB.
+- `all_years.json` is the map's default view: each cell's total over every complete standard year, per satellite. A year counts for a satellite when all 12 months are complete standard data under `calibrate.usable()`: MODIS Aqua 2003–2025 (23 years, the same years as the calendar's "usual"), Terra 2001–2025, Suomi NPP 2013–2025, NOAA-20 2019–2025 in all three regions. The step checks that these totals equal `monthly_series.csv` summed over the same years. Sizes: contiguous United States 1.25 MB (70,473 cells), California 87 kB, Hawaiʻi 3 kB, Vietnam region 160 kB.
 - A point is placed in the cell `floor((lat + 90) × 10 + 10⁻⁶)`, `floor((lon + 180) × 10 + 10⁻⁶)`; the web app bins CSV rows with the same expression.
 
-Sizes (uncompressed JSON; GitHub Pages serves it gzip-compressed, about a third of this): California 1.30 MB for 27 years, largest year 94 kB; Hawaiʻi 0.03 MB; Vietnam region 9.95 MB, largest year about 600 kB (180 kB gzip).
+Sizes (uncompressed JSON; GitHub Pages serves it gzip-compressed, about a third of this): California 1.30 MB for 27 years, largest year 94 kB; Hawaiʻi 0.03 MB; Vietnam region 9.95 MB, largest year about 600 kB (180 kB gzip); contiguous United States 26.3 MB, largest year 1.68 MB.
 
 ## Choosing an area
 
@@ -146,6 +161,8 @@ Checked in the browser: with the area set to the whole region box, every rebuilt
 - **Near-real-time months are provisional.** Standard data ends 31 Aug 2026 (MODIS) and 31 Jul 2026 (VIIRS). Later months use near-real-time files, which have no `type` column.
 - **`<region>.json` publishes k rounded to 3 decimals.** VIIRS values on the Aqua scale recomputed in the browser for a chosen area can differ in the last decimal from the pipeline's values.
 - **The static-source mask is built from every file in `data/raw/`.** Its total cell count (4,518 with all three regions' downloads present; 1,415 before the Vietnam files were added) is shared by all regions. Cells are 2 km and the regions do not overlap, so a region's counts are unaffected; the in-region check rates above are per region.
+- **Size of the site.** `docs/` is 345 MB in 529 files: hotspot files 305 MB (contiguous United States 160 MB, Vietnam region 120 MB), map grids 38 MB. The largest single file is 10.8 MB (Vietnam region, 2019). GitHub Pages allows 100 MB per file and about 1 GB per site.
+- **Hotspot files of the contiguous United States are split by month.** A year would be up to 16.6 MB (2020), read whole to show one day late in the year; the 313 month files are at most 5.5 MB (September 2020) and the newest day needs one of about 0.3 MB. `export.py --hotspots-by-month` writes them and `index.json` lists them (`"split": "month"`); the page reads either layout. The rows are the same as in year files, checked row for row.
 - **Vietnam region file sizes.** Its hotspot files total 114 MB compressed (up to 11 MB a year) and its grid 9.95 MB uncompressed. Individual detections and the area download read the year files as a stream; on a slow connection a year can still take a while to arrive.
 - **The nearest town is the nearest place in GeoNames with more than 500 people** (or an administrative seat). In remote country that can be tens of kilometres away, and smaller settlements are not in the list. Distances are great-circle distances to the town's GeoNames point, not road distances.
 - **The second place line depends on a shared public service.** Nominatim allows at most 1 request per second for the whole site. The page spaces one reader's lookups, but cannot coordinate readers; with real traffic the lookups need a caching proxy or must be switched off (`NOMINATIM_URL` in `docs/index.html`). A reverse lookup gives the place that contains the pixel centre, which is not always the nearest town.
@@ -198,6 +215,17 @@ python3 pipeline/places.py    --id california --bbox -124.5 32.5 -114.0 42.0   #
 
 Hawaiʻi uses `--bbox -160.6 18.7 -154.5 22.5`; the Vietnam region `--bbox 102.1 8.4 109.5 23.4`.
 
+The contiguous United States reads its own folder of country downloads and writes its hotspot files by month:
+
+```sh
+python3 pipeline/ingest.py    --raw data/raw/usa --out data/processed/conus --bbox -125.0 24.4 -66.9 49.5
+python3 pipeline/calibrate.py --region data/processed/conus
+python3 pipeline/export.py    --id conus --name "Contiguous United States" --bbox -125.0 24.4 -66.9 49.5 --raw data/raw/usa --hotspots-by-month
+python3 pipeline/grid.py      --id conus --bbox -125.0 24.4 -66.9 49.5 --raw data/raw/usa
+python3 pipeline/places.py    --id conus --bbox -125.0 24.4 -66.9 49.5
+python3 pipeline/inside.py    --large data/processed/conus --small data/processed/california   # California inside the national fit
+```
+
 The web app is the static folder `docs/`: `python3 -m http.server -d docs 8000`, then open http://localhost:8000. Besides its own files it requests Leaflet from cdnjs, on a reader's action a place name from Nominatim and a day's image from NASA GIBS or Worldview Snapshots, and basemap tiles: NASA GIBS (Blue Marble with coastline, border and label overlays) up to zoom 8, and from zoom 9 Esri World Imagery with Esri's reference labels (its two libraries load from jsDelivr only then), falling back to OpenStreetMap if Esri is unavailable. No FIRMS or other data API is called from the page.
 
 The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location Platform, basemap privileges only, restricted to the referrers https://nguyenhuulong2222.github.io and http://localhost. It is meant to be shipped in a web page and is not a secret. Leave it empty and the page uses OpenStreetMap at close zoom.
@@ -216,7 +244,7 @@ The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location
 - **NASA image of the day.** With a day selected, the basemap can be "NASA satellite image of this day": GIBS daily true-colour imagery from the satellite shown on the map, for that UTC date (MODIS about 250 m per pixel, VIIRS about 375 m). The card and the report show a picture of the area from NASA Worldview Snapshots with the detection ringed, and a link that opens that day in NASA Worldview with the satellite's fire layer on. The page says what such an image can show (smoke, cloud, burn scars; not flames; cloud may hide everything) and says in words when there is none: Suomi NPP imagery in GIBS starts on 24 Nov 2015, so its 2012 to 2015 detections have no picture.
 - **Report for one detection.** "Report for this place and day" on a card builds a page section from this project's files only: where and when; what each of the four satellites recorded within 5 km on that UTC date (pass times, detections, counted, highest and total fire radiative power; a satellite with no detection is not shown as zero fire); the first and last date with detections within 5 km in the 30 days before and after, with a daily bar chart for the detection's satellite; the month's harmonized total for the region against the usual; the image of the day; and the limits. It prints on one A4 page, downloads its detections as CSV, and has its own address (`#region=…&day=…&report=lat,lon,SATELLITE,HHMM`). Distances are measured from the position in the address (4 decimals), so a reopened report gives the same numbers. It is not an official incident report and names no cause.
 - **Selecting a detection moves the map to it.** The map flies to zoom 11 (it jumps without animation under reduced motion), the detection is ringed, and its card is docked beside it: on the right on a wide screen, as a sheet along the bottom on a phone, with the point centred in the part of the map left free. The card's first row is the Place: the town line in bold, the admin area, the country on its own line, the nearest named feature, and a small locator showing where the point is in the region box. "Back to the whole region" returns to the view before the card opened. In the detections table, Place comes right after the time.
-- **One detection.** Selecting a square (a day, or a month at zoom 9 and closer) opens a card: the time of the satellite pass in UTC and in the region's local time (America/Los_Angeles, Pacific/Honolulu, Asia/Ho_Chi_Minh), latitude and longitude to 4 decimals with Copy and a link that opens that point at zoom 14, the satellite and sensor, day or night, FIRMS confidence, fire radiative power in MW, data quality, and whether it was counted and, if not, why (a FIRMS type other than vegetation fire, low confidence, or a place in the static-source mask). On a phone the card opens as a sheet over the map.
+- **One detection.** Selecting a square (a day, or a month at zoom 9 and closer) opens a card: the time of the satellite pass in UTC and in the region's local time (America/Los_Angeles, Pacific/Honolulu, Asia/Ho_Chi_Minh; UTC only for the contiguous United States, which spans four time zones), latitude and longitude to 4 decimals with Copy and a link that opens that point at zoom 14, the satellite and sensor, day or night, FIRMS confidence, fire radiative power in MW, data quality, and whether it was counted and, if not, why (a FIRMS type other than vegetation fire, low confidence, or a place in the static-source mask). On a phone the card opens as a sheet over the map.
 - **The detections table** under the map lists a day's detections ("Detections on <date>"), the detections in view when a month's individual detections are on, or the detections behind one grid cell (select a cell in a month, then "Show the detections in this cell"). It sorts by time and by radiative power, shows 200 rows at a time, highlights a row's square on the map, and downloads its rows as CSV with the local time added. The table and the download hold every row even when the map's 4,000-square cap hides some; the page says so. It lists the satellite shown on the map.
 - **What the time and place mean** is stated beside the card and the table: the time is the satellite pass, not the fire's start, and each satellite passes about twice a day; the position is the pixel centre (about 375 m for VIIRS, 1 km for MODIS, larger at the swath edge); dates on the page are UTC dates, so a local evening can fall on the neighbouring date.
 - **Reaching a day.** In a month, Days selects the month's busiest day for the satellite on the map, and a daily bar selects that day; both move the map to where the day's detections are.
@@ -230,7 +258,7 @@ The `ESRI_API_KEY` in `docs/index.html` is a public basemap key: ArcGIS Location
 - Colours: one fire ramp for the calendar and the map, low to high: deep maroon, red, orange, yellow (`FIRE` in `docs/index.html`). Lightness rises at every step (L* 14 to 92), and still does under simulated protanopia, deuteranopia and tritanopia (Machado et al. 2009 matrices); every step carries white or near-black text at 4.5:1 or better. Calendar cells keep their printed numbers, and provisional, partial, Terra-only and refused keep their borders, hatching and wording, so nothing depends on colour alone.
 - Map cells use the upper seven steps of that ramp on the same log scale: the darkest steps disappear on the dark satellite imagery. Opacity rises with the step, from 30% for the lowest to solid for the highest (`STEP_OPACITY`), so the basemap shows through where there were few detections and busy areas stand out; the legend swatches are drawn the same way. For a year or all years, the explanation states that a coloured square means at least one detection in the period, the measured share of squares in the faintest step, and the count half of them stay under.
 - Individual detections are red squares with a dark edge; detections that were not counted are hollow dashed squares. The legend lists the count range of each step, worked out with the same function that colours the cells.
-- Cells are drawn without gaps, each colour step at its own opacity, so coastlines and terrain show through the fainter ones. Pointing at a cell, tapping it, or focusing a row of the "cells with the most detections" table outlines the cell and shows its count, so no value is given by colour alone.
+- Cells are drawn without gaps, each colour step at its own opacity, so coastlines and terrain show through the fainter ones. All cells of a view are painted on one canvas layer rather than as one Leaflet rectangle each. Measured in Chrome at 1440×900 with the 55,462 cells of the contiguous United States, all years: 233 ms per draw and 173 ms per zoom step before, 28 ms and 26 ms after; the Vietnam region's 7,763 cells went from 40 ms to 18 ms. Pointing at a cell, tapping it, or focusing a row of the "cells with the most detections" table outlines the cell and shows its count, so no value is given by colour alone.
 - Outside the region box the map is dimmed slightly; nothing is drawn there.
 - Layout: the map sits at the top of the page, full width, with the timeline along its bottom edge (about 70% of the window together). "Expand map" fills the window with the browser's Fullscreen API, or with a fixed-position fallback where that API is missing (iPhone Safari); Esc or "Close full screen" returns.
 - The timeline steps at the level of the selection: years (with an "All years" position), the months of the record, or the days of a month, with Play, a speed choice, and buttons for the next coarser step. It and the calendar and charts drive the same selection, so each moves the others.

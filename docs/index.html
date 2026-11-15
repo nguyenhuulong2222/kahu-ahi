@@ -230,7 +230,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 <div class="wrap pagehead">
   <h1>Kahu Ahi: where and when satellites saw fire</h1>
   <div><label for="region">Region</label>
-    <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select></div>
+    <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option><option value="conus">Contiguous United States</option></select></div>
 </div>
 
 <section class="mapshell" id="mapshell" aria-label="Map of fire detections">
@@ -317,7 +317,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <h2 id="h-det" tabindex="-1">Detections</h2>
     <p id="detsum" aria-live="polite"></p>
     <p id="detplace" aria-live="polite" hidden></p>
-    <p class="note">Local time and UTC are the time of the satellite pass. Radiative power is the fire radiative power FIRMS reports for the pixel, in megawatts.</p>
+    <p class="note"><span id="dettime">Local time and UTC are the time of the satellite pass.</span> Radiative power is the fire radiative power FIRMS reports for the pixel, in megawatts.</p>
     <div class="howto">
       <p><strong>When:</strong> the time is when the satellite passed over and saw the heat, not when the fire started. Each satellite passes about twice a day, so a fire can burn for hours unseen. Dates on this page are UTC dates, so a local evening or early morning can fall on the neighbouring date.</p>
       <p style="margin:0"><strong>Where:</strong> the position is the centre of the satellite pixel: about 375 m across for VIIRS and about 1 km for MODIS, larger at the edge of the swath. The fire is somewhere inside it, not exactly at the point.</p>
@@ -448,6 +448,8 @@ const $ = id => document.getElementById(id);
 const fmt = n => n == null ? "none" : Number(n).toLocaleString("en-US", {maximumFractionDigits: 0});
 const fmt1 = n => Number(n).toLocaleString("en-US", {maximumFractionDigits: 1});
 const pct = n => n == null ? "n/a" : n + "%";
+// The region's name as it reads inside a sentence.
+function inRegion() { return D.region.id === "conus" ? "the contiguous United States" : D.region.name; }
 const round1 = v => Math.round(v * 10) / 10;
 // Same expression as cell_index() in pipeline/grid.py, applied to lat + 90 and lon + 180.
 const cellOf = d => Math.floor(d * 10 + 1e-6);
@@ -517,6 +519,9 @@ async function load(region, wish) {
   try { daily = await loadDaily(region); } catch (e) { daily = null; }
   try { const r = await fetch("data/places/" + region + ".json"); if (!r.ok) throw new Error(r.status); PLACES = await r.json(); } catch (e) { PLACES = null; }
   nearCacheTown.clear();
+  // A large region also carries a check of its conversion against a smaller region inside it (pipeline/inside.py).
+  INSIDE = null;
+  if (HAS_INSIDE[region]) { try { const r = await fetch("data/" + region + "_inside.json"); if (r.ok) INSIDE = await r.json(); } catch (e) { INSIDE = null; } }
   if (token !== loadToken) return;
   area = null; S = regionSeries(); pointsOn = false; applySel({});
   $("through").textContent = "Data through " + D.data_through + ". Detections of presumed vegetation fire, low-confidence ones removed.";
@@ -648,7 +653,7 @@ function monthSentence(x, place, medians) {
 }
 function drawExplain() {
   const box = $("explain"), lv = level(), ys = yearStats(), cs = completeSpan(ys), s = [];
-  const place = D.region.name + (area ? " (chosen area)" : ""), x = selected && S.months.find(v => v.m === selected);
+  const place = inRegion() + (area ? " (chosen area)" : ""), x = selected && S.months.find(v => v.m === selected);
   s.push(lv === "day" ? "Each red square on the map is one place where a satellite saw heat from a fire as it passed over."
     : "Each coloured square on the map is an area about 10 km across where a satellite saw heat from fires.");
   if (lv === "all") {
@@ -662,7 +667,7 @@ function drawExplain() {
     const m = +selected.slice(5), med = S.medians[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
     if (lv === "day") {
       const pick = mapSensor(x), ok = !!pick.s && flyingOn(pick.s, selDay) && !!daily, n = ok ? dayCounts(selDay)[pick.i] : null;
-      s.push(ok ? "On " + dayName(selDay) + " " + SENSOR[pick.s] + " recorded " + fmt(n) + (n === 1 ? " detection" : " detections") + " in " + D.region.name + "." + (area ? " Daily counts cover the whole region, not the chosen area." : "")
+      s.push(ok ? "On " + dayName(selDay) + " " + SENSOR[pick.s] + " recorded " + fmt(n) + (n === 1 ? " detection" : " detections") + " in " + inRegion() + "." + (area ? " Daily counts cover the whole region, not the chosen area." : "")
         : (pick.s ? SENSOR[pick.s] : "The chosen satellite") + " has no record for " + dayName(selDay) + ".");
       if (ok && n < FEW_DETECTIONS) {
         // A quiet day is said in words, with one-click jumps to busy ones.
@@ -835,7 +840,7 @@ function drawCalendar() {
   });
   t.append(body);
   const bb = D.region.bbox;
-  $("calnote").textContent = "Each cell is one month, on the MODIS Aqua scale. Newest year first. Area: a rectangle from " + bb.south + "° to " + bb.north + "° latitude and " + bb.west + "° to " + bb.east + "° longitude" + (D.region.id === "vietnam" ? ", which also takes in parts of Laos, Cambodia and southern China." : ".") + (area ? " Counted inside the chosen area only." : "");
+  $("calnote").textContent = "Each cell is one month, on the MODIS Aqua scale. Newest year first. Area: a rectangle from " + bb.south + "° to " + bb.north + "° latitude and " + bb.west + "° to " + bb.east + "° longitude" + (D.region.id === "vietnam" ? ", which also takes in parts of Laos, Cambodia and southern China." : D.region.id === "conus" ? ". The FIRMS downloads for this region are limited to the United States, so the rectangle holds no detections in Canada or Mexico; Alaska and Hawaiʻi lie outside it." : ".") + (area ? " Counted inside the chosen area only." : "");
   const lg = $("legend"); lg.replaceChildren();
   if ($("mode").value === "anom") {
     lg.append(el("span", {}, "Far below usual ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + DIVERGE.join(",") + ")"}), " far above usual"));
@@ -848,7 +853,7 @@ function drawCalendar() {
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:repeating-linear-gradient(45deg,#dfe4ea 0 4px,#fff 4px 8px)"}), "Terra only, not on this scale"));
   if (!D.calibration_accepted) {
     const e = D.snpp_to_aqua.leave_one_year_out.monthly_k.all_years;
-    $("banner").replaceChildren(el("p", {class: "banner", text: "VIIRS is not converted in " + D.region.name + ". When tested, the conversion was wrong by " + pct(e && e.abs_error_pct_of_total) + " of the total, so only MODIS Aqua is shown here. " + (D.region.id === "hawaii" ? "Most heat detected here is volcanic, and the satellite record cannot reliably separate it from vegetation fire." : "")}));
+    $("banner").replaceChildren(el("p", {class: "banner", text: "VIIRS is not converted in " + inRegion() + ". When tested, the conversion was wrong by " + pct(e && e.abs_error_pct_of_total) + " of the total, so only MODIS Aqua is shown here. " + (D.region.id === "hawaii" ? "Most heat detected here is volcanic, and the satellite record cannot reliably separate it from vegetation fire." : "")}));
   } else $("banner").replaceChildren();
   $("detail").replaceChildren(el("p", {class: "note", text: "Select a month to see what each satellite recorded."}));
 }
@@ -875,9 +880,9 @@ function validationFor(x) {
   if (x.snpp == null && x.n20 == null) return null;   // no VIIRS satellite flying
   const L = D.snpp_to_aqua.leave_one_year_out.monthly_k, key = y < 2022 ? "before_2022" : "2022_onward", e = L[key];
   const period = y < 2022 ? "2012 to 2021" : "2022 onward";
-  if (!D.calibration_accepted) return {period: "all years (refused, not converted)", e: L.all_years, text: "VIIRS is not converted in " + D.region.name + ": when tested, the conversion was wrong by " + pct(L.all_years && L.all_years.abs_error_pct_of_total) + " of the total."};
+  if (!D.calibration_accepted) return {period: "all years (refused, not converted)", e: L.all_years, text: "VIIRS is not converted in " + inRegion() + ": when tested, the conversion was wrong by " + pct(L.all_years && L.all_years.abs_error_pct_of_total) + " of the total."};
   if (!e) return null;
-  return {period, e, text: "VIIRS values on the Aqua scale for this period: tested year by year " + (y < 2022 ? "over 2012 to 2021" : "from 2022 onward") + ", the conversion was off by " + pct(e.abs_error_pct_of_total) + " of the total and ran " + (e.bias_pct >= 0 ? "high" : "low") + " by " + pct(Math.abs(e.bias_pct)) + ". That test covers all of " + D.region.name + (area ? ", not the chosen area." : ".")};
+  return {period, e, text: "VIIRS values on the Aqua scale for this period: tested year by year " + (y < 2022 ? "over 2012 to 2021" : "from 2022 onward") + ", the conversion was off by " + pct(e.abs_error_pct_of_total) + " of the total and ran " + (e.bias_pct >= 0 ? "high" : "low") + " by " + pct(Math.abs(e.bias_pct)) + ". That test covers all of " + inRegion() + (area ? ", not the chosen area." : ".")};
 }
 
 function drawNow() {
@@ -932,11 +937,25 @@ function drawSeason() {
   });
 }
 
+const HAS_INSIDE = {conus: "California"};
+let INSIDE = null;
+// What one conversion per calendar month costs when the region is a whole country.
+function drawMixed(box) {
+  const a = D.snpp_to_aqua.leave_one_year_out.monthly_k.all_years;
+  const kids = [el("h3", {text: "One conversion for a whole country"})];
+  let text = "This region is a whole country. It takes in areas whose fires differ in season, in what burns and in the time of day they burn, and the ratio between VIIRS and MODIS differs with them. One conversion per calendar month averages over all of that. Tested as above, it is off by " + pct(a.abs_error_pct_of_total) + " of the national total";
+  const bm = INSIDE && INSIDE.large_by_calendar_month;
+  if (bm) { const v = Object.values(bm).map(e => e.abs_error_pct_of_total); text += ", and by between " + pct(Math.min(...v)) + " and " + pct(Math.max(...v)) + " depending on the calendar month"; }
+  kids.push(el("p", {text: text + ". That number describes the country as a whole, not any one part of it."}));
+  const own = INSIDE && INSIDE.small_with_own_k.all_years, out = INSIDE && INSIDE.small_with_large_k.all_years;
+  if (own && out) kids.push(el("p", {text: "Measured for one part: applied to this page's " + HAS_INSIDE[D.region.id] + " region over the same " + own.months + " months, the national conversion is off by " + pct(out.abs_error_pct_of_total) + " and runs " + pct(Math.abs(out.bias_pct)) + (out.bias_pct >= 0 ? " high" : " low") + ", where " + HAS_INSIDE[D.region.id] + "'s own conversion is off by " + pct(own.abs_error_pct_of_total) + ". Other parts of the country were not measured this way. For a single state or a smaller area, treat a converted number as rougher than the national error suggests."}));
+  box.append(...kids);
+}
 function drawTrust() {
   const box = $("trust"); box.replaceChildren();
   const L = D.snpp_to_aqua.leave_one_year_out, K = D.snpp_to_aqua.coefficients, a = L.monthly_k.all_years;
   if (!a) { box.append(el("p", {class: "note", text: "Not enough overlapping months to test a conversion here."})); return; }
-  box.append(el("p", {text: "For " + a.months + " months both MODIS Aqua and VIIRS Suomi NPP watched " + D.region.name + ". Over that time VIIRS recorded about " + (K.annual_k || 0).toFixed(1) + " detections for every one from Aqua. Each year was then predicted from a conversion built without that year, and compared with what Aqua actually recorded."}));
+  box.append(el("p", {text: "For " + a.months + " months both MODIS Aqua and VIIRS Suomi NPP watched " + inRegion() + ". Over that time VIIRS recorded about " + (K.annual_k || 0).toFixed(1) + " detections for every one from Aqua. Each year was then predicted from a conversion built without that year, and compared with what Aqua actually recorded."}));
   const rows = [["VIIRS used as it is", L.uncalibrated.all_years, "raw"], ["One conversion for the whole year", L.annual_k.all_years, ""], ["A conversion for each calendar month" + (D.calibration_accepted ? " (used here)" : " (failed the test, not used)"), L.monthly_k.all_years, ""]];
   const scale = v => Math.max(1.5, 100 * Math.log10(1 + v) / Math.log10(1 + rows[0][1].abs_error_pct_of_total));
   rows.forEach(r => {
@@ -954,7 +973,8 @@ function drawTrust() {
   if (D.calibration_accepted && u) box.append(el("p", {style: "margin-top:12px", text: "Suomi NPP stopped sending new observations on 2 November 2026. From then on VIIRS numbers come from NOAA-20, used in its place without a further conversion: over " + u.months + " shared months the two differed by " + pct(u.abs_error_pct_of_total) + " of the total, and adding a conversion did not reduce that."}));
   const mk = D.static_source_mask;
   if (mk && mk.non_veg_caught_pct != null) box.append(el("p", {class: "note", text: "Near-real-time files do not say whether a detection is a fire, a volcano or an industrial source. Places that repeatedly showed non-fire heat in the standard record are left out of provisional months. Checked against that same record, this removes " + pct(mk.non_veg_caught_pct) + " of non-fire detections and wrongly removes " + pct(mk.veg_wrongly_masked_pct) + " of fire detections."}));
-  if (D.calibration_accepted) box.append(el("p", {class: "note", text: "All of these numbers are for the whole of " + D.region.name + ". None of them were measured for a smaller area chosen on the map."}));
+  if (D.calibration_accepted) box.append(el("p", {class: "note", text: "All of these numbers are for the whole of " + inRegion() + ". None of them were measured for a smaller area chosen on the map."}));
+  if (HAS_INSIDE[D.region.id]) drawMixed(box);
 }
 
 // ---------- area of interest ----------
@@ -1026,7 +1046,7 @@ function areaSeries(docs) {
 
 async function setArea(a, quiet) {
   const note = $("areanote"), r = makeArea(a);
-  if (!r) { note.textContent = "That area is outside the supported region, " + D.region.name + ". Choose an area inside the outlined box (" + areaText(regionBox()) + ")."; return false; }
+  if (!r) { note.textContent = "That area is outside the supported region, " + inRegion() + ". Choose an area inside the outlined box (" + areaText(regionBox()) + ")."; return false; }
   if (!G) { note.textContent = "The grid files for this region could not be found, so an area cannot be used."; return false; }
   if (r.whole) { clearArea(); note.textContent = "That is the whole region, so the whole region is shown."; return true; }
   note.textContent = "Loading every year of the grid for this area.";
@@ -1053,8 +1073,8 @@ function drawAreaBanner() {
   const box = $("areabanner"); box.replaceChildren();
   if (!area) return;
   box.append(el("p", {class: "banner"}, el("strong", {text: "Chosen area: "}), areaText(area) + ". " + (D.calibration_accepted
-    ? "The conversion from VIIRS to the MODIS Aqua scale was fitted and validated for the whole of " + D.region.name + ", not for this area. Whether it holds here has not been tested."
-    : "VIIRS is not converted in " + D.region.name + ", so only MODIS Aqua is shown for this area too.")));
+    ? "The conversion from VIIRS to the MODIS Aqua scale was fitted and validated for the whole of " + inRegion() + ", not for this area. Whether it holds here has not been tested."
+    : "VIIRS is not converted in " + inRegion() + ", so only MODIS Aqua is shown for this area too.")));
   if (S.aquaPerYear < MIN_AQUA_PER_YEAR) box.append(el("p", {class: "banner"}, el("strong", {text: "Too few detections to compare: "}),
     "MODIS Aqua recorded about " + fmt1(S.aquaPerYear) + " a year in this area (complete years from 2003). Below " + MIN_AQUA_PER_YEAR + " a year, one or two detections change a month's comparison with the usual a lot, so treat the colours and comparisons as rough."));
 }
@@ -1108,7 +1128,67 @@ const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
 // The GIBS reference overlays and the street map share one OpenStreetMap string, which Leaflet shows once.
 const GIBS_ATTR = 'Imagery: <a href="https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api">NASA GIBS</a> Blue Marble';
 const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · <a href="https://www.openstreetmap.org/fixthemap">Report a map issue</a>';
-let cellRenderers = [], pointRenderer = null;
+let cellLayer = null, pointRenderer = null;
+// Every grid cell of a view on one canvas. One Leaflet rectangle per cell is fine for a few thousand cells but slow for
+// the tens of thousands of a large region. Each colour step is painted opaque on a spare canvas and laid on at its step's
+// opacity, so cells of a step stay gap-free and even. Cells are drawn half a pixel larger all round, like a 1-pixel outline.
+function makeCellLayer() {
+  const PAD = .3;
+  return new (L.Layer.extend({
+    onAdd(m) {
+      this._c = L.DomUtil.create("canvas", "leaflet-zoom-animated", m.getPane("cells"));
+      this._tmp = document.createElement("canvas");
+      m.on("moveend zoomend resize viewreset", this._draw, this);
+      m.on("zoomanim", this._anim, this);
+      this._draw();
+    },
+    onRemove(m) {
+      m.off("moveend zoomend resize viewreset", this._draw, this);
+      m.off("zoomanim", this._anim, this);
+      this._c.remove();
+    },
+    // steps[i] is a flat list of grid row, column, row, column, ... for colour step i.
+    setCells(steps) { this._steps = steps; if (this._map) this._draw(); },
+    _anim(e) {
+      if (!this._bounds) return;
+      const m = this._map;
+      L.DomUtil.setTransform(this._c, m._latLngBoundsToNewLayerBounds(this._bounds, e.zoom, e.center).min, m.getZoomScale(e.zoom, this._zoom));
+    },
+    _draw() {
+      const m = this._map;
+      if (!m || !m._loaded) return;
+      const c = this._c, tmp = this._tmp, size = m.getSize(), dpr = window.devicePixelRatio || 1;
+      const min = m.containerPointToLayerPoint(size.multiplyBy(-PAD)).round(), w = Math.round(size.x * (1 + 2 * PAD)), h = Math.round(size.y * (1 + 2 * PAD));
+      L.DomUtil.setPosition(c, min);
+      c.width = tmp.width = Math.round(w * dpr); c.height = tmp.height = Math.round(h * dpr);
+      c.style.width = w + "px"; c.style.height = h + "px";
+      this._zoom = m.getZoom();
+      this._bounds = L.latLngBounds(m.layerPointToLatLng(min), m.layerPointToLatLng(min.add([w, h])));
+      const steps = this._steps || [];
+      if (!steps.some(a => a.length)) return;
+      // Longitude is linear on the map; latitude is not, so each grid row's edge is projected once.
+      const origin = m.getPixelOrigin(), zoom = this._zoom, perCol = m.options.crs.scale(zoom) / 3600;
+      const x0 = m.project([0, -180], zoom).x - origin.x - min.x, ys = new Map();
+      const yOf = row => { let y = ys.get(row); if (y === undefined) { y = m.project([row / 10 - 90, 0], zoom).y - origin.y - min.y; ys.set(row, y); } return y; };
+      const ctx = c.getContext("2d"), t = tmp.getContext("2d"), grow = dpr / 2;
+      steps.forEach((cells, st) => {
+        if (!cells.length) return;
+        t.clearRect(0, 0, tmp.width, tmp.height);
+        t.fillStyle = MAP_RAMP[st];
+        for (let i = 0; i < cells.length; i += 2) {
+          const xa = (x0 + cells[i + 1] * perCol) * dpr - grow, xb = (x0 + (cells[i + 1] + 1) * perCol) * dpr + grow;
+          if (xb < 0 || xa > tmp.width) continue;
+          const yb = yOf(cells[i]) * dpr + grow, ya = yOf(cells[i] + 1) * dpr - grow;
+          if (yb < 0 || ya > tmp.height) continue;
+          const X = Math.round(xa), Y = Math.round(ya);
+          t.fillRect(X, Y, Math.max(1, Math.round(xb) - X), Math.max(1, Math.round(yb) - Y));
+        }
+        ctx.globalAlpha = STEP_OPACITY[st];
+        ctx.drawImage(tmp, 0, 0);
+      });
+    }
+  }))();
+}
 
 function mapStep(v, max) { return Math.min(MAP_RAMP.length - 1, Math.floor(Math.log10(v + 1) / Math.log10(Math.max(max, 10) + 1) * MAP_RAMP.length)); }
 // The legend's steps, worked out with mapStep() itself so they always match the drawn colours.
@@ -1144,8 +1224,7 @@ function setupMap() {
   map.createPane("labels").style.zIndex = 430;
   map.getPane("labels").style.pointerEvents = "none";
   map.createPane("pts").style.zIndex = 460;
-  // One canvas per colour step inside the cells pane, each at its step's opacity: cells of a step stay gap-free and even.
-  cellRenderers = MAP_RAMP.map((_, i) => { map.createPane("cells" + i, map.getPane("cells")).style.opacity = STEP_OPACITY[i]; return L.canvas({pane: "cells" + i, padding: .3}); });
+  cellLayer = makeCellLayer().addTo(map);
   pointRenderer = L.canvas({pane: "pts", padding: .3});
   // Basemap layers; syncBasemap() decides which are on the map.
   base.gibs = L.tileLayer(GIBS + "BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg",
@@ -1155,7 +1234,7 @@ function setupMap() {
   base.labels = L.tileLayer(GIBS + "Reference_Labels/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
     {maxNativeZoom: 9, maxZoom: 8, pane: "labels"});
   deep.osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 15, attribution: OSM_ATTR});
-  ["mask", "cells", "box", "area", "hover", "points", "pick"].forEach(k => layers[k] = L.layerGroup().addTo(map));
+  ["mask", "box", "area", "hover", "points", "pick"].forEach(k => layers[k] = L.layerGroup().addTo(map));
   map.on("popupclose", () => { if ($("cardsheet").hidden) layers.pick.clearLayers(); });
 
   // Corners. Top left: layers. Top right: expand, then zoom. Bottom left: scale and cursor position. Bottom right: legend.
@@ -1535,7 +1614,7 @@ function notFlyingText(pick) {
 async function drawMap() {
   if (!map || !D) return;
   const token = ++drawToken, sum = $("mapsum"), lv = level();
-  layers.cells.clearLayers(); layers.hover.clearLayers(); shown = new Map(); shownInfo = null; setEmpty(null); cellNote = null;
+  cellLayer.setCells([]); layers.hover.clearLayers(); shown = new Map(); shownInfo = null; setEmpty(null); cellNote = null;
   updateAllYearsButton(); updatePointsButton(); syncBasemap();
   if (!G) { sum.textContent = "The map grid for this region could not be found."; return; }
   const x = selected && S.months.find(v => v.m === selected);
@@ -1571,10 +1650,10 @@ async function drawMap() {
     setEmpty(text, $("sensor").value !== "auto");
     layers.points.clearLayers(); drawnRows = []; if (tbl) hideTable(); drawMapLegend(pick); drawTopCells(pick); viewNote(); return;
   }
-  const nothing = SENSOR[pick.s] + " was flying but recorded no detection in " + D.region.name + (lv === "day" ? " on " : " in ") + name + ". That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
+  const nothing = SENSOR[pick.s] + " was flying but recorded no detection in " + inRegion() + (lv === "day" ? " on " : " in ") + name + ". That is not the same as no fire: clouds, smoke and the time of the satellite pass hide fires.";
   if (lv === "day") {
     const n = daily ? dayCounts(selDay)[pick.i] : null;
-    sum.textContent = name + ", " + pick.label + ": " + (n == null ? "the daily counts could not be loaded." : fmt(n) + (n === 1 ? " detection" : " detections") + " counted across " + D.region.name + ".")
+    sum.textContent = name + ", " + pick.label + ": " + (n == null ? "the daily counts could not be loaded." : fmt(n) + (n === 1 ? " detection" : " detections") + " counted across " + inRegion() + ".")
       + " Each detection is drawn as a square. Places with no square had no detection recorded, which is not the same as no fire.";
     if (n === 0) setEmpty(nothing);
     drawMapLegend(pick); drawTopCells(pick); viewNote();
@@ -1589,19 +1668,18 @@ async function drawMap() {
     }
   }
   let total = 0, cells = 0, areaTotal = 0, areaCells = 0;
-  const perStep = MAP_RAMP.map(() => 0), inView = [];
+  const perStep = MAP_RAMP.map(() => 0), inView = [], steps = MAP_RAMP.map(() => []);
   shown.forEach((n, key) => {
-    const row = Math.floor(key / 10000), col = key % 10000, v = pick.k ? n / pick.k : n, st = mapStep(v, pick.max), c = MAP_RAMP[st];
+    const row = Math.floor(key / 10000), col = key % 10000, v = pick.k ? n / pick.k : n, st = mapStep(v, pick.max);
     shown.set(key, v);
     total += v; cells++;
     if (area && inArea(row, col)) { areaTotal += v; areaCells++; }
     if (inArea(row, col)) { perStep[st]++; inView.push(v); }
-    const s = row / 10 - 90, w = col / 10 - 180;
-    // Opaque cells with an outline in their own colour leave no gaps; the step's pane sets how much basemap shows through.
-    L.rectangle([[s, w], [s + .1, w + .1]], {renderer: cellRenderers[st], interactive: false, color: c, weight: 1, opacity: 1, fillColor: c, fillOpacity: 1}).addTo(layers.cells);
+    steps[st].push(row, col);
   });
+  cellLayer.setCells(steps);
   shownInfo = {pick, name, when: lv === "month" ? name : lv === "year" ? name + " total" : "total over " + pick.span};
-  const where = area ? "inside the chosen area" : "across " + D.region.name;
+  const where = area ? "inside the chosen area" : "across " + inRegion();
   const [t, c] = area ? [areaTotal, areaCells] : [total, cells];
   const f = v => pick.k ? fmt1(v) : fmt(v);
   sum.textContent = name + ", " + pick.label + ": " + f(t) + (t === 1 ? " detection in " : " detections in ") + fmt(c) + (c === 1 ? " cell " : " cells ") + where
@@ -1684,7 +1762,7 @@ function drawTopCells(pick) {
 function viewNote() {
   if (!map || !regionBounds) return;
   $("mapview").textContent = !map.getBounds().intersects(regionBounds)
-    ? "This view is outside the supported region, " + D.region.name + ". Nothing is shown here; this area is not supported." : "";
+    ? "This view is outside the supported region, " + inRegion() + ". Nothing is shown here; this area is not supported." : "";
   updatePointsButton();
 }
 function onView() { viewNote(); if (pointsOn || level() === "day") drawPoints(); }
@@ -1700,7 +1778,11 @@ function updateAllYearsButton() { $("allyears").setAttribute("aria-pressed", Str
 
 // ---------- one detection: when, where and what the satellite recorded ----------
 // Times in the hotspot files are UTC (acq_date, acq_time). Each region also gets its own local time.
-const TIMEZONE = {california: "America/Los_Angeles", hawaii: "Pacific/Honolulu", vietnam: "Asia/Ho_Chi_Minh"};
+const TIMEZONE = {california: "America/Los_Angeles", hawaii: "Pacific/Honolulu", vietnam: "Asia/Ho_Chi_Minh", conus: "UTC"};
+// The contiguous United States spans four time zones. Telling which one a point is in needs time-zone boundaries,
+// which this page does not carry, and guessing from longitude would be wrong near every boundary. So that region shows UTC only.
+const NO_LOCAL = "Not shown for this region. It spans four time zones, and this page carries no time-zone boundaries to tell which one a point is in, so times are given in UTC only.";
+function hasLocal() { return TIMEZONE[D.region.id] !== "UTC"; }
 const PLATFORM = {MODIS_AQUA: "Aqua satellite, MODIS sensor", MODIS_TERRA: "Terra satellite, MODIS sensor", VIIRS_SNPP: "Suomi NPP satellite, VIIRS sensor", VIIRS_NOAA20: "NOAA-20 satellite, VIIRS sensor"};
 const FIRMS_TYPE = {"1": "an active volcano", "2": "another static land source", "3": "an offshore source"};
 // The fields of one row of the hotspot CSV (columns as written by pipeline/export.py).
@@ -1743,7 +1825,7 @@ function rowsNear(region, lat, lon, from, to, km) {
     const rows = [], dLat = km / 110.5, dLon = km / (110.5 * Math.cos(lat * Math.PI / 180));
     for (let y = +from.slice(0, 4); y <= +to.slice(0, 4); y++) {
       if (!hotIndex || !hotIndex.years[y]) continue;
-      await eachLines("data/hotspots/" + region + "/" + y + ".csv.gz", lines => {
+      await eachHot(region, y, lines => {
         for (const line of lines) {
           const d = line.slice(0, 10);
           if (d > to && d[0] !== "a") return false;
@@ -1751,7 +1833,7 @@ function rowsNear(region, lat, lon, from, to, km) {
           const f = line.split(",", 5), la = +f[2], lo = +f[3];
           if (Math.abs(la - lat) <= dLat && Math.abs(lo - lon) <= dLon && kmBetween(lat, lon, la, lo) <= km) rows.push([la, lo, false, f[4], +d.slice(8), line]);
         }
-      });
+      }, y === +from.slice(0, 4) ? from.slice(5, 7) : "01", y === +to.slice(0, 4) ? to.slice(5, 7) : "12");
     }
     rows.forEach(r => { r[2] = r[5].endsWith(",1"); });
     return rows;
@@ -1787,7 +1869,7 @@ async function openReport(d) {
   kids.push(el("h3", {text: "Where and when"}), el("dl", {class: "card"},
     kv("Place", place),
     kv("Latitude, longitude", pointText(full) + ", or " + dmsText(full.lat, full.lon) + " (centre of a satellite pixel " + pix + " across, larger at the edge of the swath; the fire is somewhere inside it)"),
-    kv("Satellite pass, local time", localText(full, zone, true)),
+    kv("Satellite pass, local time", hasLocal() ? localText(full, zone, true) : NO_LOCAL),
     kv("Satellite pass, UTC", utcText(full, true)),
     kv("Seen by", PLATFORM[d.sensor] || d.sensor),
     ...(me ? [kv("Confidence, as given by FIRMS", confidenceText(full.conf)), kv("Fire radiative power", full.frp === "" ? "not given" : full.frp + " MW"), kv("Counted on this page", countedText(full))] : [])));
@@ -1815,7 +1897,7 @@ async function openReport(d) {
     el("p", {class: "note", text: "Up: " + SENSOR[d.sensor] + " detections within " + REPORT_KM + " km in a day (counted and not counted). Across: days before (-) and after (+) " + dayName(d.date) + ", which is marked."}));
   // d. context
   const R = regionSeries(), x = R.months.find(v => v.m === d.date.slice(0, 7));
-  kids.push(el("h3", {text: "The month in " + D.region.name}), el("p", {id: "reportmonth", text: (x ? monthSentence(x, D.region.name, R.medians) : "There is no monthly value for this date.")
+  kids.push(el("h3", {text: "The month in " + inRegion()}), el("p", {id: "reportmonth", text: (x ? monthSentence(x, inRegion(), R.medians) : "There is no monthly value for this date.")
     + (D.calibration_accepted ? "" : " VIIRS is not converted in this region, so the monthly value is MODIS Aqua only.")}));
   // e. image
   // e. image, beside f. limits
@@ -1991,7 +2073,7 @@ function cardNode(r) {
   const here = el("a", {href: "#" + new URLSearchParams({region: D.region.id, day: d.date, at: d.lat.toFixed(4) + "," + d.lon.toFixed(4)}).toString(), text: "Open this point at zoom 14"});
   return el("div", {class: "card"}, el("h3", {text: "One detection"}), el("dl", {},
     row("Place", ...placeRow(d.lat, d.lon, d.sensor)),
-    row("Satellite pass, local time", localText(d, zone, true)),
+    row("Satellite pass, local time", hasLocal() ? localText(d, zone, true) : NO_LOCAL),
     row("Satellite pass, UTC", utcText(d, true)),
     row("Latitude, longitude", el("span", {class: "pt4", text: pointText(d)}), " ", copy, el("br"), el("span", {class: "dms", text: dmsText(d.lat, d.lon)}), el("br"), here),
     row("Seen by", PLATFORM[d.sensor] || d.sensor),
@@ -2046,8 +2128,9 @@ function setTable(mode, rows, title, sum, csvName) {
   drawTable();
 }
 function drawTable() {
-  const sec = $("detsec"), zone = TIMEZONE[D.region.id];
+  const sec = $("detsec"), zone = TIMEZONE[D.region.id], local = hasLocal();
   sec.hidden = false;
+  $("dettime").textContent = local ? "Local time and UTC are the time of the satellite pass." : "Times are the time of the satellite pass, in UTC. Local time is not shown for this region: it spans four time zones, and this page carries no time-zone boundaries to tell which one a point is in.";
   $("h-det").textContent = tbl.title; $("detsum").textContent = tbl.sum;
   const list = tbl.rows.map(r => ({r, d: det(r)}));
   const frp = x => x.d.frp === "" ? -1 : +x.d.frp, when = x => x.d.date + x.d.time;
@@ -2059,11 +2142,11 @@ function drawTable() {
     return el("th", {scope: "col", "aria-sort": tbl.key === key ? (tbl.dir > 0 ? "ascending" : "descending") : "none"}, b);
   };
   const t = $("dettable");
-  t.replaceChildren(el("thead", {}, el("tr", {}, head("Local time", "time"), head("Place (nearest town)"), head("UTC"), head("Latitude"), head("Longitude"), head("Satellite"), head("Confidence"), head("Radiative power (MW)", "frp"), head("Counted"))));
+  t.replaceChildren(el("thead", {}, el("tr", {}, head(local ? "Local time" : "Time (UTC)", "time"), head("Place (nearest town)"), ...(local ? [head("UTC")] : []), head("Latitude"), head("Longitude"), head("Satellite"), head("Confidence"), head("Radiative power (MW)", "frp"), head("Counted"))));
   const body = el("tbody");
   list.slice(0, tbl.limit).forEach(({r, d}) => {
     const b = el("button", {type: "button", class: "linkish", text: localText(d, zone, false), "aria-label": "Show on the map: " + localText(d, zone, true)});
-    const tr = el("tr", {}, el("td", {}, b), el("td", {text: (nearTown(d.lat, d.lon) || {short: "not available"}).short}), el("td", {text: utcText(d, tbl.mode !== "day")}), el("td", {class: "num", text: d.lat.toFixed(4)}), el("td", {class: "num", text: d.lon.toFixed(4)}),
+    const tr = el("tr", {}, el("td", {}, b), el("td", {text: (nearTown(d.lat, d.lon) || {short: "not available"}).short}), ...(local ? [el("td", {text: utcText(d, tbl.mode !== "day")})] : []), el("td", {class: "num", text: d.lat.toFixed(4)}), el("td", {class: "num", text: d.lon.toFixed(4)}),
       el("td", {text: SENSOR[d.sensor].replace("VIIRS Suomi NPP", "VIIRS S-NPP")}), el("td", {text: d.conf === "" ? "not given" : d.conf}), el("td", {class: "num", text: d.frp === "" ? "" : d.frp}), el("td", {text: d.counted ? "Yes" : "No: " + whyNotCounted(d).split(":")[0].replace(/^it lies.*/, "static heat source")}));
     if (tbl.on === r[5]) tr.classList.add("on");
     const show = () => { tbl.on = r[5]; body.querySelectorAll("tr.on").forEach(x => x.classList.remove("on")); tr.classList.add("on"); openCard(r); };
@@ -2127,17 +2210,39 @@ async function eachLines(url, fn) {
   }
 }
 
+// A region's hotspot index: which files there are. A large region has one file per month ("split": "month") instead of one per year.
+const hotIndexes = new Map();
+function hotIndexOf(region) {
+  if (!hotIndexes.has(region)) hotIndexes.set(region, fetch("data/hotspots/" + region + "/index.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(e => { hotIndexes.delete(region); throw e; }));
+  return hotIndexes.get(region);
+}
+// Read one year of a region's hotspot rows in date order, optionally only months m0 to m1 ("01" to "12"), whichever way the files are split.
+// The caller sees one header line first, then rows; returning false from fn stops the reading.
+async function eachHot(region, year, fn, m0, m1) {
+  const idx = await hotIndexOf(region);
+  if (idx.split !== "month") return eachLines("data/hotspots/" + region + "/" + year + ".csv.gz", fn);
+  const months = Object.keys(idx.months).filter(k => k.slice(0, 4) === String(year) && (!m0 || k.slice(5) >= m0) && (!m1 || k.slice(5) <= m1)).sort();
+  let stop = false;
+  for (let i = 0; i < months.length && !stop; i++) {
+    let first = true;
+    await eachLines("data/hotspots/" + region + "/" + months[i] + ".csv.gz", lines => {
+      if (first) { first = false; if (i > 0) lines = lines.slice(1); }
+      if (lines.length && fn(lines) === false) { stop = true; return false; }
+    });
+  }
+}
+
 // Load the selected month's hotspot rows: [lat, lon, counted, sensor, day of month, the CSV line]. Year files are sorted by date, so reading stops after the month.
 async function monthRows(key) {
   if (pointCache.key === key) return pointCache.rows;
   const [region, ym] = key.split("/"), rows = [];
-  await eachLines("data/hotspots/" + region + "/" + ym.slice(0, 4) + ".csv.gz", lines => {
+  await eachHot(region, ym.slice(0, 4), lines => {
     for (const line of lines) {
       const m = line.slice(0, 7);
       if (m === ym) { const f = line.split(","); rows.push([+f[2], +f[3], f[10] === "1", f[4], +f[0].slice(8, 10), line]); }
       else if (m > ym && m[0] !== "a") return false;   // past the month ("acq_date" is the header)
     }
-  });
+  }, ym.slice(5), ym.slice(5));
   pointCache = {key, rows};
   return rows;
 }
@@ -2186,8 +2291,8 @@ async function drawPoints() {
   const cap = step > 1 ? " The map draws at most " + fmt(MAX_POINTS) + " squares in a view (" + fmt(drawn) + " of the " + fmt(here.length) + " in view now); this table and the download contain every one." : "";
   const list = day ? all : here, nc = list.filter(r => r[2]).length, sat = SENSOR[pick.s];
   setTable(day ? "day" : "view", list, day ? "Detections on " + dayName(selDay) : "Detections in this view, " + monthName(selected),
-    (list.length ? fmt(list.length) + " " + sat + (list.length === 1 ? " detection" : " detections") + (day ? " on " + dayName(selDay) + " (UTC date) across " + D.region.name : " in the part of the map now in view") + ": " + fmt(nc) + " counted, " + fmt(list.length - nc) + " not counted."
-      : "No " + sat + " detection was recorded " + when + (day ? " across " + D.region.name : " in this view") + ". That is not the same as no fire.") + cap + (list.length ? " Select a time to see that detection on the map. The table lists the satellite shown on the map; change it in Layers." : ""),
+    (list.length ? fmt(list.length) + " " + sat + (list.length === 1 ? " detection" : " detections") + (day ? " on " + dayName(selDay) + " (UTC date) across " + inRegion() : " in the part of the map now in view") + ": " + fmt(nc) + " counted, " + fmt(list.length - nc) + " not counted."
+      : "No " + sat + " detection was recorded " + when + (day ? " across " + inRegion() : " in this view") + ". That is not the same as no fire.") + cap + (list.length ? " Select a time to see that detection on the map. The table lists the satellite shown on the map; change it in Layers." : ""),
     "kahu-ahi_" + D.region.id + "_" + (day ? selDay : selected + "_view") + "_" + pick.s + ".csv");
   note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view " + when + ". Zoom in to see them all. "
       : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view " + when + ". ") + fmt(counted) + " counted (red squares), " + fmt(drawn - counted) + " not counted (hollow dashed squares: low confidence or a non-fire heat source)."
@@ -2229,9 +2334,7 @@ let hotIndex = null;
 async function setupDownload() {
   const y0 = $("y0"), y1 = $("y1"); y0.replaceChildren(); y1.replaceChildren(); $("dlnote").textContent = "";
   try {
-    const r = await fetch("data/hotspots/" + D.region.id + "/index.json");
-    if (!r.ok) throw new Error(r.status);
-    hotIndex = await r.json();
+    hotIndex = await hotIndexOf(D.region.id);
   } catch (e) { hotIndex = null; $("dl").disabled = true; $("dlnote").textContent = "The hotspot files for this region could not be found."; return; }
   const years = Object.keys(hotIndex.years).sort();
   years.forEach(y => { y0.append(el("option", {text: y})); y1.append(el("option", {text: y})); });
@@ -2263,7 +2366,7 @@ async function download() {
     for (let i = 0; i < ys.length; i++) {
       $("dlnote").textContent = "Preparing " + ys[i] + " (" + (i + 1) + " of " + ys.length + ")";
       let first = true;
-      await eachLines("data/hotspots/" + D.region.id + "/" + ys[i] + ".csv.gz", lines => {
+      await eachHot(D.region.id, ys[i], lines => {
         if (first) { if (i === 0) parts.push(lines[0] + "\n"); lines = lines.slice(1); first = false; }
         const keep = area ? lines.filter(keepRow) : lines;
         if (keep.length) { parts.push(keep.join("\n") + "\n"); kept += keep.length; }

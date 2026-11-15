@@ -12,6 +12,8 @@ sensor and per month, to monthly_series.csv.
 Standard library only. Usage:
   python3 pipeline/export.py --id california --name "California" --bbox -124.5 32.5 -114.0 42.0
 Add --skip-hotspots to rewrite only the two summary files without reading data/raw again.
+Add --hotspots-by-month for a large region: one hotspot file per month (<year>-<month>.csv.gz), so the page
+reads one month to show a day instead of a whole year.
 """
 import argparse
 import csv
@@ -154,35 +156,50 @@ def detections(bbox, raw_dir):
                 yield row, lat, lon, sensor, quality, has_type, counted
 
 
-def export_hotspots(region_id, bbox, raw_dir, out_dir):
-    """Write every detection inside the region, with the flag that says whether it was counted."""
+def export_hotspots(region_id, bbox, raw_dir, out_dir, by_month=False):
+    """Write every detection inside the region, with the flag that says whether it was counted.
+
+    One file per year, or one per month (by_month) for a region whose year files would be too heavy to read
+    for a single day in the browser. The index then lists the month files under "months" and says "split": "month".
+    """
     target = out_dir / "hotspots" / region_id
     target.mkdir(parents=True, exist_ok=True)
+    for old in target.glob("*.csv.gz"):
+        old.unlink()
+    size = 7 if by_month else 4          # "2020-08" or "2020"
     buffers = {}
-    rows_by_year = {}
+    rows_by = {}
     for row, _, _, sensor, quality, has_type, counted in detections(bbox, raw_dir):
-        year = row["acq_date"][:4]
-        if year not in buffers:
-            buffers[year] = io.StringIO()
-            csv.writer(buffers[year]).writerow(HOTSPOT_COLUMNS)
-            rows_by_year[year] = 0
-        csv.writer(buffers[year]).writerow([
+        part = row["acq_date"][:size]
+        if part not in buffers:
+            buffers[part] = io.StringIO()
+            csv.writer(buffers[part]).writerow(HOTSPOT_COLUMNS)
+            rows_by[part] = 0
+        csv.writer(buffers[part]).writerow([
             row["acq_date"], row.get("acq_time", ""), row["latitude"], row["longitude"], sensor, quality,
             row.get("confidence", ""), row.get("frp", ""), row.get("daynight", ""),
             row["type"] if has_type else "", counted])
-        rows_by_year[year] += 1
+        rows_by[part] += 1
     index = {}
-    for year, buf in sorted(buffers.items()):
-        # Sort by date so a year file reads in order; header stays first.
+    for part, buf in sorted(buffers.items()):
+        # Sort by date so a file reads in order; header stays first.
         lines = buf.getvalue().splitlines()
         body = sorted(lines[1:])
         data = ("\n".join([lines[0]] + body) + "\n").encode("utf-8")
-        gz_path = target / f"{year}.csv.gz"
+        gz_path = target / f"{part}.csv.gz"
         with open(gz_path, "wb") as raw, gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as gz:
             gz.write(data)
-        index[year] = {"rows": rows_by_year[year], "bytes_gz": gz_path.stat().st_size}
-    (target / "index.json").write_text(json.dumps({"columns": HOTSPOT_COLUMNS, "years": index}, indent=1), encoding="utf-8")
-    return index
+        index[part] = {"rows": rows_by[part], "bytes_gz": gz_path.stat().st_size}
+    doc = {"columns": HOTSPOT_COLUMNS, "years": index}
+    if by_month:
+        years = {}
+        for part, v in index.items():
+            y = years.setdefault(part[:4], {"rows": 0, "bytes_gz": 0})
+            y["rows"] += v["rows"]
+            y["bytes_gz"] += v["bytes_gz"]
+        doc = {"columns": HOTSPOT_COLUMNS, "split": "month", "years": years, "months": index}
+    (target / "index.json").write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    return doc
 
 
 def main():
@@ -194,6 +211,7 @@ def main():
     ap.add_argument("--processed", type=Path, default=None)
     ap.add_argument("--out", type=Path, default=Path("docs/data"))
     ap.add_argument("--skip-hotspots", action="store_true", help="write only <region>.json and <region>_daily.json")
+    ap.add_argument("--hotspots-by-month", action="store_true", help="one hotspot file per month instead of per year")
     args = ap.parse_args()
     processed = args.processed or Path("data/processed") / args.id
     summary = export_summary(args.id, args.name, args.bbox, processed, args.out)
@@ -203,10 +221,11 @@ def main():
     print(f"daily: {n_days:,} day entries with counted detections, {size / 1e3:.1f} kB; days add up to monthly_series.csv")
     if args.skip_hotspots:
         return
-    index = export_hotspots(args.id, args.bbox, args.raw, args.out)
-    total_rows = sum(v["rows"] for v in index.values())
-    total_mb = sum(v["bytes_gz"] for v in index.values()) / 1e6
-    print(f"hotspots: {total_rows:,} rows in {len(index)} yearly files, {total_mb:.1f} MB compressed")
+    doc = export_hotspots(args.id, args.bbox, args.raw, args.out, args.hotspots_by_month)
+    files = doc.get("months", doc["years"])
+    total_rows = sum(v["rows"] for v in files.values())
+    total_mb = sum(v["bytes_gz"] for v in files.values()) / 1e6
+    print(f"hotspots: {total_rows:,} rows in {len(files)} {'monthly' if args.hotspots_by_month else 'yearly'} files, {total_mb:.1f} MB compressed")
 
 
 if __name__ == "__main__":

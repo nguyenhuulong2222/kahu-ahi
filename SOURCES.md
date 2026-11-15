@@ -13,7 +13,7 @@ Every source used in this project is listed here, including free and open ones. 
 | VJ114IMGML | VIIRS 375 m standard active fire, NOAA-20 | FIRMS Archive Download | 14 Nov 2026 |
 | VJ114IMGTDL_NRT | VIIRS 375 m near-real-time active fire, NOAA-20 | FIRMS Archive Download | 14 Nov 2026 |
 
-One archive download per sensor family and region (nine in all); file names, row counts and SHA-256 hashes are in [data/manifest.json](data/manifest.json). Access dates are the dates of those downloads.
+One archive download per sensor family and region (twelve in all). The three for the contiguous United States are FIRMS downloads by country (United States; request ids 850141 MODIS, 850143 VIIRS Suomi NPP, 850142 VIIRS NOAA-20), made on 14 Nov 2026 and kept in `data/raw/usa/`; file names, row counts and SHA-256 hashes are in [data/manifest.json](data/manifest.json). Access dates are the dates of those downloads.
 
 ### FIRMS acknowledgment
 
