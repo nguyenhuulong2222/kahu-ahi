@@ -449,7 +449,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
         <li><strong>No detection is not "no fire".</strong> Clouds, smoke and the time of day the satellite passes all hide fires.</li>
         <li><strong>Why two satellites disagree:</strong> VIIRS (fire data since 2012) has smaller pixels than MODIS (since 2000), and it records several times more detections of the same fires.</li>
         <li><strong>MODIS Aqua scale</strong> means counts as the MODIS instrument on the Aqua satellite records them. VIIRS counts are divided by a factor measured in each region, for each calendar month, so the new record can be compared with the old one.</li>
-        <li><strong>Counted</strong> detections are those FIRMS types as a presumed vegetation fire with nominal or high confidence. Recent, near-real-time detections carry no type, so this page leaves out those at places that repeatedly showed non-fire heat before. Volcanoes, gas flares and other steady heat sources are left out.</li>
+        <li><strong>Counted</strong> detections are those NASA FIRMS labels as a likely vegetation fire, with "nominal" (medium) or high confidence. Recent, near-real-time detections carry no type, so this page leaves out those at places that repeatedly showed non-fire heat before. Volcanoes, gas flares and other steady heat sources are left out.</li>
         <li><strong>Provisional</strong> means near-real-time data: it arrives within hours, has not yet been reprocessed by NASA, and can still change.</li>
         <li><strong>Select to read, press a button to zoom.</strong> Selecting a detection, a grid cell, a day, a month or a row shows its information and leaves the map where it is. The map moves only when you press a button that says so: "Zoom in here", "Show on the map", "Zoom to this area", "Open the busiest day". Choosing a region or a state fits the map to it.</li>
         <li>This is a history of what satellites saw. It is not an alert or a forecast.</li>
@@ -464,8 +464,8 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <p class="note"><span id="dettime">Local time and UTC are the time of the satellite pass.</span> Radiative power is the fire radiative power FIRMS reports for the pixel, in megawatts.</p>
     </div>
     <div class="howto">
-      <p><strong>When:</strong> the time is when the satellite passed over and saw the heat, not when the fire started. Each satellite passes about twice a day, so a fire can burn for hours unseen. Dates on this page are UTC dates, so a local evening or early morning can fall on the neighbouring date.</p>
-      <p style="margin:0"><strong>Where:</strong> the position is the centre of the satellite pixel: about 375 m across for VIIRS and about 1 km for MODIS, larger at the edge of the swath. The fire is somewhere inside it, not exactly at the point.</p>
+      <p><strong>When:</strong> the time is when the satellite passed over and saw the heat, not when the fire started. Each satellite passes about twice a day, so a fire can burn for hours unseen. Dates on this page are UTC dates (UTC is the time in Greenwich, London), so a local evening or early morning can fall on the neighbouring date.</p>
+      <p style="margin:0"><strong>Where:</strong> the position is the centre of the satellite pixel: about 375 m across for VIIRS and about 1 km for MODIS, larger near the edge of the area the satellite scans. The fire is somewhere inside it, not exactly at the point.</p>
     </div>
     </div>
     <div class="calwrap dettable"><table class="plain" id="dettable"></table></div>
@@ -710,7 +710,7 @@ function drawByState() {
     if (!r.v.calibration_accepted) labels.push(svgEl("text", {x: X((g.bbox[0] + g.bbox[2]) / 2), y: Y((g.bbox[1] + g.bbox[3]) / 2), "text-anchor": "middle", "dominant-baseline": "middle", text: g.id}));
   });
   svg.append(...labels);
-  const legend = el("div", {class: "statelegend", "aria-hidden": "true"}, el("span", {text: "Error of the state's own conversion, tested on years left out. Lighter = smaller error; from best to worst:"}));
+  const legend = el("div", {class: "statelegend", "aria-hidden": "true"}, el("span", {text: "Error of the state's own conversion, tested on years the method had not seen. Lighter = smaller error; from best to worst:"}));
   ERROR_STEPS.forEach((st, i) => legend.append(el("span", {}, el("span", {class: "sw2", style: "background:" + st[1]}), i === 0 ? "up to " + st[0] + "%" : st[0] === Infinity ? "over " + ERROR_STEPS[i - 1][0] + "% to " + limit + "%" : "over " + ERROR_STEPS[i - 1][0] + "% to " + st[0] + "%")));
   legend.append(el("span", {}, el("span", {class: "sw2", style: "background:repeating-linear-gradient(45deg,#f3ede3 0 3px,#8a4b00 3px 5px)"}), "Not harmonized (hatched, with the state's letters)"));
   // table
@@ -723,7 +723,7 @@ function drawByState() {
     return el("th", {scope: "col", class: num ? "num" : "", "aria-sort": stateSort.key === key ? (stateSort.dir > 0 ? "ascending" : "descending") : "none"}, b);
   };
   const t = el("table", {class: "plain", id: "statetable"}, el("caption", {class: "sr", text: "The conversion in each state"}),
-    el("thead", {}, el("tr", {}, head("State", "name"), head("Aqua detections", "aqua", 1), head("Error, own factors", "error", 1), head("Error, national factors", null, 1), head("Factor months", null, 1), head("Result"))));
+    el("thead", {}, el("tr", {}, head("State", "name"), head("Aqua detections", "aqua", 1), head("Error, own factors", "error", 1), head("Error, national factors", null, 1), head("Months with own factor", null, 1), head("Result"))));
   const body = el("tbody");
   rows.forEach(r => {
     const b = el("button", {type: "button", class: "linkish", text: r.v.name, "aria-label": "Open " + r.v.name});
@@ -734,7 +734,7 @@ function drawByState() {
   });
   t.append(body);
   box.replaceChildren(intro, el("div", {class: "stategrid"}, el("div", {class: "statemap"}, svg, legend), el("div", {class: "calwrap statetable"}, t)),
-    el("p", {class: "note", text: "A state is the Census Bureau's simplified outline (1:5,000,000); a detection belongs to the state whose outline contains its position. " + fmt(ST.rows.outside_every_state) + " of " + N(ST.rows.in_a_state + ST.rows.outside_every_state, "detection") + " in the national files fall in no state (offshore, or land the simplified coastline cuts off); they stay in the national numbers and are in no state's. \"Aqua detections\" are MODIS Aqua's counted detections over the months both satellites have; \"factor months\" is how many of the 12 calendar months have enough of them for a factor of their own. \"National factors\" is the state's error when the country's factors are used instead of its own. Select a state on the map, in the table or in the State list."}));
+    el("p", {class: "note", text: "A state is the Census Bureau's simplified outline (1:5,000,000); a detection belongs to the state whose outline contains its position. " + fmt(ST.rows.outside_every_state) + " of " + N(ST.rows.in_a_state + ST.rows.outside_every_state, "detection") + " in the national files fall in no state (offshore, or land the simplified coastline cuts off); they stay in the national numbers and are in no state's. \"Aqua detections\" are MODIS Aqua's counted detections over the months both satellites have; \"months with own factor\" is how many of the 12 calendar months have enough of them for a factor of their own. \"National factors\" is the state's error when the country's factors are used instead of its own. Select a state on the map, in the table or in the State list."}));
 }
 const round1 = v => Math.round(v * 10) / 10;
 // Same expression as cell_index() in pipeline/grid.py, applied to lat + 90 and lon + 180.
@@ -793,12 +793,12 @@ function asUsedText(short) {
   if (!u || !D.calibration_accepted || !a) return "";
   const st = u.noaa20_standard, own = st.adopted === "noaa20_coefficients", e = (own ? st.with_noaa20_coefficients : st.with_snpp_coefficients).all_years;
   const other = (own ? st.with_snpp_coefficients : st.with_noaa20_coefficients).all_years, nrt = u.noaa20_nrt, w = nrt.worst_month;
-  let t = "Recent months are converted from NOAA-20, not Suomi NPP, and from near-real-time data. Tested that way on years left out, the conversion is off by " + pct(e.abs_error_pct_of_total) + " of the total over " + e.months + " months of standard data (" + st.years[0] + " to " + st.years[1] + ")";
+  let t = "Recent months are converted from NOAA-20, not Suomi NPP, and from near-real-time data. Tested that way on years the method had not seen, the conversion is off by " + pct(e.abs_error_pct_of_total) + " of the total over " + e.months + " months of standard data (" + st.years[0] + " to " + st.years[1] + ")";
   if (nrt.error) t += ", and by " + pct(nrt.error.abs_error_pct_of_total) + " over the " + nrt.months.length + " complete near-real-time " + (nrt.months.length === 1 ? "month" : "months") + " so far" + (w && w.pct_diff != null ? " (furthest off: " + monthName(w.month) + ", " + (w.pct_diff > 0 ? "+" : "") + pct(w.pct_diff) + ")" : "");
   t += ".";
   if (short) return t;
   t += " The " + pct(a.abs_error_pct_of_total) + " figure is for Suomi NPP standard data, the longer record the test was built on. The tests are of different satellites, and the near-real-time months are few and not yet reprocessed, so the figures need not agree.";
-  if (other) t += own ? " NOAA-20 uses its own factors here: on years left out they did better (" + pct(e.abs_error_pct_of_total) + ") than the Suomi NPP factors (" + pct(other.abs_error_pct_of_total) + ")."
+  if (other) t += own ? " NOAA-20 uses its own factors here: on years the method had not seen they did better (" + pct(e.abs_error_pct_of_total) + ") than the Suomi NPP factors (" + pct(other.abs_error_pct_of_total) + ")."
     : " Factors fitted on NOAA-20 itself were tested and did no better (" + pct(other.abs_error_pct_of_total) + " against " + pct(e.abs_error_pct_of_total) + "), so the Suomi NPP factors are used.";
   if (!u.accepted) t += " Used this way the conversion fails the page's own test, so recent converted values are marked not reliable.";
   return t;
@@ -833,7 +833,7 @@ function recordSentence() {
   if (!a) return "";
   const from = MONTH_FULL[+a.first.slice(5, 7) - 1] + " " + a.first.slice(0, 4);
   return "From " + from + " the record shown is MODIS Aqua: no month of it is converted. " + (D.calibration_accepted && y0
-    ? "Converted VIIRS runs beside it from " + y0 + " as the tested successor, and is what continues the record when Aqua stops."
+    ? "Converted VIIRS, available from " + y0 + ", runs beside it and is ready to continue the record when Aqua stops."
     : "VIIRS is not converted in " + inRegion() + ", so no successor stands ready to continue it.");
 }
 function setRecord(mode) {
@@ -1098,7 +1098,7 @@ function drawExplain() {
       whole.addEventListener("click", () => select({month: selected}));
       const text = c && c.month === selected
         ? "So far in " + fullMonth(selected) + " (days " + c.days.replace("-", " to ") + "), MODIS Aqua recorded " + N(c.aqua_nrt_same_days, "detection") + " in " + place + "; the usual for the same days is " + fmt(c.baseline_median) + " (lowest " + fmt(c.baseline_min) + ", highest " + fmt(c.baseline_max) + ")."
-          + (c.value_aqua_equiv != null ? " NOAA-20, converted to the MODIS Aqua scale, gives about " + fmt(c.value_aqua_equiv) + "." : "")
+          + (c.value_aqua_equiv != null ? " The newer NOAA-20 satellite, converted to the MODIS Aqua scale, suggests about " + fmt(c.value_aqua_equiv) + "." : "")
         : monthSentence(x, place);
       s.push(el("p", {}, text + " ", whole, "."));
     } else s.push(monthSentence(x, place));
@@ -1264,7 +1264,7 @@ function drawCalendarIn() {
     lg.append(el("span", {}, "Far below usual ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + DIVERGE.join(",") + ")"}), " far above usual"));
     lg.append(el("span", {text: "Usual = median of the same month, 2003 onward"}));
   } else {
-    lg.append(el("span", {}, "Fewer ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + FIRE.join(",") + ")"}), " more detections (each step is a multiple, not an amount)"));
+    lg.append(el("span", {}, "Fewer ", el("span", {class: "ramp", style: "background:linear-gradient(90deg," + FIRE.join(",") + ")"}), " more detections (each colour step covers a wider range than the one before)"));
   }
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:#e0531a;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px #14213d"}), "Provisional"));
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:#e0531a;outline:2px dashed #14213d;outline-offset:-2px"}), "Month not complete"));
@@ -1443,18 +1443,18 @@ function drawHarm() {
   // The same result in one line at the top of the page.
   const head = $("headline"); head.replaceChildren();
   if (f.all && f.raw) head.append(D.region.name + ": " + (ok
-    ? "VIIRS as recorded is off by " + pct(f.raw.abs_error_pct_of_total) + (f.annual ? "; with one whole-year ratio, " + pct(f.annual.abs_error_pct_of_total) : "") + "; with monthly factors, tested on years left out, " + pct(f.all.abs_error_pct_of_total) + ". "
+    ? "VIIRS as recorded is off by " + pct(f.raw.abs_error_pct_of_total) + (f.annual ? "; with one whole-year ratio, " + pct(f.annual.abs_error_pct_of_total) : "") + "; with monthly factors, tested on years the method had not seen, " + pct(f.all.abs_error_pct_of_total) + ". "
     : "not harmonized. " + stateFacts(D).says + " Only MODIS Aqua is shown. "), el("a", {href: "#h-harm", text: "See the result"}));
   if (!f.all || !f.raw) { box.append(el("p", {class: "note", text: "Not enough months with both MODIS Aqua and VIIRS to test a conversion in " + inRegion() + "."})); return; }
   const fig = (label, big, sub, cls) => el("div", {class: "fig" + (cls ? " " + cls : "")}, el("dt", {text: label}), el("dd", {}, el("div", {class: "big", text: big}), sub ? el("div", {class: "sub", text: sub}) : ""));
   const figs = el("dl", {class: "figs"});
   figs.append(fig("1. VIIRS counts as recorded", pct(f.raw.abs_error_pct_of_total), "off from MODIS Aqua, as a share of Aqua's total over " + f.raw.months + " shared months"));
-  if (f.annual) figs.append(fig("2. One ratio for the whole year", pct(f.annual.abs_error_pct_of_total), "off, tested on years left out; the fair comparison for step 3"));
+  if (f.annual) figs.append(fig("2. One ratio for the whole year", pct(f.annual.abs_error_pct_of_total), "off, tested on years the method had not seen; the simpler conversion that step 3 has to beat"));
   const periods = f.before && f.after ? f.first + " to " + (f.split - 1) + ": " + pct(f.before.abs_error_pct_of_total) + "; from " + f.split + ": " + pct(f.after.abs_error_pct_of_total) : "";
   if (ok) {
-    figs.append(fig("3. A factor for each month (used here)", pct(f.all.abs_error_pct_of_total), "off, tested the same way; " + periods + ". Factors run from " + f.kMin.k + " (" + MONTH_FULL[f.kMin.m - 1] + ") to " + f.kMax.k + " (" + MONTH_FULL[f.kMax.m - 1] + ") VIIRS detections per Aqua detection"));
+    figs.append(fig("3. A factor for each month (used here)", pct(f.all.abs_error_pct_of_total), "off, tested the same way; " + periods + ". VIIRS records from " + f.kMin.k + " (" + MONTH_FULL[f.kMin.m - 1] + ") to " + f.kMax.k + " (" + MONTH_FULL[f.kMax.m - 1] + ") detections for every MODIS Aqua detection"));
   } else {
-    figs.append(fig("3. A factor for each month", "Not harmonized", "Off by " + pct(f.all.abs_error_pct_of_total) + (f.limit ? "; the limit is " + f.limit + "%" : "") + ". Only " + f.own + " of 12 calendar months have enough detections for a factor" + (f.need ? " (" + f.need + " needed)" : "") + ". Only MODIS Aqua is shown here." + (D.region.id === "hawaii" ? " Most heat detected here is volcanic." : ""), "refused"));
+    figs.append(fig("3. A factor for each month", "Not harmonized", (() => { const sf = stateFacts(D); return sf.says + (!sf.overError ? " The tested error, " + pct(sf.e) + ", is within the " + f.limit + "% limit." : ""); })() + " Only MODIS Aqua is shown here." + (D.region.id === "hawaii" ? " Most heat detected here is volcanic." : ""), "refused"));
   }
   const left = el("div", {}, figs, el("p", {style: "margin:10px 0 0", id: "harmsays", text: recordSentence() + (ok ? " " : " The same test that accepts a conversion elsewhere refuses it here, and the page says so rather than show a number it cannot support. ")}, el("a", {href: "#h-trust", text: "How these figures were measured, and all regions side by side"})));
   if (ok && asUsedText()) left.append(el("p", {class: "note", id: "harmused", style: "margin:8px 0 0", text: asUsedText()}));
@@ -1479,7 +1479,7 @@ async function drawCompare() {
   try { const r = await fetch("data/" + large + "_inside.json"); if (r.ok) inside = await r.json(); } catch (e) { inside = null; }
   if (token !== compareToken) return;
   const num = (v, file, suffix) => v == null ? el("td", {class: "num", text: "n/a"}) : el("td", {class: "num"}, el("a", {href: file, text: suffix === "%" ? pct(v) : String(v), title: "Read from " + file}));
-  const t = el("table", {class: "plain"}, el("caption", {class: "sr", text: "The conversion in every region, each tested the same way"}), el("tr", {}, ...[["Region"], ["Shared months", 1], ["VIIRS per Aqua detection, whole year", 1], ["VIIRS as recorded", 1], ["One whole-year ratio", 1], ["Monthly factors, years left out", 1], ["Earlier years", 1], ["Later years", 1], ["NOAA-20 in place of Suomi NPP", 1], ["Result"]].map(([text, n]) => el("th", {scope: "col", class: n ? "num" : "", text}))));
+  const t = el("table", {class: "plain"}, el("caption", {class: "sr", text: "The conversion in every region, each tested the same way"}), el("tr", {}, ...[["Region"], ["Shared months", 1], ["VIIRS per Aqua detection, whole year", 1], ["VIIRS as recorded", 1], ["One whole-year ratio", 1], ["Monthly factors, on unseen years", 1], ["Earlier years", 1], ["Later years", 1], ["NOAA-20 in place of Suomi NPP", 1], ["Result"]].map(([text, n]) => el("th", {scope: "col", class: n ? "num" : "", text}))));
   let split = null, first = null;
   docs.forEach((d, i) => {
     if (!d) { t.append(el("tr", {}, el("th", {scope: "row", text: ids[i]}), el("td", {colspan: 9, text: "This region's file could not be loaded."}))); return; }
@@ -1551,7 +1551,7 @@ function drawTrust() {
   if (mk && mk.non_veg_caught_pct != null) box.append(el("p", {class: "note", text: "Near-real-time files do not say whether a detection is a fire, a volcano or an industrial source. Places that repeatedly showed non-fire heat in the standard record are left out of provisional months. Checked against that same record, this removes " + pct(mk.non_veg_caught_pct) + " of non-fire detections and wrongly removes " + pct(mk.veg_wrongly_masked_pct) + " of fire detections."}));
   if (D.calibration_accepted) box.append(el("p", {class: "note", text: "All of these numbers are for the whole of " + inRegion() + ". None of them were measured for a smaller area chosen on the map."}));
   if (HAS_INSIDE[D.region.id] && !STATE) drawMixed(box);
-  if (STATE && D.with_national && D.with_national.all_years && a) box.append(el("p", {id: "natfactors", text: "With the national factors instead of its own, " + D.region.name + "'s conversion is off by " + pct(D.with_national.all_years.abs_error_pct_of_total) + " on years left out, against " + pct(a.abs_error_pct_of_total) + " with its own."}));
+  if (STATE && D.with_national && D.with_national.all_years && a) box.append(el("p", {id: "natfactors", text: "With the national factors instead of its own, " + D.region.name + "'s conversion is off by " + pct(D.with_national.all_years.abs_error_pct_of_total) + " on years the method had not seen, against " + pct(a.abs_error_pct_of_total) + " with its own."}));
   // How much data stands behind each monthly factor.
   const bm = K.by_month, ft = el("table", {class: "plain", id: "factortable", style: "margin-top:8px"}, el("caption", {class: "sr", text: "The factor for each calendar month and the months of data behind it"}),
     el("tr", {}, el("th", {scope: "col", text: "Calendar month"}), el("th", {scope: "col", class: "num", text: "Factor"}), el("th", {scope: "col", class: "num", text: "Months of data behind it"}), el("th", {scope: "col", text: "Note"})));
@@ -2801,7 +2801,7 @@ function drawMapLegend(pick) {
   if (pick.flying && level() !== "day") {
     const steps = el("span", {class: "steps"});
     legendSteps(pick.max, !!pick.k).forEach(st => steps.append(el("span", {class: "step"}, el("span", {class: "chip"}, el("span", {style: "background:" + st.c + ";opacity:" + STEP_OPACITY[MAP_RAMP.indexOf(st.c)]})), st.text)));
-    lg.append(el("span", {class: "legtitle", text: "Detections in a 0.1° cell" + (pick.span ? ", " + pick.span : "") + " (each step is a multiple, not an amount; fainter means fewer):"}), steps);
+    lg.append(el("span", {class: "legtitle", text: "Detections in a 0.1° cell" + (pick.span ? ", " + pick.span : "") + " (each colour step covers a wider range than the one before; fainter means fewer):"}), steps);
   }
   lg.append(el("span", {}, el("span", {class: "sw", style: "background:transparent;border:1px dashed #55627a"}), "Blank: no detection recorded, which is not the same as no fire"));
   lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px solid #fff;box-shadow:0 0 0 2px #333"}), (STATE ? "Outline of " + STATE.name : "Region with data: " + D.region.name)));
@@ -2812,7 +2812,7 @@ function drawMapLegend(pick) {
   if (pointsOn || level() === "day") {
     lg.append(el("span", {}, el("span", {class: "sw", style: "background:" + DETECTION_RED + ";border:1.5px solid #111;width:12px;height:12px"}), "Counted detection (filled red square)"));
     lg.append(el("span", {}, el("span", {class: "sw", style: "background:#3b4a5f;border:2px dashed #fff;width:16px;height:16px"}), "Not counted (hollow dashed square): low confidence or a non-fire heat source"));
-    lg.append(el("span", {text: "Squares show the sensor's footprint at nadir: about 1 km for MODIS, 375 m for VIIRS (drawn at least 5 pixels wide)."}));
+    lg.append(el("span", {text: "Each square is the size of one satellite pixel: about 1 km for MODIS, 375 m for VIIRS (drawn at least 5 pixels wide)."}));
   }
   lg.append(el("span", {class: "legtitle", text: "Select a square or a cell to read about it; the map moves only when you press a button that says so."}));
   if (panelCheck) { panelCheck = false; fitPanels(); }
@@ -2888,11 +2888,11 @@ function updateAllYearsButton() { $("allyears").setAttribute("aria-pressed", Str
 const TIMEZONE = {california: "America/Los_Angeles", hawaii: "Pacific/Honolulu", vietnam: "Asia/Ho_Chi_Minh", conus: "UTC"};
 // The contiguous United States spans four time zones. Telling which one a point is in needs time-zone boundaries,
 // which this page does not carry, and guessing from longitude would be wrong near every boundary. So that region shows UTC only.
-const NO_LOCAL = "Not shown for this region. It spans four time zones, and this page carries no time-zone boundaries to tell which one a point is in, so times are given in UTC only.";
+const NO_LOCAL = "Not shown, because this region spans four time zones and the page cannot tell which one a point is in. Times are in UTC.";
 // A state has a local time only when all its towns share one zone (pipeline/states.py, from GeoNames).
 function zoneNow() { return D.region.state ? (D.tz || "UTC") : TIMEZONE[D.region.id]; }
 function hasLocal() { return zoneNow() !== "UTC"; }
-function noLocal() { return D.region.state ? "Not shown for " + D.region.name + ". Its towns do not all share one time zone (GeoNames), and this page carries no time-zone boundaries to tell which one a point is in, so times are given in UTC only." : NO_LOCAL; }
+function noLocal() { return D.region.state ? "Not shown, because the towns of " + D.region.name + " do not all share one time zone (GeoNames) and the page cannot tell which one a point is in. Times are in UTC." : NO_LOCAL; }
 const PLATFORM = {MODIS_AQUA: "Aqua satellite, MODIS sensor", MODIS_TERRA: "Terra satellite, MODIS sensor", VIIRS_SNPP: "Suomi NPP satellite, VIIRS sensor", VIIRS_NOAA20: "NOAA-20 satellite, VIIRS sensor"};
 const FIRMS_TYPE = {"1": "an active volcano", "2": "another static land source", "3": "an offshore source"};
 // The fields of one row of the hotspot CSV (columns as written by pipeline/export.py).
@@ -2978,11 +2978,11 @@ async function openReport(d) {
   const place = el("span"); fillPlace(place, d.lat, d.lon);
   kids.push(el("h3", {text: "Where and when"}), el("dl", {class: "card"},
     kv("Place", place),
-    kv("Latitude, longitude", pointText(full) + ", or " + dmsText(full.lat, full.lon) + " (centre of a satellite pixel " + pix + " across, larger at the edge of the swath; the fire is somewhere inside it)"),
+    kv("Latitude, longitude", pointText(full) + ", or " + dmsText(full.lat, full.lon) + " (centre of a satellite pixel " + pix + " across, larger near the edge of the area the satellite scans; the fire is somewhere inside it)"),
     kv("Satellite pass, local time", hasLocal() ? localText(full, zone, true) : noLocal()),
     kv("Satellite pass, UTC", utcText(full, true)),
     kv("Seen by", PLATFORM[d.sensor] || d.sensor),
-    ...(me ? [kv("Confidence, as given by FIRMS", confidenceText(full.conf)), kv("Fire radiative power", full.frp === "" ? "not given" : full.frp + " MW"), kv("Counted on this page", countedText(full))] : [])));
+    ...(me ? [kv("How sure the detection is (FIRMS confidence)", confidenceText(full.conf)), kv("Heat given off (fire radiative power)", full.frp === "" ? "not given" : full.frp + " MW"), kv("Counted on this page", countedText(full))] : [])));
   // b. what each satellite recorded within 5 km on that UTC date
   const t = el("table", {class: "plain", id: "reporttable"}, el("tr", {}, el("th", {text: "Satellite"}), el("th", {text: "Pass times with a detection, UTC"}), el("th", {class: "num", text: "Detections"}), el("th", {class: "num", text: "Counted"}), el("th", {class: "num", text: "Highest radiative power (MW)"}), el("th", {class: "num", text: "Total radiative power (MW)"})));
   GRID_SENSORS.forEach(sat => {
@@ -3193,8 +3193,8 @@ function cardNode(r) {
     row("Latitude, longitude", el("span", {class: "pt4", text: pointText(d)}), " ", copy, el("br"), el("span", {class: "dms", text: dmsText(d.lat, d.lon)}), el("br"), here),
     row("Seen by", PLATFORM[d.sensor] || d.sensor),
     row("Day or night pass", d.dn === "D" ? "Day" : d.dn === "N" ? "Night" : "not given"),
-    row("Confidence, as given by FIRMS", confidenceText(d.conf)),
-    row("Fire radiative power", d.frp === "" ? "not given" : d.frp + " MW"),
+    row("How sure the detection is (FIRMS confidence)", confidenceText(d.conf)),
+    row("Heat given off (fire radiative power)", d.frp === "" ? "not given" : d.frp + " MW"),
     row("Data quality", d.quality === "nrt" ? "near-real-time (provisional)" : d.quality),
     row("Counted on this page", countedText(d))),
     imageNode(d, 276, 184, .3),
