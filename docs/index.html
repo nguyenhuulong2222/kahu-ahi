@@ -266,7 +266,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <div class="brand"><img class="mark" src="kahu-ahi-mark.svg" alt="" aria-hidden="true" width="42" height="54">
     <div><h1>Kahu Ahi: one fire record across MODIS and VIIRS</h1>
     <p class="namenote">Kahu Ahi is Hawaiian for 'keeper of the fire': <i lang="haw">kahu</i>, keeper or guardian; <i lang="haw">ahi</i>, fire.</p>
-    <p class="lede">The record shown is MODIS Aqua. VIIRS, converted to its scale and tested, runs beside it and is what continues the record when Aqua stops.</p>
+    <p class="lede">The record shown is MODIS Aqua; VIIRS, converted to its scale and tested, continues it when Aqua stops.</p>
     <p class="headline" id="headline" aria-live="polite"></p></div></div>
   <div><label for="region">Region</label>
     <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option><option value="conus">Contiguous United States</option></select></div>
@@ -1107,7 +1107,7 @@ function harmFacts(d) {
   const split = (Object.keys(L.monthly_k).map(k => /^before_(\d+)$/.exec(k)).find(Boolean) || [])[1];
   const own = Object.keys(bm).filter(m => !bm[m].uses_annual_fallback && bm[m].k != null).sort((a, b) => bm[a].k - bm[b].k);
   const rule = d.acceptance_rule || "";
-  return {raw: L.uncalibrated.all_years, all: L.monthly_k.all_years, before: split && L.monthly_k["before_" + split], after: split && L.monthly_k[split + "_onward"], split,
+  return {raw: L.uncalibrated.all_years, annual: L.annual_k.all_years, all: L.monthly_k.all_years, before: split && L.monthly_k["before_" + split], after: split && L.monthly_k[split + "_onward"], split,
     first: d.snpp_to_aqua.years && d.snpp_to_aqua.years[0], last: d.snpp_to_aqua.years && d.snpp_to_aqua.years[1],
     own: own.length, kMin: own.length ? {m: +own[0], k: bm[own[0]].k} : null, kMax: own.length ? {m: +own[own.length - 1], k: bm[own[own.length - 1]].k} : null,
     limit: (/<= (\d+)%/.exec(rule) || [])[1], need: (/at least (\d+)/.exec(rule) || [])[1]};
@@ -1162,19 +1162,18 @@ function drawHarm() {
   // The same result in one line at the top of the page.
   const head = $("headline"); head.replaceChildren();
   if (f.all && f.raw) head.append(D.region.name + ": " + (ok
-    ? "VIIRS as recorded is off by " + pct(f.raw.abs_error_pct_of_total) + "; converted, and tested on years left out, " + pct(f.all.abs_error_pct_of_total) + ". "
+    ? "VIIRS as recorded is off by " + pct(f.raw.abs_error_pct_of_total) + (f.annual ? "; with one whole-year ratio, " + pct(f.annual.abs_error_pct_of_total) : "") + "; with monthly factors, tested on years left out, " + pct(f.all.abs_error_pct_of_total) + ". "
     : "not harmonized. The conversion failed its test (off by " + pct(f.all.abs_error_pct_of_total) + "), so only MODIS Aqua is shown. "), el("a", {href: "#h-harm", text: "See the result"}));
   if (!f.all || !f.raw) { box.append(el("p", {class: "note", text: "Not enough months with both MODIS Aqua and VIIRS to test a conversion in " + inRegion() + "."})); return; }
   const fig = (label, big, sub, cls) => el("div", {class: "fig" + (cls ? " " + cls : "")}, el("dt", {text: label}), el("dd", {}, el("div", {class: "big", text: big}), sub ? el("div", {class: "sub", text: sub}) : ""));
   const figs = el("dl", {class: "figs"});
-  figs.append(fig("VIIRS counts taken as they are differ from MODIS Aqua by", pct(f.raw.abs_error_pct_of_total), "of Aqua's total over " + f.raw.months + " shared months"));
+  figs.append(fig("1. VIIRS counts as recorded", pct(f.raw.abs_error_pct_of_total), "off from MODIS Aqua, as a share of Aqua's total over " + f.raw.months + " shared months"));
+  if (f.annual) figs.append(fig("2. One ratio for the whole year", pct(f.annual.abs_error_pct_of_total), "off, tested on years left out; the fair comparison for step 3"));
   const periods = f.before && f.after ? f.first + " to " + (f.split - 1) + ": " + pct(f.before.abs_error_pct_of_total) + "; from " + f.split + ": " + pct(f.after.abs_error_pct_of_total) : "";
   if (ok) {
-    figs.append(fig("After conversion, tested on years left out", pct(f.all.abs_error_pct_of_total), periods));
-    figs.append(fig("Conversion factor by month (VIIRS detections per Aqua detection)", f.kMin.k + " to " + f.kMax.k, "lowest in " + MONTH_FULL[f.kMin.m - 1] + ", highest in " + MONTH_FULL[f.kMax.m - 1]));
+    figs.append(fig("3. A factor for each month (used here)", pct(f.all.abs_error_pct_of_total), "off, tested the same way; " + periods + ". Factors run from " + f.kMin.k + " (" + MONTH_FULL[f.kMin.m - 1] + ") to " + f.kMax.k + " (" + MONTH_FULL[f.kMax.m - 1] + ") VIIRS detections per Aqua detection"));
   } else {
-    figs.append(fig("After conversion, tested on years left out", "Not harmonized", "The conversion was off by " + pct(f.all.abs_error_pct_of_total) + (f.limit ? "; the limit is " + f.limit + "%" : "") + ". Only MODIS Aqua is shown here.", "refused"));
-    figs.append(fig("Calendar months with enough detections for a factor", f.own + " of 12", (f.need ? f.need + " are needed. " : "") + (D.region.id === "hawaii" ? "Most heat detected here is volcanic, and the record cannot reliably separate it from vegetation fire." : ""), "refused"));
+    figs.append(fig("3. A factor for each month", "Not harmonized", "Off by " + pct(f.all.abs_error_pct_of_total) + (f.limit ? "; the limit is " + f.limit + "%" : "") + ". Only " + f.own + " of 12 calendar months have enough detections for a factor" + (f.need ? " (" + f.need + " needed)" : "") + ". Only MODIS Aqua is shown here." + (D.region.id === "hawaii" ? " Most heat detected here is volcanic." : ""), "refused"));
   }
   const left = el("div", {}, figs, el("p", {style: "margin:10px 0 0", id: "harmsays", text: recordSentence() + (ok ? " " : " The same test that accepts a conversion elsewhere refuses it here, and the page says so rather than show a number it cannot support. ")}, el("a", {href: "#h-trust", text: "How these figures were measured, and all regions side by side"})));
   if (ok && asUsedText()) left.append(el("p", {class: "note", id: "harmused", style: "margin:8px 0 0", text: asUsedText()}));
@@ -1197,14 +1196,14 @@ async function drawCompare() {
   try { const r = await fetch("data/" + large + "_inside.json"); if (r.ok) inside = await r.json(); } catch (e) { inside = null; }
   if (token !== compareToken) return;
   const num = (v, file, suffix) => v == null ? el("td", {class: "num", text: "n/a"}) : el("td", {class: "num"}, el("a", {href: file, text: v + (suffix || ""), title: "Read from " + file}));
-  const t = el("table", {class: "plain"}, el("caption", {class: "sr", text: "The conversion in every region, each tested the same way"}), el("tr", {}, ...[["Region"], ["Shared months", 1], ["VIIRS per Aqua detection, whole year", 1], ["VIIRS as recorded", 1], ["Converted, years left out", 1], ["Earlier years", 1], ["Later years", 1], ["NOAA-20 in place of S-NPP", 1], ["Result"]].map(([text, n]) => el("th", {scope: "col", class: n ? "num" : "", text}))));
+  const t = el("table", {class: "plain"}, el("caption", {class: "sr", text: "The conversion in every region, each tested the same way"}), el("tr", {}, ...[["Region"], ["Shared months", 1], ["VIIRS per Aqua detection, whole year", 1], ["VIIRS as recorded", 1], ["One whole-year ratio", 1], ["Monthly factors, years left out", 1], ["Earlier years", 1], ["Later years", 1], ["NOAA-20 in place of S-NPP", 1], ["Result"]].map(([text, n]) => el("th", {scope: "col", class: n ? "num" : "", text}))));
   let split = null, first = null;
   docs.forEach((d, i) => {
-    if (!d) { t.append(el("tr", {}, el("th", {scope: "row", text: ids[i]}), el("td", {colspan: 8, text: "This region's file could not be loaded."}))); return; }
+    if (!d) { t.append(el("tr", {}, el("th", {scope: "row", text: ids[i]}), el("td", {colspan: 9, text: "This region's file could not be loaded."}))); return; }
     const f = harmFacts(d), file = "data/" + d.region.id + ".json", u = d.noaa20_to_snpp.leave_one_year_out.uncalibrated.all_years;
     split = split || f.split; first = first || f.first;
     t.append(el("tr", {class: d.region.id === D.region.id ? "here" : ""}, el("th", {scope: "row", text: d.region.name + (d.region.id === D.region.id ? " (shown)" : "")}),
-      num(f.all && f.all.months, file), num(d.snpp_to_aqua.coefficients.annual_k, file), num(f.raw && f.raw.abs_error_pct_of_total, file, "%"), num(f.all && f.all.abs_error_pct_of_total, file, "%"),
+      num(f.all && f.all.months, file), num(d.snpp_to_aqua.coefficients.annual_k, file), num(f.raw && f.raw.abs_error_pct_of_total, file, "%"), num(f.annual && f.annual.abs_error_pct_of_total, file, "%"), num(f.all && f.all.abs_error_pct_of_total, file, "%"),
       num(f.before && f.before.abs_error_pct_of_total, file, "%"), num(f.after && f.after.abs_error_pct_of_total, file, "%"), num(u && u.abs_error_pct_of_total, file, "%"),
       el("td", {text: d.calibration_accepted ? "Harmonized" : "Not harmonized: fails the test"})));
   });
@@ -1213,7 +1212,7 @@ async function drawCompare() {
     const file = "data/" + large + "_inside.json", o = inside.small_with_large_k, own = inside.small_with_own_k, bk = Object.keys(o).find(k => /^before_/.test(k)), ak = Object.keys(o).find(k => /_onward$/.test(k));
     const small = docs.find(d => d && d.region.id === inside.small), big = docs.find(d => d && d.region.id === inside.large);
     const sName = small ? small.region.name : inside.small, bName = big ? big.region.name : inside.large;
-    t.append(el("tr", {}, el("th", {scope: "row", text: sName + ", with the factors of " + bName}), num(o.all_years.months, file), num(inside.annual_k.large, file), el("td", {class: "num", text: ""}),
+    t.append(el("tr", {}, el("th", {scope: "row", text: sName + ", with the factors of " + bName}), num(o.all_years.months, file), num(inside.annual_k.large, file), el("td", {class: "num", text: ""}), el("td", {class: "num", text: ""}),
       num(o.all_years.abs_error_pct_of_total, file, "%"), num(o[bk] && o[bk].abs_error_pct_of_total, file, "%"), num(o[ak] && o[ak].abs_error_pct_of_total, file, "%"), el("td", {class: "num", text: ""}), el("td", {text: "Comparison only; not shown on the page"})));
     kids.push(el("p", {text: sName + " inside the larger fit: "}, el("a", {href: file, text: pct(o.all_years.abs_error_pct_of_total)}), " with the factors of " + bName + ", against ", el("a", {href: file, text: pct(own.all_years.abs_error_pct_of_total)}), " with its own. A conversion fitted over a larger area costs accuracy in the smaller one."));
   }
