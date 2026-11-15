@@ -106,7 +106,7 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 #explain p{font-size:1.08rem;margin:0 0 6px}
 /* one detection: card on the map and table under it */
 .detpop .leaflet-popup-content{margin:10px 12px;font:13px/1.4 var(--font)}
-.card h3{margin:0 0 6px;font-size:1rem}.card dl{margin:0}.card p{margin:0 0 8px}
+.card h3{margin:0 0 6px;font-size:1rem}.card .place{margin:0 0 6px}.place .note{font-size:12px}.card dl{margin:0}.card p{margin:0 0 8px}
 .card .kv{display:grid;grid-template-columns:42% 1fr;gap:2px 8px;padding:3px 0;border-top:1px solid var(--line)}
 .card dt{color:var(--muted)}.card dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .card .note{margin:6px 0 0;font-size:12px}.card button:not(.linkish){min-height:40px}
@@ -282,6 +282,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <section id="detsec" aria-labelledby="h-det" hidden>
     <h2 id="h-det" tabindex="-1">Detections</h2>
     <p id="detsum" aria-live="polite"></p>
+    <p id="detplace" aria-live="polite" hidden></p>
     <p class="note">Local time and UTC are the time of the satellite pass. Radiative power is the fire radiative power FIRMS reports for the pixel, in megawatts.</p>
     <div class="howto">
       <p><strong>When:</strong> the time is when the satellite passed over and saw the heat, not when the fire started. Each satellite passes about twice a day, so a fire can burn for hours unseen. Dates on this page are UTC dates, so a local evening or early morning can fall on the neighbouring date.</p>
@@ -372,7 +373,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   </section>
 
   <footer>
-    <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; street map above zoom 8 and the GIBS overlays © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS). Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p>
+    <p>Fire data: NASA FIRMS (MODIS Collection 6.1, VIIRS 375 m from Suomi NPP and NOAA-20). Map: <a href="https://leafletjs.com">Leaflet</a>. Basemap: Blue Marble shaded relief and bathymetry, and coastline, border and label overlays, from NASA GIBS; street map above zoom 8 and the GIBS overlays © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS). Place names: <a href="https://nominatim.org">Nominatim</a>, © OpenStreetMap contributors. Not endorsed by NASA. Built for the 2026 NASA Space Apps Challenge by team Kahu Ahi, Honolulu event. Method, sources and AI use are documented in the <a href="https://github.com/nguyenhuulong2222/kahu-ahi">project repository</a>.</p>
   </footer>
 </div>
 </main>
@@ -1648,6 +1649,55 @@ function whyNotCounted(d) {
 function countedText(d) { return d.counted ? "Yes" : "No: " + whyNotCounted(d); }
 function pointText(d) { return d.lat.toFixed(4) + ", " + d.lon.toFixed(4); }
 
+// ---------- place names: OpenStreetMap Nominatim, one lookup for each detection a reader opens ----------
+// Usage policy: https://operations.osmfoundation.org/policies/nominatim/ . Only on a reader's click, never in bulk,
+// one request at a time and at least 1.1 s apart, each place asked once and kept in memory, attribution shown.
+// To switch the service off or to another server, change this one address (empty = no lookups).
+const NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse";
+const PLACE_WAIT_MS = 3000, PLACE_GAP_MS = 1100;
+const placeCache = new Map();
+let placeChain = Promise.resolve(), placeLast = 0;
+function placeText(j) {
+  const a = (j && j.address) || {}, nd = (j && j.namedetails) || {}, parts = [];
+  const near = a.village || a.town || a.city || a.hamlet || a.municipality || a.suburb || a.neighbourhood || null;
+  // English names; the local name follows in brackets where Nominatim gives one that differs (the nearest place only).
+  const local = near && j.name === near && nd.name && nd.name !== near ? " (" + nd.name + ")" : "";
+  [near && near + local, a.county || a.district || a.city_district, a.state || a.province || a.region, a.country].forEach(v => { if (v && !parts.some(q => q.split(" (")[0] === v)) parts.push(v); });
+  return parts.length ? (near ? "Near " : "In ") + parts.join(", ") : null;
+}
+// Resolves to a place description, or to null when the lookup fails. Never rejects.
+function placeName(lat, lon) {
+  const key = lat.toFixed(4) + "," + lon.toFixed(4);
+  if (!NOMINATIM_URL) return Promise.resolve(null);
+  if (!placeCache.has(key)) {
+    const job = placeChain.then(async () => {
+      const wait = placeLast + PLACE_GAP_MS - Date.now();
+      if (wait > 0) await sleep(wait);
+      placeLast = Date.now();
+      const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 10000);
+      try {
+        const r = await fetch(NOMINATIM_URL + "?" + new URLSearchParams({format: "jsonv2", lat: lat.toFixed(5), lon: lon.toFixed(5), zoom: "14", addressdetails: "1", namedetails: "1", "accept-language": "en"}), {signal: stop.signal});
+        if (!r.ok) throw new Error(r.status);
+        return placeText(await r.json());
+      } catch (e) { placeCache.delete(key); return null; }
+      finally { clearTimeout(timer); }
+    });
+    placeChain = job; placeCache.set(key, job);
+  }
+  return placeCache.get(key);
+}
+// Fill a line with the place name when it arrives. The card never waits for it: after 3 s it says the name is unavailable.
+function fillPlace(node, lat, lon, lead) {
+  let done = false;
+  node.textContent = (lead || "") + "Looking up the place name.";
+  const late = setTimeout(() => { if (!done) node.textContent = (lead || "") + "Place name unavailable right now; the coordinates are given instead."; }, PLACE_WAIT_MS);
+  placeName(lat, lon).then(t => {
+    done = true; clearTimeout(late);
+    if (!t) { node.textContent = (lead || "") + "Place name unavailable; the coordinates are given instead."; return; }
+    node.replaceChildren(lead || "", el("strong", {text: t}), el("span", {class: "note", text: " This is where the centre of the pixel falls. Place names © OpenStreetMap contributors, via Nominatim."}));
+  });
+}
+
 function cardNode(r) {
   const d = det(r), zone = TIMEZONE[D.region.id], row = (k, ...v) => el("div", {class: "kv"}, el("dt", {text: k}), el("dd", {}, ...v));
   const copy = el("button", {type: "button", class: "linkish", text: "Copy"});
@@ -1656,7 +1706,9 @@ function cardNode(r) {
     try { navigator.clipboard.writeText(pointText(d)).then(() => done(true), () => done(false)); } catch (e) { done(false); }
   });
   const here = el("a", {href: "#" + new URLSearchParams({region: D.region.id, day: d.date, at: d.lat.toFixed(4) + "," + d.lon.toFixed(4)}).toString(), text: "Open this point at zoom 14"});
-  return el("div", {class: "card"}, el("h3", {text: "One detection"}), el("dl", {},
+  const place = el("p", {class: "place"});
+  fillPlace(place, d.lat, d.lon);
+  return el("div", {class: "card"}, el("h3", {text: "One detection"}), place, el("dl", {},
     row("Satellite pass, local time", localText(d, zone, true)),
     row("Satellite pass, UTC", utcText(d, true)),
     row("Latitude, longitude", el("span", {class: "pt4", text: pointText(d)}), " ", copy, el("br"), here),
@@ -1678,6 +1730,8 @@ function openCard(r, pan) {
     x.addEventListener("click", closeCard);
     $("cardsheet").replaceChildren(x, cardNode(r)); $("cardsheet").hidden = false;
   } else L.popup({maxWidth: 300, minWidth: 240, className: "detpop"}).setLatLng([r[0], r[1]]).setContent(cardNode(r)).openOn(map);
+  // The table under the map names the opened detection too.
+  if (tbl) { const d = det(r); $("detplace").hidden = false; fillPlace($("detplace"), d.lat, d.lon, "Opened: " + localText(d, TIMEZONE[D.region.id], true) + ", " + pointText(d) + ". "); }
   layers.pick.clearLayers();
   L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#111", weight: 5, fill: false, interactive: false}).addTo(layers.pick);
   L.circleMarker([r[0], r[1]], {pane: "pts", radius: 13, color: "#f2a900", weight: 3, fill: false, interactive: false}).addTo(layers.pick);
@@ -1696,7 +1750,7 @@ function nearestDetection(e) {
 // ---------- table of detections: one day, the current view, or one grid cell ----------
 const TABLE_STEP = 200;
 let tbl = null;
-function hideTable() { tbl = null; $("detsec").hidden = true; }
+function hideTable() { tbl = null; $("detsec").hidden = true; $("detplace").hidden = true; }
 function setTable(mode, rows, title, sum, csvName) {
   const keep = tbl && tbl.mode === mode && tbl.title === title;
   tbl = {mode, rows, title, sum, csvName, key: keep ? tbl.key : "time", dir: keep ? tbl.dir : 1, limit: keep ? tbl.limit : TABLE_STEP, on: keep ? tbl.on : null};
