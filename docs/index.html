@@ -533,6 +533,34 @@ function coeff(m) {
   const c = D.snpp_to_aqua.coefficients, k = c.by_month[String(m)].k;
   return k != null ? k : c.annual_k;
 }
+// NOAA-20 is converted with the Suomi NPP coefficients unless its own did better on held-out years (as_used in the region file).
+function n20Table() {
+  const u = D.as_used && D.as_used.noaa20_standard;
+  return u && u.adopted === "noaa20_coefficients" && u.noaa20_coefficients ? u.noaa20_coefficients : D.snpp_to_aqua.coefficients;
+}
+function coeffN20(m) {
+  if (!D.calibration_accepted) return null;
+  const c = n20Table(), k = c.by_month[String(m)].k;
+  return k != null ? k : c.annual_k;
+}
+// Whether recent VIIRS-converted values may be shown as estimates: the chain as used must pass the acceptance rule too.
+function asUsedOk() { return !!(D.calibration_accepted && (!D.as_used || D.as_used.accepted)); }
+// The error of the conversion as it is used for recent months, in words. Every number is read from the region file.
+function asUsedText(short) {
+  const u = D.as_used, a = D.snpp_to_aqua.leave_one_year_out.monthly_k.all_years;
+  if (!u || !D.calibration_accepted || !a) return "";
+  const st = u.noaa20_standard, own = st.adopted === "noaa20_coefficients", e = (own ? st.with_noaa20_coefficients : st.with_snpp_coefficients).all_years;
+  const other = (own ? st.with_snpp_coefficients : st.with_noaa20_coefficients).all_years, nrt = u.noaa20_nrt, w = nrt.worst_month;
+  let t = "Recent months are converted from NOAA-20, not Suomi NPP, and from near-real-time data. Tested that way on years left out, the conversion is off by " + pct(e.abs_error_pct_of_total) + " of the total over " + e.months + " months of standard data (" + st.years[0] + " to " + st.years[1] + ")";
+  if (nrt.error) t += ", and by " + pct(nrt.error.abs_error_pct_of_total) + " over the " + nrt.months.length + " complete near-real-time " + (nrt.months.length === 1 ? "month" : "months") + " so far" + (w && w.pct_diff != null ? " (furthest off: " + monthName(w.month) + ", " + (w.pct_diff > 0 ? "+" : "") + pct(w.pct_diff) + ")" : "");
+  t += ".";
+  if (short) return t;
+  t += " The " + pct(a.abs_error_pct_of_total) + " figure is for Suomi NPP standard data, the longer record the test was built on. The tests are of different satellites, and the near-real-time months are few and not yet reprocessed, so the figures need not agree.";
+  if (other) t += own ? " NOAA-20 uses its own factors here: on years left out they did better (" + pct(e.abs_error_pct_of_total) + ") than the Suomi NPP factors (" + pct(other.abs_error_pct_of_total) + ")."
+    : " Factors fitted on NOAA-20 itself were tested and did no better (" + pct(other.abs_error_pct_of_total) + " against " + pct(e.abs_error_pct_of_total) + "), so the Suomi NPP factors are used.";
+  if (!u.accepted) t += " Used this way the conversion fails the page's own test, so recent converted values are marked not reliable.";
+  return t;
+}
 function regionSeries() { return {months: D.months, medians: mediansOf(D.months), current: D.current_month}; }
 
 // ---------- loading ----------
@@ -803,8 +831,8 @@ function drawDrill() {
     const have = ms.filter(x => x && x.h != null), top = have.length ? have.reduce((a, b) => b.h > a.h ? b : a) : null;
     sum = selYear + ": " + (have.length ? fmt(have.reduce((t, x) => t + x.h, 0)) + " detections in " + have.length + " months with a value. The most: " + monthName(top.m) + ", with " + fmt(top.h) + "." : "no month has a value on the MODIS Aqua scale.") + " Select a month to see its days.";
   } else {
-    const x = S.months.find(v => v.m === selected), pick = mapSensor(x), m = +selected.slice(5), n = daysIn(selected), k = $("sensor").value === "auto" ? coeff(m) : null;
-    const viirs = k ? (x.n20 != null ? "VIIRS_NOAA20" : x.snpp != null ? "VIIRS_SNPP" : null) : null, vi = GRID_SENSORS.indexOf(viirs);
+    const x = S.months.find(v => v.m === selected), pick = mapSensor(x), m = +selected.slice(5), n = daysIn(selected), k0 = $("sensor").value === "auto" ? coeff(m) : null;
+    const viirs = k0 ? (x.n20 != null ? "VIIRS_NOAA20" : x.snpp != null ? "VIIRS_SNPP" : null) : null, vi = GRID_SENSORS.indexOf(viirs), k = viirs === "VIIRS_NOAA20" ? coeffN20(m) : k0;
     kids.push(el("h3", {text: "Detections each day of " + monthName(selected) + ", " + D.region.name + (area ? " (whole region)" : "")}));
     if (!daily) kids.push(el("p", {class: "note", text: "The daily counts for this region could not be loaded."}));
     else if (!pick.s) kids.push(el("p", {class: "note", text: "No satellite in this record was observing in " + monthName(selected) + "."}));
@@ -913,9 +941,12 @@ function drawDetail(x) {
   box.append(el("p", {class: "note", text: (STATUS[st] || st) + (x.status.startsWith("partial_month_") ? ". This month is not complete, so it is not compared with a full month." : ".")}));
   const v = validationFor(x);
   if (v) box.append(el("p", {class: "note", text: v.text}));
+  // A recent month's converted value comes from NOAA-20 near-real-time data: say how that chain has done.
+  const lastStd = D.sensors["VIIRS_NOAA20/standard"] && D.sensors["VIIRS_NOAA20/standard"].last;
+  if (x.n20_eq != null && lastStd && x.m > lastStd.slice(0, 7) && asUsedText()) box.append(el("p", {class: "note", id: "detailused", text: (asUsedOk() ? "" : "The converted NOAA-20 value for this month is not reliable. ") + asUsedText(true)}));
   const rows = [["MODIS Terra", x.terra, null], ["MODIS Aqua", x.aqua, x.aqua], ["VIIRS Suomi NPP", x.snpp, x.snpp_eq], ["VIIRS NOAA-20", x.n20, x.n20_eq]];
   const t = el("table", {}, el("tr", {}, el("th", {text: "Satellite"}), el("th", {class: "num", text: "Detections counted"}), el("th", {class: "num", text: "Detections on the Aqua scale"})));
-  rows.forEach(r => t.append(el("tr", {}, el("td", {text: r[0]}), el("td", {class: "num", text: r[1] == null ? "not flying" : fmt(r[1])}), el("td", {class: "num", text: r[2] == null ? "not converted" : fmt(r[2])}))));
+  rows.forEach(r => t.append(el("tr", {}, el("td", {text: r[0]}), el("td", {class: "num", text: r[1] == null ? "not flying" : fmt(r[1])}), el("td", {class: "num", text: r[2] == null ? "not converted" : r[0] === "VIIRS NOAA-20" && lastStd && x.m > lastStd.slice(0, 7) && !asUsedOk() ? "not reliable" : fmt(r[2])}))));
   box.append(t);
 }
 
@@ -959,11 +990,12 @@ function drawNow() {
   box.append(r);
   const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "This year"}), el("th", {class: "num", text: "Detections"}), el("th", {class: "num", text: "Higher than"})));
   t.append(el("tr", {}, el("td", {}, el("span", {class: "sw", style: "background:#14213d;border-radius:50%;width:12px;height:12px"}), "MODIS Aqua, near-real-time"), el("td", {class: "num", text: fmt(c.aqua_nrt_same_days)}), el("td", {class: "num", text: c.years_below_current_aqua_nrt + " of " + c.baseline_years + " years"})));
-  if (c.value_aqua_equiv != null) t.append(el("tr", {}, el("td", {}, el("span", {class: "sw", style: "background:#0b6e6e;border-radius:50%;width:12px;height:12px"}), "NOAA-20, converted"), el("td", {class: "num", text: fmt(c.value_aqua_equiv)}), el("td", {class: "num", text: c.years_below_current + " of " + c.baseline_years + " years"})));
+  if (c.value_aqua_equiv != null) t.append(el("tr", {}, el("td", {}, el("span", {class: "sw", style: "background:#0b6e6e;border-radius:50%;width:12px;height:12px"}), "NOAA-20, converted"), el("td", {class: "num", text: asUsedOk() ? fmt(c.value_aqua_equiv) : "not reliable"}), el("td", {class: "num", text: asUsedOk() ? c.years_below_current + " of " + c.baseline_years + " years" : ""})));
   box.append(t);
+  if (c.value_aqua_equiv != null && asUsedText()) box.append(el("p", {class: "note", id: "nowused", style: "margin-top:10px", text: "How far to trust the converted value: " + asUsedText(true)}));
   box.append(el("p", {class: "note", style: "margin-top:10px", text: c.value_aqua_equiv != null ? "Two satellites, two estimates. Where they disagree, the gap is the uncertainty. Both are provisional." + (area ? " The NOAA-20 conversion is the one fitted for the whole region." : "") : "Provisional. VIIRS is not converted in this region, so only Aqua is shown."}));
   // Say what drives a gap between the two estimates, with the numbers behind it.
-  const m = +c.month.slice(5), bm = D.snpp_to_aqua.coefficients.by_month[String(m)], k = coeff(m);
+  const m = +c.month.slice(5), bm = n20Table().by_month[String(m)], k = coeffN20(m);
   if (c.value_aqua_equiv != null && c.aqua_nrt_same_days > 0 && k) {
     box.append(el("p", {class: "note", text: "Over these days NOAA-20 recorded " + (c.raw_noaa20 / c.aqua_nrt_same_days).toFixed(1) + " detections for every one from Aqua. The conversion for " + MONTHS[m - 1] + " assumes " + k.toFixed(1)
       + (bm.yearly_ratio_min != null ? "; in earlier years the " + MONTHS[m - 1] + " ratio ranged from " + bm.yearly_ratio_min + " to " + bm.yearly_ratio_max : "")
@@ -1073,6 +1105,7 @@ function drawHarm() {
     figs.append(fig("Calendar months with enough detections for a factor", f.own + " of 12", (f.need ? f.need + " are needed. " : "") + (D.region.id === "hawaii" ? "Most heat detected here is volcanic, and the record cannot reliably separate it from vegetation fire." : ""), "refused"));
   }
   const left = el("div", {}, figs, el("p", {style: "margin:10px 0 0", text: ok ? "One record: MODIS Aqua where it has data, VIIRS divided by its month's factor elsewhere. " : "The same test that accepts a conversion elsewhere refuses it here, and the page says so rather than show a number it cannot support. "}, el("a", {href: "#h-trust", text: "How these figures were measured, and all regions side by side"})));
+  if (ok && asUsedText()) left.append(el("p", {class: "note", id: "harmused", style: "margin:8px 0 0", text: asUsedText()}));
   box.append(el("div", {class: "harmgrid"}, left, pairChart(D)));
 }
 
@@ -1198,7 +1231,8 @@ function areaSeries(docs) {
     const keep = (region, n) => region == null ? null : n;   // a satellite not flying stays "not flying"
     const y = {m: x.m, terra: keep(x.terra, c[1]), aqua: keep(x.aqua, c[0]), snpp: keep(x.snpp, c[2]), n20: keep(x.n20, c[3]), src: x.src, status: x.status};
     y.snpp_eq = y.snpp != null && k ? round1(y.snpp / k) : null;
-    y.n20_eq = y.n20 != null && k ? round1(y.n20 / k) : null;
+    const kn = coeffN20(+x.m.slice(5));
+    y.n20_eq = y.n20 != null && kn ? round1(y.n20 / kn) : null;
     y.h = x.h == null ? null : x.src === "MODIS_AQUA" ? y.aqua : x.src === "VIIRS_SNPP" ? y.snpp_eq : x.src === "VIIRS_NOAA20" ? y.n20_eq : null;
     return y;
   });
@@ -1210,7 +1244,7 @@ function areaSeries(docs) {
     const vals = [];
     for (let y = first; y <= last; y++) vals.push(mtd[y] ? mtd[y].standard[0] : 0);
     vals.sort((p, q) => p - q);
-    const now = mtd[year] ? mtd[year].all[3] : 0, nowAqua = mtd[year] ? mtd[year].all[0] : 0, k = coeff(+c.month.slice(5));
+    const now = mtd[year] ? mtd[year].all[3] : 0, nowAqua = mtd[year] ? mtd[year].all[0] : 0, k = coeffN20(+c.month.slice(5));
     const value = k ? round1(now / k) : null;
     current = Object.assign({}, c, {value_aqua_equiv: value, raw_noaa20: now, aqua_nrt_same_days: nowAqua, baseline_years: vals.length,
       baseline_median: median(vals), baseline_min: vals[0], baseline_max: vals[vals.length - 1],
@@ -1720,7 +1754,7 @@ function mapSensor(x) {
   let s = $("sensor").value, k = null, label;
   if (s === "auto") {
     s = GRID_SENSORS.includes(x.src) ? x.src : x.aqua != null ? "MODIS_AQUA" : null;
-    if (s && s.startsWith("VIIRS")) k = coeff(+x.m.slice(5));
+    if (s && s.startsWith("VIIRS")) k = s === "VIIRS_NOAA20" ? coeffN20(+x.m.slice(5)) : coeff(+x.m.slice(5));
     label = s ? SENSOR[s] + (k ? ", converted to the Aqua scale" : s === "MODIS_TERRA" ? " (before Aqua; not on the Aqua scale)" : "") : "no satellite";
   } else label = SENSOR[s] + (s === "MODIS_AQUA" ? "" : ", as recorded (not converted)");
   return {s, i: GRID_SENSORS.indexOf(s), k, label, flying: !!s && x[FIELD[s]] != null};

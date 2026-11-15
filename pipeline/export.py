@@ -60,6 +60,7 @@ def export_summary(region_id, name, bbox, processed, out_dir):
         "acceptance_rule": cal["acceptance_rule"],
         "snpp_to_aqua": cal["snpp_to_aqua"],
         "noaa20_to_snpp": cal["noaa20_to_snpp"],
+        "as_used": cal.get("as_used"),
         "current_month": cal["current_month"],
         "static_source_mask": schema["static_source_mask"],
         "sensors": schema["sensors"],

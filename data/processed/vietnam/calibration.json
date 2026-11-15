@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-14T20:48:04+00:00",
+  "generated_at": "2026-11-15T01:38:11+00:00",
   "metric": "n_veg_conf",
   "data_through": "2026-11-14",
   "snpp_to_aqua": {
@@ -358,11 +358,244 @@
   },
   "calibration_accepted": true,
   "acceptance_rule": "leave-one-year-out error <= 50% of total and at least 9 calendar months with their own coefficient; this region: error 12.0%, 12 months",
+  "as_used": {
+    "definition": "NOAA-20 count / k(m), k(m) fitted on Suomi NPP against Aqua (standard data), compared with the MODIS Aqua count",
+    "why": "the tested conversion is Suomi NPP standard against Aqua standard; recent months use NOAA-20, near-real-time",
+    "noaa20_standard": {
+      "paired_months": 100,
+      "years": [
+        2018,
+        2026
+      ],
+      "with_snpp_coefficients": {
+        "all_years": {
+          "months": 100,
+          "mae": 567.1,
+          "median_abs_error": 81.9,
+          "abs_error_pct_of_total": 13.4,
+          "bias_pct": -2.8
+        },
+        "before_2022": {
+          "months": 45,
+          "mae": 416.3,
+          "median_abs_error": 62.8,
+          "abs_error_pct_of_total": 9.7,
+          "bias_pct": -4.4
+        },
+        "2022_onward": {
+          "months": 55,
+          "mae": 690.6,
+          "median_abs_error": 95.7,
+          "abs_error_pct_of_total": 16.5,
+          "bias_pct": -1.6
+        }
+      },
+      "with_noaa20_coefficients": {
+        "all_years": {
+          "months": 100,
+          "mae": 558.9,
+          "median_abs_error": 110.8,
+          "abs_error_pct_of_total": 13.2,
+          "bias_pct": 0.0
+        },
+        "before_2022": {
+          "months": 45,
+          "mae": 438.6,
+          "median_abs_error": 106.7,
+          "abs_error_pct_of_total": 10.2,
+          "bias_pct": -0.9
+        },
+        "2022_onward": {
+          "months": 55,
+          "mae": 657.4,
+          "median_abs_error": 121.4,
+          "abs_error_pct_of_total": 15.7,
+          "bias_pct": 0.8
+        }
+      },
+      "noaa20_coefficients": {
+        "annual_k": 6.043,
+        "by_month": {
+          "1": {
+            "k": 6.376,
+            "uses_annual_fallback": false,
+            "years": 8,
+            "yearly_ratio_min": 5.03,
+            "yearly_ratio_max": 7.44
+          },
+          "2": {
+            "k": 7.061,
+            "uses_annual_fallback": false,
+            "years": 8,
+            "yearly_ratio_min": 6.15,
+            "yearly_ratio_max": 8.02
+          },
+          "3": {
+            "k": 5.451,
+            "uses_annual_fallback": false,
+            "years": 8,
+            "yearly_ratio_min": 4.87,
+            "yearly_ratio_max": 7.63
+          },
+          "4": {
+            "k": 5.559,
+            "uses_annual_fallback": false,
+            "years": 9,
+            "yearly_ratio_min": 4.24,
+            "yearly_ratio_max": 18.65
+          },
+          "5": {
+            "k": 6.948,
+            "uses_annual_fallback": false,
+            "years": 9,
+            "yearly_ratio_min": 5.56,
+            "yearly_ratio_max": 9.36
+          },
+          "6": {
+            "k": 6.203,
+            "uses_annual_fallback": false,
+            "years": 9,
+            "yearly_ratio_min": 4.83,
+            "yearly_ratio_max": 7.1
+          },
+          "7": {
+            "k": 6.639,
+            "uses_annual_fallback": false,
+            "years": 9,
+            "yearly_ratio_min": 4.21,
+            "yearly_ratio_max": 8.09
+          },
+          "8": {
+            "k": 7.072,
+            "uses_annual_fallback": false,
+            "years": 8,
+            "yearly_ratio_min": 5.78,
+            "yearly_ratio_max": 26.71
+          },
+          "9": {
+            "k": 5.39,
+            "uses_annual_fallback": false,
+            "years": 8,
+            "yearly_ratio_min": 3.14,
+            "yearly_ratio_max": 7.6
+          },
+          "10": {
+            "k": 5.904,
+            "uses_annual_fallback": false,
+            "years": 8,
+            "yearly_ratio_min": 4.34,
+            "yearly_ratio_max": 8.19
+          },
+          "11": {
+            "k": 5.96,
+            "uses_annual_fallback": false,
+            "years": 8,
+            "yearly_ratio_min": 4.35,
+            "yearly_ratio_max": 7.77
+          },
+          "12": {
+            "k": 6.067,
+            "uses_annual_fallback": false,
+            "years": 8,
+            "yearly_ratio_min": 5.41,
+            "yearly_ratio_max": 6.76
+          }
+        }
+      },
+      "worst_months_with_snpp_coefficients": [
+        {
+          "month": "2020-08",
+          "observed_aqua": 83,
+          "predicted": 324.5,
+          "pct_diff": 291.0
+        },
+        {
+          "month": "2022-04",
+          "observed_aqua": 3194,
+          "predicted": 11603.1,
+          "pct_diff": 263.3
+        },
+        {
+          "month": "2025-09",
+          "observed_aqua": 380,
+          "predicted": 190.6,
+          "pct_diff": -49.8
+        },
+        {
+          "month": "2024-05",
+          "observed_aqua": 1504,
+          "predicted": 2237.5,
+          "pct_diff": 48.8
+        },
+        {
+          "month": "2024-11",
+          "observed_aqua": 895,
+          "predicted": 526.2,
+          "pct_diff": -41.2
+        }
+      ],
+      "adopted": "noaa20_coefficients",
+      "adoption_rule": "NOAA-20's own coefficients are used only if their leave-one-year-out error over all years is lower than that of the Suomi NPP coefficients on the same months"
+    },
+    "noaa20_nrt": {
+      "months": [
+        {
+          "month": "2026-08",
+          "aqua": 313,
+          "aqua_quality": "standard",
+          "noaa20_nrt": 1340,
+          "predicted": 189.5,
+          "pct_diff": -39.5
+        },
+        {
+          "month": "2026-09",
+          "aqua": 461,
+          "aqua_quality": "nrt",
+          "noaa20_nrt": 2225,
+          "predicted": 412.8,
+          "pct_diff": -10.5
+        },
+        {
+          "month": "2026-10",
+          "aqua": 755,
+          "aqua_quality": "nrt",
+          "noaa20_nrt": 3111,
+          "predicted": 527.0,
+          "pct_diff": -30.2
+        }
+      ],
+      "error": {
+        "months": 3,
+        "mae": 133.3,
+        "median_abs_error": 123.5,
+        "abs_error_pct_of_total": 26.1,
+        "bias_pct": -26.1
+      },
+      "worst_month": {
+        "month": "2026-08",
+        "aqua": 313,
+        "aqua_quality": "standard",
+        "noaa20_nrt": 1340,
+        "predicted": 189.5,
+        "pct_diff": -39.5
+      },
+      "single_nrt_ratio_leave_one_month_out": {
+        "months": 3,
+        "mae": 53.4,
+        "median_abs_error": 72.9,
+        "abs_error_pct_of_total": 10.5,
+        "bias_pct": -0.9
+      },
+      "note": "too few months, all in one year, to fit or adopt anything; a single ratio fitted on the other near-real-time months is shown for comparison only"
+    },
+    "accepted": true,
+    "acceptance_rule": "the region's conversion is accepted, and the chain as used passes the same rule: error <= 50% of total on held-out years of NOAA-20 standard data and over the complete near-real-time months, and at least 9 calendar months with their own coefficient; this region: 13.2% (standard), 26.1% (near-real-time, 3 months), 12 months"
+  },
   "current_month": {
     "month": "2026-11",
     "days": "1-13",
     "source": "VIIRS_NOAA20 near-real-time, on the Aqua scale",
-    "value_aqua_equiv": 98.8,
+    "value_aqua_equiv": 115.1,
     "raw_noaa20": 686,
     "aqua_nrt_same_days": 180,
     "baseline": "MODIS Aqua, same days, 2002-2025",
@@ -370,7 +603,7 @@
     "baseline_median": 180.5,
     "baseline_min": 56,
     "baseline_max": 453,
-    "years_below_current": 8,
+    "years_below_current": 9,
     "years_below_current_aqua_nrt": 12,
     "caveat": "near-real-time files have no `type` column, so static heat sources are not removed from the current month"
   }

@@ -63,7 +63,7 @@ Why counts: the same filter can be applied to every sensor's records, and counts
 - **Calibration pair:** VIIRS Suomi NPP (375 m) against MODIS Aqua (about 1 km). Both cross the equator in the early afternoon, so they see the same part of the day. Terra (morning) is never put on the Aqua scale.
 - **Training window:** every month from February 2012 to July 2026 in which both sensors have complete, standard-quality data (174 months in each region). Partial first months and near-real-time months are never used.
 - **Coefficient:** for each calendar month m, k(m) = Σ S-NPP counts / Σ Aqua counts over all training years. A VIIRS count is put on the Aqua scale by dividing by k(m). A calendar month whose Aqua total is under 30 falls back to one annual coefficient.
-- **NOAA-20:** used 1:1 in place of S-NPP (S-NPP's last day of data is 2 Nov 2026). The same leave-one-year-out test of a NOAA-20 → S-NPP coefficient did not reduce the error, so none is applied.
+- **NOAA-20:** converted with the Suomi NPP coefficients, or with coefficients fitted on NOAA-20 against Aqua where those have the lower error on held-out years (see "The conversion as it is used"). A further NOAA-20 → S-NPP coefficient was tested and did not reduce the error, so none is applied.
 - **Which value the calendar shows:** MODIS Aqua when it has data for the month (standard, else near-real-time); otherwise VIIRS on the Aqua scale. In all three regions Aqua is still flying, so every calendar month from July 2002 is an Aqua count; the conversion is used for the month-to-date estimate and the "On the Aqua scale" columns.
 - **Refusal:** calibration is refused for a region when the leave-one-year-out error exceeds 50% of the total, or fewer than 9 calendar months have their own coefficient. A refused region shows Aqua only and states the measured error.
 
@@ -74,14 +74,14 @@ The current month is compared with the median of the **same day range** (day 1 t
 | Region | Aqua NRT, 1–13 Nov 2026 | NOAA-20 on the Aqua scale | Same days, earlier years: median (range) |
 |---|---:|---:|---|
 | California | 137 | 199.8 (raw 1,223, k(11) = 6.122) | 147 (49–642) |
-| Vietnam region | 180 | 98.8 (raw 686, k(11) = 6.942) | 180.5 (56–453) |
-| Contiguous United States | 1,356 | 1,880.7 (raw 9,681, k(11) = 5.148) | 2,181 (1,146–3,090) |
+| Vietnam region | 180 | 115.1 (raw 686, NOAA-20's own k(11) = 5.960) | 180.5 (56–453) |
+| Contiguous United States | 1,356 | 1,783.5 (raw 9,681, NOAA-20's own k(11) = 5.428) | 2,181 (1,146–3,090) |
 | Hawaiʻi | 0 | not converted (raw 1) | 0 (0–9) |
 
 **Why the two estimates disagree in November 2026.** Checked day by day in `daily_counts.csv`:
 
 - *California.* NOAA-20 recorded 8.9 counted detections per Aqua detection over 1–13 November, close to September (9.4) and October (8.6). The sensors behave as before; the gap comes from the November coefficient, k(11) = 6.12, which is lower than this year's ratio. November is one of the least certain months: its leave-one-year-out error is 24.2% of the total (September 5.4%), and the yearly November ratio ranged 4.43–9.69 over 2012–2025. September and October agree within 2% because k(9) = 9.62 and k(10) = 8.50 happen to match this year's ratios.
-- *Vietnam region.* September and October do **not** agree within 2%: NOAA-20 on the Aqua scale is 373 vs Aqua 461 (−19%) and 500 vs 755 (−34%). The yearly November S-NPP/Aqua ratio fell from 9.88 (2012) to 4.12–5.16 (2023–2025), and this year's NOAA-20/Aqua ratio is 3.8; k(11) = 6.94 pools all years, so the converted value runs low. This matches the larger error from 2022 onward (15.8% vs 10.5%).
+- *Vietnam region.* September and October do **not** agree within 2%: NOAA-20 on the Aqua scale is 413 vs Aqua 461 (−10.5%) and 527 vs 755 (−30.2%) with NOAA-20's own factors (373 and 500 with the Suomi NPP factors used before the as-used test below). The yearly November S-NPP/Aqua ratio fell from 9.88 (2012) to 4.12–5.16 (2023–2025), and this year's NOAA-20/Aqua ratio is 3.8; k(11) = 6.94 pools all years, so the converted value runs low. This matches the larger error from 2022 onward (15.8% vs 10.5%).
 - *Incomplete days.* The last date (14 Nov) is already dropped. Days on which Aqua has no record at all while NOAA-20 has 10 or more: California 3 of 13 in November (02, 03, 06) against 4 in September and 2 in October; Vietnam region 0 in November against 9 in September and 9 in October. Missing Aqua days do not explain the November gap.
 - *S-NPP* stopped on 2 Nov and does not enter either estimate.
 
@@ -97,6 +97,24 @@ Leave-one-year-out: each year is predicted from coefficients fitted without it a
 | Vietnam region | 174 | 6.25 | 524.7% | 16.8% | **12.0%** | 10.5% / 15.8% | +0.1% | 3.4% | yes |
 | Contiguous United States | 174 | 6.64 | 563.8% | 28.2% | **10.4%** | 10.1% / 10.9% | +0.3% | 4.5% | yes |
 | Hawaiʻi | 174 | 169.08 | 16,808.2% | 168.0% | **256.2%** | 308.7% / 136.2% | +124.5% | 15.8% | **no** |
+
+### The conversion as it is used
+
+The table above tests Suomi NPP standard data against Aqua standard data. For recent months the page converts **NOAA-20**, and **near-real-time** rows. `calibrate.py` measures that chain and writes it to `calibration.json` and `<region>.json` under `as_used`:
+
+1. *NOAA-20 standard against Aqua standard*, the 100 months both have (April 2018 to July 2026). Each year is predicted with coefficients fitted without it, once with the Suomi NPP coefficients and once with coefficients fitted on NOAA-20 itself. NOAA-20's own coefficients are adopted for a region only if their error on the held-out years is lower.
+2. *NOAA-20 near-real-time against Aqua*, the complete months both have (August to October 2026; Aqua is standard in August and near-real-time after). Three months in one year cannot be fitted and tested on held-out years, so they are listed as they are.
+
+| Region | Suomi NPP k on NOAA-20 (bias) | NOAA-20's own k (bias) | Used | Near-real-time months: Aug, Sep, Oct 2026 | Error over those 3 months | Passes the acceptance rule as used |
+|---|---:|---:|---|---|---:|---|
+| California | 14.6% (+3.3%) | 15.6% (+0.9%) | Suomi NPP k | −14.5%, −1.9%, +1.4% | 9.6% | yes |
+| Vietnam region | 13.4% (−2.8%) | 13.2% (0.0%) | NOAA-20's own k | −39.5%, −10.5%, −30.2% | 26.1% | yes |
+| Contiguous United States | 10.8% (+5.1%) | 10.4% (+0.4%) | NOAA-20's own k | −0.3%, −7.2%, +26.1% | 6.3% | yes |
+| Hawaiʻi | 264.9% | 406.2% | not converted | not meaningful (0 to 2 Aqua detections a month) | 93.3% | no |
+
+What this changed: in the Vietnam region and the contiguous United States every NOAA-20 value on the Aqua scale (104 months, April 2018 onward) is now computed with NOAA-20's own coefficients, and the month-to-date estimate moved from 98.8 to 115.1 (Vietnam region) and from 1,880.7 to 1,783.5 (United States). No Suomi NPP coefficient, no error figure in the validation table and no count changed. The gains on held-out years are small (0.2 and 0.4 points); the rule was to adopt on any measured improvement, and the near-real-time months moved the same way (United States October +39.1% to +26.1%; Vietnam region October −33.8% to −30.2%).
+
+What it shows: on standard data the chain as used is about as accurate as the Suomi NPP test. On near-real-time data single months have been off by 26% to 40% in two regions. The page gives both figures wherever a recent converted value appears. Where the chain as used fails the acceptance rule (error over 50% on either measurement), recent converted values are shown as "not reliable"; with the present data that happens in no accepted region. The worst standard months, and a single near-real-time ratio tested by leaving one month out, are in `as_used` too.
 
 Forward test (fit up to 2018, predict later years with monthly k): California 13.5% for 2019–2021 and 22.8% from 2022; Vietnam region 9.4% and 18.1%; contiguous United States 14.6% and 13.3%; Hawaiʻi 98.5% and 114.1%.
 

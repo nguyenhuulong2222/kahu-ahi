@@ -239,6 +239,109 @@ def month_to_date(daily_path, data_through, k_month):
     }
 
 
+def period_errors(rows, split_year):
+    """rows: [(year, observed, predicted)] -> the three error tables."""
+    return {"all_years": errors([(o, p) for _, o, p in rows]),
+            f"before_{split_year}": errors([(o, p) for y, o, p in rows if y < split_year]),
+            f"{split_year}_onward": errors([(o, p) for y, o, p in rows if y >= split_year])}
+
+
+def held_out(train, test):
+    """Predict each year of `test` from monthly coefficients fitted on `train` without that year.
+    Returns [(year, month_of_year, observed, predicted)]."""
+    out = []
+    for year in sorted({y for y, *_ in test}):
+        k, annual = fit([p for p in train if p[0] != year])
+        for y, m, num, den in test:
+            if y == year:
+                pred = predict(k, annual, m, num, "monthly")
+                if pred is not None:
+                    out.append((y, m, den, pred))
+    return out
+
+
+def worst_months(rows, n=5, min_observed=30):
+    """The months furthest off in percent, among months with at least `min_observed` observed detections."""
+    big = [(abs(p - o) / o, y, m, o, p) for y, m, o, p in rows if o >= min_observed]
+    return [{"month": f"{y}-{m:02d}", "observed_aqua": o, "predicted": round(p, 1), "pct_diff": round(100 * (p - o) / o, 1)}
+            for _, y, m, o, p in sorted(big, reverse=True)[:n]]
+
+
+def as_used(monthly, through_month, snpp_aqua, k_sa, annual_sa, accepted):
+    """The error of the conversion as the page uses it for recent months.
+
+    The coefficients are fitted on Suomi NPP against Aqua, both standard data. For recent months the page
+    applies them to NOAA-20, and to near-real-time rows. Two measurements of that chain:
+
+    1. NOAA-20 standard against Aqua standard, every month both have: each year predicted with Suomi NPP
+       coefficients fitted without that year. Beside it, the same test with coefficients fitted on NOAA-20
+       itself. The NOAA-20 coefficients are adopted only if their error on the held-out years is lower.
+    2. NOAA-20 near-real-time against Aqua, every complete month both have. There are only as many such months
+       as the near-real-time files hold, all in one year, so nothing can be fitted and tested on held-out years;
+       the months are listed one by one, with a single near-real-time ratio tested by leaving one month out.
+    """
+    n20_aqua = pairs(monthly, "VIIRS_NOAA20", "MODIS_AQUA", through_month)
+    out = {"definition": "NOAA-20 count / k(m), k(m) fitted on Suomi NPP against Aqua (standard data), compared with the MODIS Aqua count",
+           "why": "the tested conversion is Suomi NPP standard against Aqua standard; recent months use NOAA-20, near-real-time"}
+    with_snpp = held_out(snpp_aqua, n20_aqua)
+    with_own = held_out(n20_aqua, n20_aqua)
+    e_snpp, e_own = period_errors([(y, o, p) for y, _, o, p in with_snpp], DRIFT_YEAR), period_errors([(y, o, p) for y, _, o, p in with_own], DRIFT_YEAR)
+    a, b = (e_snpp["all_years"] or {}).get("abs_error_pct_of_total"), (e_own["all_years"] or {}).get("abs_error_pct_of_total")
+    k_own, annual_own = fit(n20_aqua)
+    adopt_own = a is not None and b is not None and b < a
+    out["noaa20_standard"] = {
+        "paired_months": len(n20_aqua),
+        "years": [min(y for y, *_ in n20_aqua), max(y for y, *_ in n20_aqua)] if n20_aqua else None,
+        "with_snpp_coefficients": e_snpp,
+        "with_noaa20_coefficients": e_own,
+        "noaa20_coefficients": describe_k(n20_aqua, k_own, annual_own) if n20_aqua else None,
+        "worst_months_with_snpp_coefficients": worst_months(with_snpp),
+        "adopted": "noaa20_coefficients" if adopt_own else "snpp_coefficients",
+        "adoption_rule": "NOAA-20's own coefficients are used only if their leave-one-year-out error over all years is lower than that of the Suomi NPP coefficients on the same months",
+    }
+    k_use, annual_use = (k_own, annual_own) if adopt_own else (k_sa, annual_sa)
+    # 2. near-real-time months
+    months, rows = [], []
+    for month in sorted(monthly):
+        c = monthly[month]
+        if month >= through_month or "VIIRS_NOAA20" not in c or "MODIS_AQUA" not in c or c["VIIRS_NOAA20"]["quality"] != "nrt":
+            continue
+        m = int(month[5:])
+        coeff = k_use[m] if k_use[m] is not None else annual_use
+        if not coeff:
+            continue
+        n, o = c["VIIRS_NOAA20"]["value"], c["MODIS_AQUA"]["value"]
+        pred = n / coeff
+        rows.append((int(month[:4]), m, n, o, pred))
+        months.append({"month": month, "aqua": o, "aqua_quality": c["MODIS_AQUA"]["quality"], "noaa20_nrt": n, "predicted": round(pred, 1),
+                       "pct_diff": round(100 * (pred - o) / o, 1) if o else None})
+    loo = []
+    for i, (_, _, n, o, _) in enumerate(rows):
+        rest = [r for j, r in enumerate(rows) if j != i]
+        den = sum(r[3] for r in rest)
+        if len(rest) >= 1 and den > 0 and sum(r[2] for r in rest) > 0:
+            loo.append((o, n / (sum(r[2] for r in rest) / den)))
+    out["noaa20_nrt"] = {
+        "months": months,
+        "error": errors([(o, p) for _, _, _, o, p in rows]),
+        "worst_month": max(months, key=lambda x: abs(x["pct_diff"] or 0)) if months else None,
+        "single_nrt_ratio_leave_one_month_out": errors(loo),
+        "note": "too few months, all in one year, to fit or adopt anything; a single ratio fitted on the other near-real-time months is shown for comparison only",
+    }
+    e_std = out["noaa20_standard"]["with_noaa20_coefficients" if adopt_own else "with_snpp_coefficients"]["all_years"]
+    std_pct = e_std["abs_error_pct_of_total"] if e_std else None
+    nrt_pct = out["noaa20_nrt"]["error"]["abs_error_pct_of_total"] if out["noaa20_nrt"]["error"] else None
+    own = sum(1 for v in k_use.values() if v is not None)
+    ok = bool(accepted and std_pct is not None and std_pct <= MAX_LOYO_ERROR_PCT and own >= MIN_MONTHS_WITH_OWN_K
+              and (nrt_pct is None or nrt_pct <= MAX_LOYO_ERROR_PCT))
+    out["accepted"] = ok
+    out["acceptance_rule"] = (f"the region's conversion is accepted, and the chain as used passes the same rule: error <= {MAX_LOYO_ERROR_PCT}% of total "
+                              f"on held-out years of NOAA-20 standard data and over the complete near-real-time months, and at least "
+                              f"{MIN_MONTHS_WITH_OWN_K} calendar months with their own coefficient; this region: {std_pct}% (standard), "
+                              f"{nrt_pct}% (near-real-time, {len(months)} months), {own} months")
+    return out, (k_use, annual_use) if adopt_own else None
+
+
 def calibrate(region_dir):
     monthly = load_monthly(region_dir / "daily_counts.csv")
     data_through = max(c["last_day"] for m in monthly.values() for c in m.values())
@@ -279,13 +382,18 @@ def calibrate(region_dir):
                                  f"{MIN_MONTHS_WITH_OWN_K} calendar months with their own coefficient; "
                                  f"this region: error {loyo_err}%, {own_k} months")
 
+    result["as_used"], n20_own = as_used(monthly, through_month, snpp_aqua, k_sa, annual_sa, accepted)
+
     def coeff(k, annual, m):
         if not accepted:
             return None
         return k[m] if k[m] is not None else annual
 
+    # NOAA-20 is converted with the Suomi NPP coefficients unless its own were shown to do better on held-out years.
+    k_n20, annual_n20 = n20_own if n20_own else (k_sa, annual_sa)
+
     result["current_month"] = month_to_date(region_dir / "daily_counts.csv", data_through,
-                                            coeff(k_sa, annual_sa, int(through_month[5:])))
+                                            coeff(k_n20, annual_n20, int(through_month[5:])))
 
     with open(region_dir / "monthly_series.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -301,8 +409,8 @@ def calibrate(region_dir):
             snpp_eq = n20_eq = ""
             if "VIIRS_SNPP" in cells and coeff(k_sa, annual_sa, m):
                 snpp_eq = round(cells["VIIRS_SNPP"]["value"] / coeff(k_sa, annual_sa, m), 1)
-            if "VIIRS_NOAA20" in cells and coeff(k_sa, annual_sa, m):
-                n20_eq = round(cells["VIIRS_NOAA20"]["value"] / coeff(k_sa, annual_sa, m), 1)
+            if "VIIRS_NOAA20" in cells and coeff(k_n20, annual_n20, m):
+                n20_eq = round(cells["VIIRS_NOAA20"]["value"] / coeff(k_n20, annual_n20, m), 1)
 
             partial = month == through_month
             # Which value represents the month, in order of preference.
