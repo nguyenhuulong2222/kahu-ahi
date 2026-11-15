@@ -194,7 +194,8 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .card .note{margin:6px 0 0;font-size:12px}.card button:not(.linkish){min-height:40px}
 #cardsheet{position:absolute;left:8px;right:8px;bottom:calc(var(--tl-h) + 10px);z-index:1100;max-height:62%;overflow:auto;padding:10px 12px;border-radius:8px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);font:13px/1.4 var(--font)}
 #cardsheet{max-height:50%}
-.sheetbar{display:flex;flex-wrap:wrap;gap:6px 8px;margin-bottom:6px}.sheetbar button:last-child{margin-left:auto}#card-where{margin:0 0 6px;padding:6px 8px;background:#fff6e5;border-left:4px solid #f2a900;color:var(--ink)}
+/* The three actions share one row in the 380 px card; a long label wraps inside its button instead of pushing Close onto a line of its own. */
+.sheetbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:6px 8px;margin-bottom:6px}.sheetbar button{white-space:normal;line-height:1.2}#card-where{margin:0 0 6px;padding:6px 8px;background:#fff6e5;border-left:4px solid #f2a900;color:var(--ink)}
 .sheetbar button{min-height:36px;padding:4px 7px}@media(min-width:601px){.sheetbar button{font-size:12.5px}}
 /* When the card holds more than it shows, its bottom edge fades the text out under a shadow (class set in cardCue),
    so no line is cut in half and the reader sees there is more. */
