@@ -37,6 +37,8 @@ section{background:var(--panel);border:1px solid var(--line);border-radius:6px;p
 .controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;margin-top:20px}
 label{font-size:.9rem;color:var(--muted);display:block}
 select,button,input{font:inherit;color:var(--ink);background:#fff;border:1px solid #8793a6;border-radius:4px;padding:8px 10px;min-height:44px}
+/* A select or a long address never makes the page wider than the window (390 px phone). */
+select{max-width:100%}.controls>div{min-width:0;max-width:100%}#reportaddr a{overflow-wrap:anywhere}
 button{background:var(--action);color:#fff;border-color:var(--action);cursor:pointer;font-weight:600}
 button:disabled{opacity:.55;cursor:default}
 :focus-visible{outline:3px solid #f2a900;outline-offset:2px}
