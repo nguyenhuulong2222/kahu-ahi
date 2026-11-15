@@ -39,7 +39,7 @@ All fire data come from NASA FIRMS. Details, access dates and citations are in [
 
 ## Sensor timeline that shapes the method
 
-- Aqua has far exceeded its six-year design life and no longer holds its orbit (NASA Science, Aqua; SOURCES.md); Terra, launched in 1999, is older still. The archive is unaffected.
+- **Why this project exists.** NASA's notice "Transition from MODIS to VIIRS" (2 May 2025) says that Terra and Aqua "will begin shutting down operations" in late 2026/early 2027, that both "are currently drifting out of their designed orbits, impacting crossing times and possibly impacting data", and encourages users to move to VIIRS products (SOURCES.md). As of the last download (14 Nov 2026) Aqua is still delivering data; this project does not say it has stopped.
 - Suomi NPP stopped delivering new observations on 2 Nov 2026 (FIRMS), so the VIIRS side of current months comes from NOAA-20. The calendar value of a current month is still MODIS Aqua.
 - Aqua's orbit is changing. NASA reports that Aqua "completed the last of its drag makeup maneuvers in December 2021 and is now in a free-drift mode, slowly descending below the A-Train and drifting to later equatorial crossing times, and lower altitudes"; by January 2025 its crossing time had moved about 50 minutes later (sources in SOURCES.md). The pipeline therefore splits validation at **2022** (`DRIFT_YEAR` in `pipeline/calibrate.py`), the first year of free drift, and reports the error before and after. Whether the drift causes the higher error after 2022 is not established by this project.
 - Standard-quality monthly files lag by about 2–3 months. Newer months are near-real-time and labelled provisional.
@@ -222,7 +222,7 @@ Lessons the team took from these trainings and where each is applied. ARSET and 
 - Urgent-response products are faster and less accurate. The page states that trade next to every provisional value (`STATUS.provisional_nrt` in [docs/index.html](docs/index.html)).
 - Different products suit different magnitudes. Each region gets its own coefficients; none are borrowed from another region ([pipeline/calibrate.py](pipeline/calibrate.py), run per region).
 
-**Geostationary Remote Sensing of Aerosols** (with the team's own GOES-18 analysis of the 2023 Lahaina fire)
+**Geostationary Remote Sensing of Aerosols**
 - Polar-orbiting sensors see a place a few times a day and can miss short fires between passes. Geostationary fire detections are named as future work only; this version does not use them.
 
 ## Use of AI

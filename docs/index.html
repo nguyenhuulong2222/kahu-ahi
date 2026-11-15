@@ -266,7 +266,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
   <div class="brand"><img class="mark" src="kahu-ahi-mark.svg" alt="" aria-hidden="true" width="42" height="54">
     <div><h1>Kahu Ahi: one fire record across MODIS and VIIRS</h1>
     <p class="namenote">Kahu Ahi is Hawaiian for 'keeper of the fire': <i lang="haw">kahu</i>, keeper or guardian; <i lang="haw">ahi</i>, fire.</p>
-    <p class="lede">The record shown is MODIS Aqua; VIIRS, converted to its scale and tested, continues it when Aqua stops.</p>
+    <p class="lede">NASA plans to begin shutting down Terra and Aqua in late 2026 or early 2027 and encourages users to move to VIIRS. The record shown is MODIS Aqua; VIIRS, converted to its scale and tested, continues it.</p>
     <p class="headline" id="headline" aria-live="polite"></p></div></div>
   <div><label for="region">Region</label>
     <select id="region"><option value="california">California</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option><option value="conus">Contiguous United States</option></select></div>
@@ -620,7 +620,7 @@ function drawRecordBars() {
     if (!ok) kids.push(el("p", {class: "note", text: "VIIRS is not converted in " + inRegion() + ", so there is no VIIRS-only record to show."}));
     else {
       const a = f && f["2019_to_2021"], b = f && f["2022_onward"];
-      kids.push(el("p", {class: "note", text: (viirs ? "Showing converted VIIRS only, from " + D.snpp_to_aqua.years[0] + ": Suomi NPP while it has standard data, NOAA-20 after. Select a month to see how far it is from what Aqua recorded. The map stays on the MODIS Aqua record. " : "")
+      kids.push(el("p", {class: "note", text: (viirs ? "Showing converted VIIRS only, from " + D.snpp_to_aqua.years[0] + ": Suomi NPP while it has standard data, NOAA-20 after. Select a month to see how far it is from what Aqua recorded. The map stays on the MODIS Aqua record. Aqua is still delivering data as of the last download (" + dayName(D.data_through) + "); NASA plans to begin shutting it down in late 2026 or early 2027. " : "")
         + (a && b ? "How a conversion built in the past holds up later: factors fitted on years up to 2018 and tested on later years were off by " + pct(a.abs_error_pct_of_total) + " for 2019 to 2021 and " + pct(b.abs_error_pct_of_total) + " from 2022." : "")}));
     }
     box.replaceChildren(...kids);

@@ -23,6 +23,7 @@ From the FIRMS FAQ (https://www.earthdata.nasa.gov/data/tools/firms/faq, "Are th
 
 ## NASA documentation
 
+- **The reason for this project:** NASA Earthdata, "Transition from MODIS to VIIRS", issued 2 May 2025 (read 14 Nov 2026) — https://www.earthdata.nasa.gov/data/alerts-outages/transition-from-modis-viirs . It says: "In late 2026/early 2027, the Terra and Aqua platforms that carry the Moderate Resolution Imaging Spectroradiometer ... will begin shutting down operations"; "Both platforms are currently drifting out of their designed orbits, impacting crossing times and possibly impacting data"; and "data users are encouraged to explore using similar data products from the Visible Infrared Imaging Radiometer Suite". Used for: the lede of the page, the note beside the VIIRS-only record, and README's sensor timeline. It does not say that either satellite has stopped, and neither does this project.
 - FIRMS overview — https://www.earthdata.nasa.gov/data/tools/firms
 - FIRMS FAQ — https://www.earthdata.nasa.gov/data/tools/firms/faq
 - Active fire data attributes for MODIS and VIIRS — https://www.earthdata.nasa.gov/data/tools/firms/active-fire-data-attributes-modis-viirs
