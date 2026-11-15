@@ -118,9 +118,9 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .maplabel{margin:12px 0 0;font-size:1rem;color:var(--muted);font-weight:600}
 .mapshell{margin-top:6px!important}
 /* Harmonization result: three figures and a small chart, straight under the map. */
-#harm{margin-top:12px;padding:14px 20px}#most{margin-top:12px;padding:14px 20px}#most h2,#harm h2{font-size:1.15rem}
+#harm,#most{margin-top:20px;padding:20px}#most h2,#harm h2{font-size:1.15rem}
 /* Wide screens: the harmonization result and the busiest places side by side under the timeline, each in one column inside. */
-.pair2{display:grid;grid-template-columns:minmax(0,1fr);gap:0 16px}
+.pair2{display:grid;grid-template-columns:minmax(0,1fr);gap:0 20px}
 @media(min-width:1100px){.widewrap{max-width:1400px}.pair2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
   .pair2 .harmgrid,.pair2 .mostgrid{grid-template-columns:minmax(0,1fr)}.pair2>section:only-child,.pair2>section[hidden]+section{grid-column:1/-1}}
 .harmgrid{display:grid;gap:12px 20px;grid-template-columns:1fr;margin-top:6px}
@@ -278,10 +278,9 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 #layerspanel.collapsed,#legendpanel.collapsed{width:auto}
 @media(min-width:601px) and (max-width:1180px){.mapshell{--tl-h:102px}}
 @media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:300px;height:300px}.lede{display:none}.headline{font-size:.92rem}.pagehead{gap:4px 24px}.brand{gap:9px}.brand .mark{width:34px;height:44px}.namenote{font-size:.82rem}.maplabel{margin-top:8px}
-  .timeline{gap:6px}#tl-range{order:-1;flex-basis:100%}.tl-word{display:none}
+  .timeline{gap:6px}.tl-word{display:none}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
-  #tl-play{order:-3}#tl-range{order:-2;flex:1 1 52%}#tl-speed{order:-1}
-  #tl-py{order:2}#tl-pm{order:3}#tl-nm{order:5;margin-left:auto}#tl-ny{order:6}
+  #tl-speed{flex:1 1 calc(100% - 56px)}#tl-range{flex:1 1 60px;min-width:60px}
   .tl-goto{order:7;flex:1 1 100%}#go-msg{order:7}.tl-goto>span{display:flex;flex:1 1 0;align-items:center;gap:6px;min-width:0}.tl-goto select,.tl-goto input{flex:1 1 auto;min-width:0;min-height:44px}
   #legendpanel{width:240px}
   #map .leaflet-top.leaflet-left{flex-wrap:wrap;max-width:none;right:0}.mchip{max-width:calc(100vw - 30px);flex:0 1 auto;margin-top:6px!important}
@@ -302,7 +301,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <p class="lede">NASA plans to begin shutting down Terra and Aqua in late 2026 or early 2027 and encourages users to move to VIIRS. The record shown is MODIS Aqua; VIIRS, converted to its scale and tested, continues it.</p>
     <p class="headline" id="headline" aria-live="polite"></p></div></div>
   <div><label for="region">Region</label>
-    <select id="region"><option value="conus">United States</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select>
+    <select id="region"><option value="conus">Contiguous United States</option><option value="hawaii">Hawaiʻi</option><option value="vietnam">Vietnam region</option></select>
     <span id="statewrap" hidden><label for="state">State</label>
     <select id="state"><option value="">Whole country</option></select></span></div>
 </div>
@@ -327,7 +326,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
         <option value="auto">Harmonized (as the calendar)</option>
         <option value="MODIS_AQUA">MODIS Aqua</option>
         <option value="MODIS_TERRA">MODIS Terra, as recorded</option>
-        <option value="VIIRS_SNPP">VIIRS S-NPP, as recorded</option>
+        <option value="VIIRS_SNPP">VIIRS Suomi NPP, as recorded</option>
         <option value="VIIRS_NOAA20">VIIRS NOAA-20, as recorded</option>
       </select>
       <fieldset class="drawset"><legend>Draw</legend>
@@ -461,7 +460,7 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <p class="note" style="margin:0">Draw a rectangle on the map, or type its edges in decimal degrees (longitudes west of Greenwich are negative, as in California, Hawaiʻi and the contiguous United States; in the Vietnam region all four edges are positive). The area is widened to whole 0.1° cells and kept inside the region box. The calendar, the comparisons and the download then cover only that area.</p>
     <div class="areabar">
       <button id="drawbtn" type="button" class="secondary" aria-pressed="false">Draw an area on the map</button>
-      <button id="whole" type="button" class="secondary" disabled>Whole region</button>
+      <button id="whole" type="button" class="secondary" disabled title="The whole region is already shown">Whole region</button>
     </div>
     <form id="areaform" style="margin-top:12px" novalidate>
       <fieldset><legend>Area edges, in decimal degrees</legend>
@@ -552,7 +551,10 @@ const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = id => document.getElementById(id);
 const fmt = n => n == null ? "none" : Number(n).toLocaleString("en-US", {maximumFractionDigits: 0});
 const fmt1 = n => Number(n).toLocaleString("en-US", {maximumFractionDigits: 1});
-const pct = n => n == null ? "n/a" : n + "%";
+// One format per kind of number: counts with thousands separators, converted values and percentages with one decimal.
+const pct = n => n == null ? "n/a" : Number(n).toLocaleString("en-US", {minimumFractionDigits: 1, maximumFractionDigits: 1}) + "%";
+// A count with its noun, singular for exactly one: "1 detection", "2 detections".
+const N = (n, word, f) => (f || fmt)(n) + " " + (Number(n) === 1 ? word : word + "s");
 // The region's name as it reads inside a sentence.
 function inRegion() { return D.region.state ? D.region.name : D.region.id === "conus" ? "the contiguous United States" : D.region.name; }
 
@@ -671,7 +673,7 @@ function drawByState() {
   });
   t.append(body);
   box.replaceChildren(intro, el("div", {class: "stategrid"}, el("div", {class: "statemap"}, svg, legend), el("div", {class: "calwrap statetable"}, t)),
-    el("p", {class: "note", text: "A state is the Census Bureau's simplified outline (1:5,000,000); a detection belongs to the state whose outline contains its position. " + fmt(ST.rows.outside_every_state) + " of " + fmt(ST.rows.in_a_state + ST.rows.outside_every_state) + " detections in the national files fall in no state (offshore, or land the simplified coastline cuts off); they stay in the national numbers and are in no state's. \"Aqua detections\" are MODIS Aqua's counted detections over the months both satellites have; \"factor months\" is how many of the 12 calendar months have enough of them for a factor of their own. \"National factors\" is the state's error when the country's factors are used instead of its own. Select a state on the map, in the table or in the State list."}));
+    el("p", {class: "note", text: "A state is the Census Bureau's simplified outline (1:5,000,000); a detection belongs to the state whose outline contains its position. " + fmt(ST.rows.outside_every_state) + " of " + N(ST.rows.in_a_state + ST.rows.outside_every_state, "detection") + " in the national files fall in no state (offshore, or land the simplified coastline cuts off); they stay in the national numbers and are in no state's. \"Aqua detections\" are MODIS Aqua's counted detections over the months both satellites have; \"factor months\" is how many of the 12 calendar months have enough of them for a factor of their own. \"National factors\" is the state's error when the country's factors are used instead of its own. Select a state on the map, in the table or in the State list."}));
 }
 const round1 = v => Math.round(v * 10) / 10;
 // Same expression as cell_index() in pipeline/grid.py, applied to lat + 90 and lon + 180.
@@ -845,7 +847,7 @@ async function load(region, wish) {
   if (token !== loadToken) return;
   area = null; S = regionSeries(); pointsOn = false; applySel({});
   recordMode = wish.record === "viirs" && D.calibration_accepted ? "viirs" : "aqua";
-  $("through").textContent = "Data through " + D.data_through + ". Detections of presumed vegetation fire, low-confidence ones removed.";
+  $("through").textContent = "Data through " + dayName(D.data_through) + " (UTC). Detections of presumed vegetation fire, low-confidence ones removed.";
   // A region or a state opens on the harmonized view unless the link names a satellite.
   chipFromLink = !!(wish.sensor && [...$("sensor").options].some(o => o.value === wish.sensor)); chipDismissed = "";
   $("sensor").value = chipFromLink ? wish.sensor : "auto";
@@ -998,9 +1000,9 @@ const FEW_DETECTIONS = 10;   // below this many on a day, the page says the day 
 // One sentence for a month on the MODIS Aqua scale, compared with the usual for that calendar month.
 function monthSentence(x, place, medians) {
   const m = +x.m.slice(5), med = (medians || S.medians)[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
-  if (x.h == null) return st === "terra_only_not_harmonized" ? "In " + fullMonth(x.m) + " only MODIS Terra has fire data (" + fmt(x.terra) + " detections); MODIS Aqua's begin on " + niceDate(SAT_FACTS.MODIS_AQUA.data) + ". Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + fullMonth(x.m) + ".";
-  if (isPartial(x.status)) return fullMonth(x.m) + " has " + fmt(x.h) + " detections so far in " + place + " on the MODIS Aqua scale. The month is not complete, so it is not compared with a full " + mn + ".";
-  return fullMonth(x.m) + " had " + fmt(x.h) + " detections in " + place + " on the MODIS Aqua scale" + (med > 0 ? ", " + times(x.h, med) + " the usual " + mn + " (" + fmt(med) + (med === 1 ? " detection" : " detections") + ")." : med === 0 ? "; the usual " + mn + " has none." : ".");
+  if (x.h == null) return st === "terra_only_not_harmonized" ? "In " + fullMonth(x.m) + " only MODIS Terra has fire data (" + N(x.terra, "detection") + "); MODIS Aqua's begin on " + niceDate(SAT_FACTS.MODIS_AQUA.data) + ". Terra passes in the morning and is not on the same scale as the rest of the record." : "There is no value for " + fullMonth(x.m) + ".";
+  if (isPartial(x.status)) return fullMonth(x.m) + " has " + N(x.h, "detection") + " so far in " + place + " on the MODIS Aqua scale. The month is not complete, so it is not compared with a full " + mn + ".";
+  return fullMonth(x.m) + " had " + N(x.h, "detection") + " in " + place + " on the MODIS Aqua scale" + (med > 0 ? ", " + times(x.h, med) + " the usual " + mn + " (" + fmt(med) + (med === 1 ? " detection" : " detections") + ")." : med === 0 ? "; the usual " + mn + " has none." : ".");
 }
 function drawExplain() {
   const box = $("explain"), lv = level(), ys = yearStats(), cs = completeSpan(ys), s = [];
@@ -1012,8 +1014,8 @@ function drawExplain() {
   } else if (lv === "year") {
     const y = ys[selYear], usual = cs ? median(cs.years.map(k => ys[k].total)) : null;
     if (!y.any) s.push("In " + selYear + " only MODIS Terra has fire data. Its counts are not on the same scale as the rest of the record, so there is no total for the year.");
-    else if (!y.complete) s.push(selYear + " has " + fmt(y.total) + " detections in " + place + ", but it is not a full year of final data, so it is not compared with the usual year.");
-    else s.push(selYear + " had " + fmt(y.total) + " detections in " + place + (usual > 0 ? ", " + times(y.total, usual) + " the usual year (the median of " + cs.text + ", " + fmt(usual) + " detections)." : "."));
+    else if (!y.complete) s.push(selYear + " has " + N(y.total, "detection") + " in " + place + ", but it is not a full year of final data, so it is not compared with the usual year.");
+    else s.push(selYear + " had " + N(y.total, "detection") + " in " + place + (usual > 0 ? ", " + times(y.total, usual) + " the usual year (the median of " + cs.text + ", " + N(usual, "detection") + ")." : "."));
   } else {
     const m = +selected.slice(5), med = S.medians[m - 1], st = baseStatus(x.status), mn = MONTH_FULL[m - 1];
     if (lv === "day") {
@@ -1025,14 +1027,14 @@ function drawExplain() {
         const peak = Math.max(...S.medians.map(v => v || 0)), quiet = peak > 0 && med != null && med < .25 * peak, year = D.data_through.slice(0, 4);
         const jump = (text, d) => { const b = el("button", {type: "button", class: "linkish", text: text + (d ? " (" + dayName(d) + ")" : "")}); if (d) b.addEventListener("click", () => select({day: d}, {fit: true})); else b.disabled = true; return b; };
         s.push(el("p", {}, (n === 0 ? "No detection was recorded" : "Only " + fmt(n) + (n === 1 ? " detection" : " detections")) + " on " + dayName(selDay)
-          + (quiet ? "; this is the quiet season here: the usual " + mn + " has " + fmt(med) + " detections, against " + fmt(peak) + " in the usual " + MONTH_FULL[S.medians.indexOf(peak)] + ". " : ". ")
+          + (quiet ? "; this is the quiet season here: the usual " + mn + " has " + N(med, "detection") + ", against " + fmt(peak) + " in the usual " + MONTH_FULL[S.medians.indexOf(peak)] + ". " : ". ")
           + "Jump to: ", ...(busiestIn(year) && busiestIn(year) !== selDay ? [jump("Busiest day this year", busiestIn(year)), " or "] : []), jump("Busiest day on record", busiestIn("")), "."));
       }
       // The conversion between satellites is tested by month, so the day view also gives the month on the MODIS Aqua scale.
       const c = S.current, whole = el("button", {type: "button", class: "linkish", text: "See the whole month"});
       whole.addEventListener("click", () => select({month: selected}));
       const text = c && c.month === selected
-        ? "So far in " + fullMonth(selected) + " (days " + c.days.replace("-", " to ") + "), MODIS Aqua recorded " + fmt(c.aqua_nrt_same_days) + " detections in " + place + "; the usual for the same days is " + fmt(c.baseline_median) + " (lowest " + fmt(c.baseline_min) + ", highest " + fmt(c.baseline_max) + ")."
+        ? "So far in " + fullMonth(selected) + " (days " + c.days.replace("-", " to ") + "), MODIS Aqua recorded " + N(c.aqua_nrt_same_days, "detection") + " in " + place + "; the usual for the same days is " + fmt(c.baseline_median) + " (lowest " + fmt(c.baseline_min) + ", highest " + fmt(c.baseline_max) + ")."
           + (c.value_aqua_equiv != null ? " NOAA-20, converted to the MODIS Aqua scale, gives about " + fmt(c.value_aqua_equiv) + "." : "")
         : monthSentence(x, place);
       s.push(el("p", {}, text + " ", whole, "."));
@@ -1090,7 +1092,7 @@ function drawDrillIn() {
     const list = Object.keys(ys).sort();
     kids.push(el("h3", {text: "Detections each year, " + where}));
     kids.push(barChart("Detections each year", list.map(y => ({label: y, tick: +y % 5 === 0 ? y : "", value: ys[y].any ? ys[y].total : null, cls: ys[y].complete ? "" : ys[y].any ? "inc" : "terra",
-      say: y + ": " + (ys[y].any ? fmt(ys[y].total) + " detections on the MODIS Aqua scale" + (ys[y].complete ? "" : ", not a full year of final data") : "MODIS Terra only, not on the same scale, no total") + ". Select to see its months.", go: () => select({year: y})}))));
+      say: y + ": " + (ys[y].any ? N(ys[y].total, "detection") + " on the MODIS Aqua scale" + (ys[y].complete ? "" : ", not a full year of final data") : "MODIS Terra only, not on the same scale, no total") + ". Select to see its months.", go: () => select({year: y})}))));
     unit = "Up: fire detections in a year, on the MODIS Aqua scale. Across: years. Hatched bars are years without twelve months of final data; T marks years with MODIS Terra only.";
     const best = cs && cs.years.reduce((a, b) => ys[b].total > ys[a].total ? b : a);
     sum = list.length + " years, " + list[0] + " to " + list[list.length - 1] + "." + (best ? " The most detections in a complete year: " + best + ", with " + fmt(ys[best].total) + ". The usual complete year has " + fmt(median(cs.years.map(k => ys[k].total))) + "." : "") + " Select a year to see its months.";
@@ -1103,12 +1105,12 @@ function drawDrillIn() {
       if (!x) return {tick: MONTHS[i], value: null, band, med, cls: "none", say: MONTHS[i] + " " + selYear + ": outside the record."};
       const st = baseStatus(x.status);
       return {tick: MONTHS[i], value: x.h, band, med, cls: st === "terra_only_not_harmonized" ? "terra" : isPartial(x.status) ? "partial" : st === "provisional_nrt" ? "prov" : "",
-        say: monthName(x.m) + ": " + (x.h == null ? "no value on the MODIS Aqua scale" : fmt(x.h) + " detections") + ". " + (STATUS[st] || st).split(".")[0].split(":")[0] + (isPartial(x.status) ? ", month not complete" : "")
+        say: monthName(x.m) + ": " + (x.h == null ? "no value on the MODIS Aqua scale" : N(x.h, "detection")) + ". " + (STATUS[st] || st).split(".")[0].split(":")[0] + (isPartial(x.status) ? ", month not complete" : "")
           + (med != null ? ". Usual " + MONTHS[i] + ": " + fmt(med) + " (lowest " + fmt(band[0]) + ", highest " + fmt(band[1]) + ")" : "") + ". Select to see its days.", go: () => select({month: x.m})};
     })));
     unit = "Up: fire detections in a month, on the MODIS Aqua scale. Across: months. Behind each bar, the pale band is the lowest to the highest that month has been since 2003 (final data only), and the line is the usual (median). Outlined bars are provisional, dashed bars are months not complete, T is MODIS Terra only.";
     const have = ms.filter(x => x && x.h != null), top = have.length ? have.reduce((a, b) => b.h > a.h ? b : a) : null;
-    sum = selYear + ": " + (have.length ? fmt(have.reduce((t, x) => t + x.h, 0)) + " detections in " + have.length + " months with a value. The most: " + monthName(top.m) + ", with " + fmt(top.h) + "." : "no month has a value on the MODIS Aqua scale.") + " Select a month to see its days.";
+    sum = selYear + ": " + (have.length ? fmt(have.reduce((t, x) => t + x.h, 0)) + " detections in " + have.length + (have.length === 1 ? " month" : " months") + " with a value. The most: " + monthName(top.m) + ", with " + fmt(top.h) + "." : "no month has a value on the MODIS Aqua scale.") + " Select a month to see its days.";
   } else {
     const x = S.months.find(v => v.m === selected), pick = mapSensor(x), m = +selected.slice(5), n = daysIn(selected), k0 = $("sensor").value === "auto" ? coeff(m) : null;
     const viirs = k0 ? (x.n20 != null ? "VIIRS_NOAA20" : x.snpp != null ? "VIIRS_SNPP" : null) : null, vi = GRID_SENSORS.indexOf(viirs), k = viirs === "VIIRS_NOAA20" ? coeffN20(m) : k0;
@@ -1122,17 +1124,17 @@ function drawDrillIn() {
         const mark = viirs && !after && flyingOn(viirs, d) ? c[vi] / k : null;
         if (v != null) tot.push([d, v]);
         return {tick: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "", value: v, mark, sel: d === selDay, cls: after ? "none" : !fly ? "none" : daily.nrt.has(d) ? "prov" : "",
-          say: dayName(d) + ": " + (after ? "after the end of the data" : !fly ? SENSOR[pick.s] + ": " + noDataShort(pick.s, d) + " in this record" : fmt(v) + " " + SENSOR[pick.s] + " detections" + (v === 0 ? " (none recorded, which is not the same as no fire)" : ""))
+          say: dayName(d) + ": " + (after ? "after the end of the data" : !fly ? SENSOR[pick.s] + ": " + noDataShort(pick.s, d) + " in this record" : fmt(v) + " " + SENSOR[pick.s] + (v === 1 ? " detection" : " detections") + (v === 0 ? " (none recorded, which is not the same as no fire)" : ""))
             + (mark != null ? "; " + SENSOR[viirs] + " " + fmt(c[vi]) + ", about " + fmt1(mark) + " on the Aqua scale (indicative: tested by month, not by day)" : "") + (after || !fly ? "." : ". Select to see this day on the map."),
           go: after || !fly ? null : () => select({day: d}, {fit: true})};
       })));
       unit = "Up: fire detections in a day, " + SENSOR[pick.s] + (pick.s === "MODIS_AQUA" ? "" : ", as recorded (not converted)") + ", whole region. Across: day of the month. Outlined bars are provisional days."
         + (viirs ? " Dots: " + SENSOR[viirs] + " converted to the MODIS Aqua scale. They are indicative: the conversion was tested by month, not by day." : "");
       const best = tot.length ? tot.reduce((a, b) => b[1] > a[1] ? b : a) : null;
-      sum = monthName(selected) + ": " + (best ? fmt(tot.reduce((t, r) => t + r[1], 0)) + " " + SENSOR[pick.s] + " detections over " + tot.length + " days. The most: " + dayName(best[0]) + ", with " + fmt(best[1]) + ". " + (z => z ? z + (z === 1 ? " day" : " days") + " had none recorded, which is not the same as no fire." : "Every day had at least one.")(tot.filter(r => r[1] === 0).length) : SENSOR[pick.s] + " has no record in this month.")
+      sum = monthName(selected) + ": " + (best ? fmt(tot.reduce((t, r) => t + r[1], 0)) + " " + SENSOR[pick.s] + " detections over " + (tot.length === 1 ? "1 day" : tot.length + " days") + ". The most: " + dayName(best[0]) + ", with " + fmt(best[1]) + ". " + (z => z ? z + (z === 1 ? " day" : " days") + " had none recorded, which is not the same as no fire." : "Every day had at least one.")(tot.filter(r => r[1] === 0).length) : SENSOR[pick.s] + " has no record in this month.")
         + (area ? " Daily counts are for the whole region; they are not available for a chosen area." : "") + " Select a day to see it on the map.";
       // The same days as a table: what each satellite recorded.
-      const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Day"}), ...GRID_SENSORS.map(s => el("th", {class: "num", text: SENSOR[s].replace("VIIRS Suomi NPP", "VIIRS S-NPP") + " (detections)"})), ...(viirs ? [el("th", {class: "num", text: SENSOR[viirs].replace("VIIRS Suomi NPP", "VIIRS S-NPP") + " on the Aqua scale (indicative)"})] : [])));
+      const t = el("table", {class: "plain"}, el("tr", {}, el("th", {text: "Day"}), ...GRID_SENSORS.map(s => el("th", {class: "num", text: SENSOR[s] + " (detections)"})), ...(viirs ? [el("th", {class: "num", text: SENSOR[viirs] + " on the Aqua scale (indicative)"})] : [])));
       days.filter(d => d <= D.data_through).forEach(d => { const c = dayCounts(d); t.append(el("tr", {}, el("td", {text: dayName(d)}), ...GRID_SENSORS.map((s, i) => el("td", {class: "num", text: flyingOn(s, d) ? fmt(c[i]) : noDataShort(s, d)})), ...(viirs ? [el("td", {class: "num", text: flyingOn(viirs, d) ? fmt1(c[vi] / k) : "n/a"})] : []))); });
       kids.push(el("details", {}, el("summary", {text: "Table: what each satellite recorded each day"}), el("div", {class: "calwrap"}, t)));
     }
@@ -1183,7 +1185,7 @@ function drawCalendarIn() {
       if (st === "provisional_nrt") td.classList.add("prov");
       if (isPartial(x.status)) td.classList.add("partial");
       b.textContent = x.h == null ? (st === "terra_only_not_harmonized" ? "T" : "") : (x.h >= 10000 ? Math.round(x.h / 1000) + "k" : fmt(x.h));
-      b.setAttribute("aria-label", MONTHS[m - 1] + " " + y + ": " + (x.h == null ? "no harmonized value" : fmt(x.h) + " detections") + ". " + (STATUS[st] || st));
+      b.setAttribute("aria-label", MONTHS[m - 1] + " " + y + ": " + (x.h == null ? "no harmonized value" : N(x.h, "detection")) + ". " + (STATUS[st] || st));
       b.addEventListener("click", () => selectMonth(x.m));
       td.append(b); tr.append(td);
       if (x.h != null && !isPartial(x.status)) { total += x.h; n++; }
@@ -1216,7 +1218,7 @@ function drawDetailIn(x) {
   const y = x.m.slice(0, 4), m = +x.m.slice(5), st = baseStatus(x.status), med = S.medians[m - 1];
   const box = $("detail"); box.replaceChildren();
   box.append(el("h3", {text: MONTHS[m - 1] + " " + y + (area ? ", chosen area" : ""), style: "margin:0 0 4px;font-size:1.05rem"}));
-  let line = x.h == null ? "No value on the harmonized scale." : x.h === 0 ? "0 detections recorded by " + (SENSOR[x.src] || x.src) + ". Whether the area could be observed all month is unknown." : fmt(x.h) + " detections on the Aqua scale, from " + (SENSOR[x.src] || x.src) + ".";
+  let line = x.h == null ? "No value on the harmonized scale." : x.h === 0 ? "0 detections recorded by " + (SENSOR[x.src] || x.src) + ". Whether the area could be observed all month is unknown." : N(x.h, "detection") + " on the Aqua scale, from " + (SENSOR[x.src] || x.src) + ".";
   if (x.h != null && med != null && !isPartial(x.status)) line += " The usual " + MONTHS[m - 1] + " is " + fmt(med) + (med > 0 ? " (this is " + (x.h / med).toFixed(1) + " times that)." : ".");
   box.append(el("p", {text: line}));
   // In the VIIRS-only record, say how far this month is from what Aqua recorded.
@@ -1240,7 +1242,7 @@ function validationFor(x) {
   if (x.snpp == null && x.n20 == null) return null;   // no VIIRS satellite flying
   const L = D.snpp_to_aqua.leave_one_year_out.monthly_k, key = y < 2022 ? "before_2022" : "2022_onward", e = L[key];
   const period = y < 2022 ? "2012 to 2021" : "2022 onward";
-  if (!D.calibration_accepted) return {period: "all years (refused, not converted)", e: L.all_years, text: "VIIRS is not converted in " + inRegion() + ": when tested, the conversion was wrong by " + pct(L.all_years && L.all_years.abs_error_pct_of_total) + " of the total."};
+  if (!D.calibration_accepted) return {period: "all years (not harmonized, VIIRS not converted)", e: L.all_years, text: "VIIRS is not converted in " + inRegion() + ": when tested, the conversion was wrong by " + pct(L.all_years && L.all_years.abs_error_pct_of_total) + " of the total."};
   if (!e) return null;
   return {period, e, text: "VIIRS values on the Aqua scale for this period: tested year by year " + (y < 2022 ? "over 2012 to 2021" : "from 2022 onward") + ", the conversion was off by " + pct(e.abs_error_pct_of_total) + " of the total and ran " + (e.bias_pct >= 0 ? "high" : "low") + " by " + pct(Math.abs(e.bias_pct)) + ". That test covers all of " + inRegion() + (area ? ", not the chosen area." : ".")};
 }
@@ -1370,6 +1372,10 @@ function pairChart(d) {
 function drawHarm() {
   const box = $("harmbody"), f = harmFacts(D), ok = D.calibration_accepted;
   $("h-harm").textContent = "Harmonization result: " + D.region.name;
+  // Every section heading names the region or state it is about.
+  [["h-cal", "The full record, month by month"], ["h-season", "When it usually burns"], ["h-trust", "How far to trust the harmonized numbers"], ["h-dl", "Download the hotspots"], ["h-drill", "Fire activity over time"]]
+    .forEach(([id, t]) => { $(id).textContent = t + ": " + D.region.name; });
+  $("h-now").textContent = (S.current ? fullMonth(S.current.month) + " so far" : "This month so far") + ": " + D.region.name;
   box.replaceChildren();
   // The same result in one line at the top of the page.
   const head = $("headline"); head.replaceChildren();
@@ -1566,13 +1572,13 @@ async function setArea(a, quiet) {
   catch (e) { note.textContent = "The grid files could not be loaded, so the area was not applied. Try again."; return false; }
   if (region !== D.region.id) return false;   // the region changed while loading
   area = r; S = areaSeries(docs);
-  fillAreaForm(); drawAreaOnMap(); $("whole").disabled = false; refresh();
+  fillAreaForm(); drawAreaOnMap(); $("whole").disabled = false; $("whole").title = ""; refresh();
   note.textContent = "Showing the area " + areaText(area) + "." + (quiet ? "" : " The calendar, the comparisons and the download now cover only this area.");
   return true;
 }
 function clearArea() {
   area = null; S = regionSeries();
-  fillAreaForm(); drawAreaOnMap(); $("whole").disabled = true; $("areanote").textContent = "Showing the whole region.";
+  fillAreaForm(); drawAreaOnMap(); $("whole").disabled = true; $("whole").title = "The whole region is already shown"; $("areanote").textContent = "Showing the whole region.";
   refresh();
 }
 function fillAreaForm() {
@@ -1983,8 +1989,11 @@ function updateTimeline() {
     const b = $(id); b.hidden = !w; if (!w) return;
     b.querySelector(".tl-word").textContent = w; b.setAttribute("aria-label", a + w.toLowerCase());
   });
-  $("tl-pm").disabled = v === 1; $("tl-nm").disabled = v === n;
-  $("tl-py").disabled = v === 1; $("tl-ny").disabled = v === n;
+  // A step button that cannot move is switched off and says why.
+  [["tl-pm", v === 1, "This is the start of the record"], ["tl-py", v === 1, "This is the start of the record"], ["tl-nm", v === n, "This is the end of the record"], ["tl-ny", v === n, "This is the end of the record"]].forEach(([id, off, why]) => {
+    const b = $(id); b.disabled = off; b.title = off ? why : "";
+    if (off && !b.hidden) b.setAttribute("aria-label", b.getAttribute("aria-label") + ": not available. " + why);
+  });
 }
 
 // ---------- where and when it burned most ----------
@@ -2059,7 +2068,14 @@ async function countedOfDay(d, sensor) {
 }
 function hotBytes(d) { const i = hotIndex; if (!i) return Infinity; const e = i.split === "month" ? i.months[d.slice(0, 7)] : i.years[d.slice(0, 4)]; return e ? e.bytes_gz : Infinity; }
 function listWords(a) { return a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
-function drawMost(pick) {
+// The heading of a list says what is listed: "Top 5 areas" only when there are more than five, otherwise all of them.
+function listHead(shown, all, word, lv, period) {
+  const where = lv === "day" ? " on " + period : lv === "all" ? "" : " in " + period;
+  if (shown < all) return "Top " + shown + " " + word + "s";
+  return all === 1 ? "The only " + word + " with detections" + where : "All " + all + " " + word + "s with detections" + where;
+}
+function drawMost(pick) { drawMostIn(pick); const lm = $("leg-most"); if (lm) lm.hidden = !mostCtx; }
+function drawMostIn(pick) {
   const sec = $("most"), box = $("mostbody"), lv = level(), token = ++mostToken;
   closePreview(true); mostCtx = null;
   if (layers.most) layers.most.clearLayers();
@@ -2070,21 +2086,21 @@ function drawMost(pick) {
   else shown.forEach((v, k) => { if (v > 0) cells.set(k, v); });
   let total = 0; cells.forEach(v => { total += v; });
   sec.hidden = false;
-  $("h-most").textContent = "Where and when it burned most: " + period + ", " + D.region.name;
+  $("h-most").textContent = "Where and when it burned most: " + period + ", " + D.region.name + ", " + SENSOR[pick.s];
   const intro = el("p", {id: "mostintro", class: "note", text: "The places and days with the most satellite detections in " + inRegion() + (lv === "day" ? " on " : lv === "all" ? ", " + (pick.span ? pick.span : "all years") : " in ") + (lv === "all" ? "" : period)
     + ", for " + pick.label + "." + (D.calibration_accepted ? "" : " VIIRS is not converted in " + inRegion() + ", so these are MODIS Aqua's own counts, as recorded.")
     + " This is not a ranking of fires by size or damage: one large fire gives many detections, a small or short one may give none, and cloud and smoke hide others."});
   const count = mostCount();
   const kids = [el("p", {id: "mostlead", style: "margin:0", text: "Most satellite detections, for " + pick.label + (D.calibration_accepted ? "" : " as recorded") + ". Not a ranking of fires by size or damage."})];
   const show = el("div", {class: "mostshow", role: "group", "aria-label": "How many areas and days to list"}, el("span", {text: "Show:"}));
-  MOST_CHOICES.forEach(v => { const b = el("button", {type: "button", class: "tl-btn2", "aria-pressed": String(v === count), text: String(v)}); b.addEventListener("click", () => { mostChoice = v; mostKey = ""; drawMost(pick); const again = [...document.querySelectorAll(".mostshow button")].find(x => x.textContent === String(v)); if (again) again.focus({preventScroll: true}); }); show.append(b); });
   kids.push(show);
   if (!total) { box.replaceChildren(intro, el("p", {class: "note", text: "No detection was recorded for this satellite in this period, which is not the same as no fire."})); return; }
-  const areas = topAreas(cells, count);
+  // Every area and day there is, up to the longest list offered, so the control and the headings can say what exists.
+  const allAreas = topAreas(cells, MOST_CHOICES[MOST_CHOICES.length - 1] + 1), areas = allAreas.slice(0, count);
   areas.forEach(a => { a.name = areaName(a); });
   // ---- areas ----
   const dateHead = lv === "month" ? "First and last day with detections" : lv === "year" ? "First and last month with detections" : lv === "day" ? "" : "";
-  const at = el("table", {class: "plain", id: "mostareas"}, el("caption", {class: "sr", text: "The " + areas.length + " areas with the most detections"}),
+  const at = el("table", {class: "plain", id: "mostareas"}, el("caption", {class: "sr", text: listHead(areas.length, allAreas.length, "area", lv, period)}),
     el("tr", {}, el("th", {scope: "col", text: "#"}), el("th", {scope: "col", text: "Area (about " + AREA_KM + " km across)"}), el("th", {scope: "col", class: "num", text: "Detections"}), el("th", {scope: "col", class: "num", text: "Share"})));
   const note = el("p", {class: "note", id: "mostnote", role: "status"});
   areas.forEach((a, i) => {
@@ -2101,14 +2117,14 @@ function drawMost(pick) {
   });
   const listed = areas.reduce((x, a) => x + a.count, 0);
   const share = el("p", {id: "mostshare", style: "margin:6px 0 0", text: (areas.length === 1 ? "This one area holds " : "These " + areas.length + " areas together hold ") + (100 * listed / total).toFixed(1) + "% of the period's detections on this map (" + f(listed) + " of " + f(total) + "); "
-    + (total - listed > 0 ? f(total - listed) + " are outside the list." : "none are outside the list.") + (areas.length < count ? " There are no more areas with detections." : "")});
-  const left = el("div", {}, el("h3", {text: lv === "day" ? "Top " + areas.length + " places of the day" : "Top " + areas.length + " areas"}), el("div", {class: "calwrap"}, at), share, note);
+    + (total - listed > 0 ? f(total - listed) + " are outside the list." : "none are outside the list.")});
+  const left = el("div", {}, el("h3", {text: listHead(areas.length, allAreas.length, "area", lv, period)}), el("div", {class: "calwrap"}, at), share, note);
   // ---- days ----
-  let right = null, days = [];
+  let right = null, days = [], allDays = null;
   if (lv !== "day") {
     const want = lv === "month" ? d => d.startsWith(selected) : lv === "year" ? d => d.startsWith(selYear) : d => !pick.years || pick.years.map(String).includes(d.slice(0, 4));
-    days = daily.dates.filter(want).map(d => ({d, n: dayCounts(d)[pick.i]})).filter(x => x.n > 0).sort((a, b) => b.n - a.n || (a.d < b.d ? -1 : 1)).slice(0, count);
-    const dt = el("table", {class: "plain", id: "mostdays"}, el("caption", {class: "sr", text: "The " + days.length + " days with the most detections"}),
+    days = daily.dates.filter(want).map(d => ({d, n: dayCounts(d)[pick.i]})).filter(x => x.n > 0).sort((a, b) => b.n - a.n || (a.d < b.d ? -1 : 1)); allDays = days.length; days = days.slice(0, count);
+    const dt = el("table", {class: "plain", id: "mostdays"}, el("caption", {class: "sr", text: listHead(days.length, allDays, "day", lv, period)}),
       el("tr", {}, el("th", {scope: "col", text: "#"}), el("th", {scope: "col", text: "Day (UTC date)"}), el("th", {scope: "col", class: "num", text: "Detections"})));
     days.forEach((x, i) => {
       const b = el("button", {type: "button", class: "linkish", text: dayName(x.d), "aria-label": "Day " + (i + 1) + ", " + dayName(x.d) + ": preview"});
@@ -2116,7 +2132,7 @@ function drawMost(pick) {
       x.where = el("span", {class: "where", text: "Loading"}); x.rank = i + 1;
       dt.append(x.row = el("tr", {}, el("td", {text: i + 1}), el("td", {}, b, el("span", {class: "note"}, "Most that day: ", x.where)), el("td", {class: "num", text: fmt(x.n)})));
     });
-    right = el("div", {}, el("h3", {text: "Top " + days.length + " days"}), el("div", {class: "calwrap"}, dt),
+    right = el("div", {}, el("h3", {text: listHead(days.length, allDays, "day", lv, period)}), el("div", {class: "calwrap"}, dt),
       el("p", {class: "note", text: "Counted detections of " + sat + " on each day in " + inRegion() + (pick.k ? ", as recorded (the map's cells are converted to the Aqua scale)." : ".")}));
   }
   // ---- season ----
@@ -2126,15 +2142,29 @@ function drawMost(pick) {
     S.months.forEach(x => { if (x[fld] != null && (lv === "year" ? x.m.startsWith(selYear) : !ys || ys.includes(x.m.slice(0, 4)))) by[+x.m.slice(5) - 1] += x[fld]; });
     const sum = by.reduce((a, b) => a + b, 0), order = by.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]);
     if (sum > 0) { const top = []; let acc = 0; for (const [v, i] of order) { if (acc >= sum / 2) break; top.push(i); acc += v; }
-      season = listWords(top.sort((a, b) => a - b).map(i => MONTH_FULL[i])) + " carried " + (100 * acc / sum).toFixed(0) + "% of " + (lv === "year" ? selYear + "'s" : "all the") + " " + sat + " detections" + (lv === "all" && pick.span ? " over " + pick.span : "") + " (" + fmt(acc) + " of " + fmt(sum) + ")."; }
+      season = listWords(top.sort((a, b) => a - b).map(i => MONTH_FULL[i])) + " carried " + (100 * acc / sum).toFixed(1) + "% of " + (lv === "year" ? selYear + "'s" : "all the") + " " + sat + " detections" + (lv === "all" && pick.span ? " over " + pick.span : "") + " (" + fmt(acc) + " of " + fmt(sum) + ")."; }
   } else if (lv === "month" && days.length) {
     const all = daily.dates.filter(d => d.startsWith(selected)).map(d => dayCounts(d)[pick.i]), sum = all.reduce((a, b) => a + b, 0), top = days.reduce((a, x) => a + x.n, 0);
-    if (sum > 0) season = "The " + days.length + " busiest days carried " + (100 * top / sum).toFixed(0) + "% of the month's " + sat + " detections (" + fmt(top) + " of " + fmt(sum) + ").";
+    if (sum > 0) season = (days.length === allDays ? (allDays === 1 ? "The one day with detections" : "The " + allDays + " days with detections") : "The " + days.length + " busiest days") + " carried " + (100 * top / sum).toFixed(1) + "% of the month's " + sat + " detections (" + fmt(top) + " of " + fmt(sum) + ").";
   }
+  // A choice that would list exactly what a smaller one lists is switched off, with the reason; the pressed one is the
+  // smallest choice that gives the lists on screen, so it never contradicts the headings.
+  const lens = v => Math.min(v, allAreas.length) + "/" + (allDays == null ? "" : Math.min(v, allDays)), now = lens(count), seen = new Set(), off = [];
+  const why = "Only " + N(allAreas.length, "area") + (allDays == null ? "" : " and " + N(allDays, "day")) + (allAreas.length + (allDays || 0) === 1 || (allDays == null && allAreas.length === 1) ? " has" : " have") + " detections " + (lv === "day" ? "on this day" : "in this period");
+  let pressed = false;
+  MOST_CHOICES.forEach(v => {
+    const same = seen.has(lens(v)), b = el("button", {type: "button", class: "tl-btn2", text: String(v)}); seen.add(lens(v));
+    const on = !pressed && lens(v) === now; if (on) pressed = true;
+    b.setAttribute("aria-pressed", String(on));
+    if (same) { b.disabled = true; b.title = why + ", so " + v + " would list the same."; b.setAttribute("aria-label", v + ": not available. " + b.title); off.push(v); }
+    else b.addEventListener("click", () => { mostChoice = v; mostKey = ""; drawMost(pick); const again = [...document.querySelectorAll(".mostshow button")].find(x => x.textContent === String(v)); if (again) again.focus({preventScroll: true}); });
+    show.append(b);
+  });
+  if (off.length) show.append(el("span", {class: "note", id: "mostwhy", text: why + ", so " + listWords(off.map(String)).replace(" and ", " or ") + " would list the same."}));
   kids.push(el("div", {class: "mostgrid"}, left, ...(right ? [right] : [])));
   if (season) kids.push(el("p", {id: "mostseason", style: "margin-top:10px", text: season}));
   kids.push(intro,
-    el("p", {class: "note", text: "An area is a square of " + (2 * AREA_R + 1) + " by " + (2 * AREA_R + 1) + " grid cells placed where it holds the most detections; areas do not overlap. Shares are of the " + f(total) + " detections on this map. An area is named after the nearest town in the bundled list to where its detections centre; the county is that town's. The numbered squares on the map are the same areas."
+    el("p", {class: "note", text: "An area is a square of " + (2 * AREA_R + 1) + " by " + (2 * AREA_R + 1) + " grid cells placed where it holds the most detections; areas do not overlap. Shares are of the " + N(total, "detection", f) + " on this map. An area is named after the nearest town in the bundled list to where its detections centre; the county is that town's. The numbered squares on the map are the same areas."
       + (lv === "all" ? " First and last dates are given when a year or a month is selected." : "")}));
   box.replaceChildren(...kids);
   mostCtx = {token, lv, pick, areas, days, total, period, f};
@@ -2233,7 +2263,7 @@ function pvChart(values, labels, what) {
   wrap.append(bars, el("p", {class: "note", text: what + ", " + labels[0] + " to " + labels[labels.length - 1] + ". Highest: " + fmt(hi) + " (" + labels[top] + "), marked."}));
   return wrap;
 }
-const SAT_SHORT = {MODIS_AQUA: "MODIS Aqua", MODIS_TERRA: "MODIS Terra", VIIRS_SNPP: "VIIRS S-NPP", VIIRS_NOAA20: "VIIRS NOAA-20"};
+const SAT_SHORT = {MODIS_AQUA: "MODIS Aqua", MODIS_TERRA: "MODIS Terra", VIIRS_SNPP: "VIIRS Suomi NPP", VIIRS_NOAA20: "VIIRS NOAA-20"};
 // Everything the card says about an area beyond its count: worked out once, from the grid where that is enough.
 function areaDetails(c, a) {
   if (a.details) return a.details;
@@ -2295,6 +2325,8 @@ function openPreview(kind, i, opener) {
   if (o.pin && o.pin._icon) o.pin._icon.classList.add("on");
   const nav = el("div", {class: "pvnav"}), prev = el("button", {type: "button", class: "secondary", text: "‹ Previous"}), next = el("button", {type: "button", class: "secondary", text: "Next ›"});
   prev.disabled = i === 0; next.disabled = i === list.length - 1;
+  if (prev.disabled) prev.title = list.length === 1 ? "This is the only one in the list" : "This is the first in the list";
+  if (next.disabled) next.title = list.length === 1 ? "This is the only one in the list" : "This is the last in the list";
   prev.addEventListener("click", () => { openPreview(kind, i - 1, null); $("previewcard").querySelector(".pvnav button").focus({preventScroll: true}); });
   next.addEventListener("click", () => { openPreview(kind, i + 1, null); const b = $("previewcard").querySelectorAll(".pvnav button"); (b[1].disabled ? b[0] : b[1]).focus({preventScroll: true}); });
   nav.append(prev, el("span", {class: "note", text: (kind === "area" ? "Area " : "Day ") + (i + 1) + " of " + list.length}), next);
@@ -2307,7 +2339,7 @@ function openPreview(kind, i, opener) {
     act("Zoom to this area", () => { pausePlay(); zoomArea(o); $("mapshell").scrollIntoView({block: "nearest", behavior: REDUCE ? "auto" : "smooth"}); }, "pv-zoom");
     const listBtn = act("List its detections", () => { const a = o, note = o.note; closePreview(true); openArea(a, c.pick, note); }, "pv-list");
     if (c.lv === "all") { listBtn.disabled = true; listBtn.title = "Select a year or a month first"; }
-    const dayBtn = act("Open the busiest day", () => {}, "pv-day"); dayBtn.disabled = true;
+    const dayBtn = act("Open the busiest day", () => {}, "pv-day"); dayBtn.disabled = true; dayBtn.title = "Loading the rest of this card";
     areaDetails(c, o).then(d => {
       if (!live()) return;
       const satText = GRID_SENSORS.filter(s => d.sats[s] > 0).map(s => SAT_SHORT[s] + " " + fmt(d.sats[s])).join(", ") || "none";
@@ -2322,24 +2354,25 @@ function openPreview(kind, i, opener) {
       more.replaceChildren(pvRows(rows), ...(d.chart ? [pvChart(d.chart.values, d.chart.labels, d.chart.what)] : []), ...(d.daysNote ? [el("p", {class: "note", text: d.daysNote})] : []));
       const target = c.lv === "day" ? null : d.busiestDay ? {day: d.busiestDay} : d.busiestMonth ? {month: d.busiestMonth} : null;
       if (target) {
-        dayBtn.textContent = target.day ? "Open the busiest day" : "Open the busiest month"; dayBtn.disabled = false;
+        dayBtn.textContent = target.day ? "Open the busiest day" : "Open the busiest month"; dayBtn.disabled = false; dayBtn.title = "";
         const go = dayBtn.cloneNode(true); dayBtn.replaceWith(go);
         go.addEventListener("click", () => { closePreview(true); select(target, {fit: !!target.day}).then(() => { $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); }); });
       } else if (c.lv === "day") dayBtn.remove();
+      else dayBtn.title = "Select a year or a month first";
       preview.data = Object.assign({rank: o.rank, name: o.name, count: o.count}, d);
     }).catch(() => { if (live()) more.replaceChildren(el("p", {class: "note", text: "The rest of this card could not be loaded."})); });
   } else {
     const m = +o.d.slice(5, 7), usual = c.pick.s === "MODIS_AQUA" ? S.medians[m - 1] : null, n = daysIn(o.d.slice(0, 7));
     title.textContent = o.rank + ". " + dayName(o.d);
-    const cmp = usual == null ? "Not compared: the usual month is known for MODIS Aqua only." : usual > 0 ? MONTH_FULL[m - 1] + " usually has " + fmt1(usual) + " detections in " + where + " (median of complete years), about " + fmt1(usual / n) + " a day. This day had " + fmt(o.n) + ", " + times(o.n, usual / n) + " that daily average." : "The usual " + MONTH_FULL[m - 1] + " has no detection in " + where + "; this day had " + fmt(o.n) + ".";
+    const cmp = usual == null ? "Not compared: the usual month is known for MODIS Aqua only." : usual > 0 ? MONTH_FULL[m - 1] + " usually has " + N(usual, "detection", fmt1) + " in " + where + " (median of complete years), about " + fmt1(usual / n) + " a day. This day had " + fmt(o.n) + ", " + times(o.n, usual / n) + " that daily average." : "The usual " + MONTH_FULL[m - 1] + " has no detection in " + where + "; this day had " + fmt(o.n) + ".";
     body.append(pvRows([["Date (UTC)", dayName(o.d)], ["Detections", fmt(o.n) + " (" + sat + ", " + D.region.name + ")"], ["Against the usual", cmp]]));
     act("Open this day", () => { closePreview(true); select({day: o.d}, {fit: true}).then(() => { $("mapshell").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); }); }, "pv-day");
     act("List its detections", () => { closePreview(true); select({day: o.d}, {fit: true}).then(() => { $("detsec").scrollIntoView({block: "start", behavior: REDUCE ? "auto" : "smooth"}); $("h-det").focus(); }); }, "pv-list");
-    const zoomBtn = act("Zoom to this area", () => {}, "pv-zoom"); zoomBtn.disabled = true;
+    const zoomBtn = act("Zoom to this area", () => {}, "pv-zoom"); zoomBtn.disabled = true; zoomBtn.title = "Loading the rest of this card";
     const fill = a => {
       if (!live()) return;
       more.replaceChildren(pvRows([["Area with the most that day", a ? a.name + ", " + fmt(a.count) + " of " + fmt(o.n) : "Not loaded: it needs a large file. Open the day to see where."]]));
-      if (a) { const z = zoomBtn.cloneNode(true); z.disabled = false; zoomBtn.replaceWith(z); z.addEventListener("click", () => { pausePlay(); zoomArea(a); $("mapshell").scrollIntoView({block: "nearest", behavior: REDUCE ? "auto" : "smooth"}); }); }
+      if (a) { const z = zoomBtn.cloneNode(true); z.disabled = false; z.title = ""; zoomBtn.replaceWith(z); z.addEventListener("click", () => { pausePlay(); zoomArea(a); $("mapshell").scrollIntoView({block: "nearest", behavior: REDUCE ? "auto" : "smooth"}); }); }
       preview.data = {rank: o.rank, day: o.d, n: o.n, usual, area: a ? {name: a.name, count: a.count} : null};
     };
     if (o.area) fill(o.area);
@@ -2351,7 +2384,13 @@ function openPreview(kind, i, opener) {
   card.hidden = false;
   title.focus({preventScroll: true});
 }
-document.addEventListener("keydown", e => { if (e.key === "Escape" && preview) { e.stopPropagation(); closePreview(false); } });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (preview) { e.stopPropagation(); closePreview(false); }
+  else if (!$("report").hidden) { closeReport(); writeHash(); $("h-det").focus({preventScroll: true}); }
+  else if (map && (!$("cardsheet").hidden || document.querySelector(".leaflet-popup"))) { closeCard(); writeHash(); }
+  else if (document.activeElement && document.activeElement.closest && document.activeElement.closest("#layerspanel") && !$("layersbody").hidden) { setLayersOpen(false); $("layersbtn").focus(); }
+});
 
 // ---------- go to a year, a month or a date ----------
 // The same selection as the slider, the calendar and the charts; a value outside the record gets a sentence, never a blank map.
@@ -2516,7 +2555,7 @@ function updateChip() {
   if (s === "auto") chipDismissed = "";
   chip.hidden = s === "auto" || chipDismissed === s;
   if (chip.hidden) return;
-  const name = SENSOR[s].replace("VIIRS Suomi NPP", "VIIRS S-NPP");
+  const name = SENSOR[s];
   $("chiptext").textContent = chipFromLink ? "This link shows " + name + (s === "MODIS_AQUA" ? " only, not the harmonized view" : " as recorded, not converted to the Aqua scale")
     : name + (s === "MODIS_AQUA" ? " only" : ", as recorded");
 }
@@ -2528,7 +2567,7 @@ function drawMonthRow() {
   box.replaceChildren(el("strong", {text: selYear}), ...MONTHS.map((n, i) => {
     const m = selYear + "-" + String(i + 1).padStart(2, "0"), x = D.months.find(v => v.m === m);
     const b = el("button", {type: "button", "aria-pressed": String(m === selected), "aria-label": MONTH_FULL[i] + " " + selYear + (x ? "" : ", outside the record"), text: n});
-    if (!x) b.disabled = true; else b.addEventListener("click", () => select({month: m}));
+    if (!x) { b.disabled = true; b.title = MONTH_FULL[i] + " " + selYear + " is outside the record"; } else b.addEventListener("click", () => select({month: m}));
     return b;
   }));
 }
@@ -2644,7 +2683,7 @@ async function drawMap() {
     + (lv === "all" ? ", summed over " + pick.span + "." : ".")
     + (x && isPartial(x.status) ? " The month is not complete." : "") + (x && baseStatus(x.status) === "provisional_nrt" ? " Provisional data." : "")
     + (STATE ? " A cell on the border also holds detections from the neighbouring state, so this total can differ a little from the state's own count in the calendar, which goes by each detection's position." : "")
-    + " Blank cells mean no detection was recorded, not that nothing burned: when each place could be observed is unknown.";
+    + " Blank cells mean no detection was recorded, which is not the same as no fire: when each place could be observed is unknown.";
   if (t === 0) setEmpty(nothing);
   // For totals over a year or more, say how many of the coloured cells are in the faintest step.
   // The faintest step is the first one the legend lists (a small scale may not reach the ramp's first colour).
@@ -2663,9 +2702,10 @@ function drawMapLegend(pick) {
     legendSteps(pick.max, !!pick.k).forEach(st => steps.append(el("span", {class: "step"}, el("span", {class: "chip"}, el("span", {style: "background:" + st.c + ";opacity:" + STEP_OPACITY[MAP_RAMP.indexOf(st.c)]})), st.text)));
     lg.append(el("span", {class: "legtitle", text: "Detections in a 0.1° cell" + (pick.span ? ", " + pick.span : "") + " (each step is a multiple, not an amount; fainter means fewer):"}), steps);
   }
-  lg.append(el("span", {}, el("span", {class: "sw", style: "background:transparent;border:1px dashed #55627a"}), "Blank: no detection recorded, not \"no fire\""));
-  lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px solid #fff;box-shadow:0 0 0 2px #333"}), "Supported region"));
-  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8d9097"}), "Dimmed: outside the region, not supported"));
+  lg.append(el("span", {}, el("span", {class: "sw", style: "background:transparent;border:1px dashed #55627a"}), "Blank: no detection recorded, which is not the same as no fire"));
+  lg.append(el("span", {}, el("span", {class: "sw", style: "border:2px solid #fff;box-shadow:0 0 0 2px #333"}), (STATE ? "Outline of " + STATE.name : "Region with data: " + D.region.name)));
+  lg.append(el("span", {}, el("span", {class: "sw", style: "background:#8d9097"}), (STATE ? "Dimmed: outside " + STATE.name : "Dimmed: outside the region, no data here")));
+  lg.append(el("span", {id: "leg-most", hidden: !mostCtx}, el("span", {class: "sw", style: "background:#14213d;border:2px solid #fff;border-radius:50%;width:14px;height:14px"}), "Numbered marker and dashed square: a listed area with the most detections"));
   if (area) lg.append(el("span", {}, el("span", {class: "sw", style: "border:3px dashed #f2a900"}), "Chosen area"));
   if (base.dayInfo) lg.append(el("span", {class: "legtitle", text: "Basemap: NASA true-colour image of " + dayName(base.dayInfo.date) + " from " + SENSOR[base.dayInfo.sat] + ", " + base.dayInfo.res + ". " + IMAGE_SHOWS}));
   if (pointsOn || level() === "day") {
@@ -2857,7 +2897,7 @@ async function openReport(d) {
     el("li", {text: "The position is the centre of a satellite pixel (" + pix + " across); the fire is somewhere inside it."}),
     el("li", {text: "A detection is not a count of fires and not burned area. One fire can give many detections; a small or short fire may give none."}),
     el("li", {text: "This is not an official incident report. It names no cause and does not replace information from emergency services."})))));
-  const print = el("button", {type: "button", text: "Print or save as PDF"}), csv = el("button", {type: "button", class: "secondary", text: "Download these " + fmt(rows.length) + " detections (CSV)"}), close = el("button", {type: "button", class: "secondary", text: "Close the report"});
+  const print = el("button", {type: "button", text: "Print or save as PDF"}), csv = el("button", {type: "button", class: "secondary", text: "Download the " + N(rows.length, "detection") + " (CSV)"}), close = el("button", {type: "button", class: "secondary", text: "Close the report"});
   print.addEventListener("click", () => window.print());
   csv.addEventListener("click", () => {
     const lines = ["acq_date,acq_time,latitude,longitude,sensor,quality,confidence,frp,daynight,type,counted,local_time,time_zone,km_from_point"];
@@ -3101,7 +3141,7 @@ function drawTable() {
   list.slice(0, tbl.limit).forEach(({r, d}) => {
     const b = el("button", {type: "button", class: "linkish", text: localText(d, zone, false), "aria-label": "Show on the map: " + localText(d, zone, true)});
     const tr = el("tr", {}, el("td", {}, b), el("td", {text: (nearTown(d.lat, d.lon) || {short: "not available"}).short}), ...(local ? [el("td", {text: utcText(d, tbl.mode !== "day")})] : []), el("td", {class: "num", text: d.lat.toFixed(4)}), el("td", {class: "num", text: d.lon.toFixed(4)}),
-      el("td", {text: SENSOR[d.sensor].replace("VIIRS Suomi NPP", "VIIRS S-NPP")}), el("td", {text: d.conf === "" ? "not given" : d.conf}), el("td", {class: "num", text: d.frp === "" ? "" : d.frp}), el("td", {text: d.counted ? "Yes" : "No: " + whyNotCounted(d).split(":")[0].replace(/^it lies.*/, "static heat source")}));
+      el("td", {text: SENSOR[d.sensor]}), el("td", {text: d.conf === "" ? "not given" : d.conf}), el("td", {class: "num", text: d.frp === "" ? "" : d.frp}), el("td", {text: d.counted ? "Yes" : "No: " + whyNotCounted(d).split(":")[0].replace(/^it lies.*/, "static heat source")}));
     if (tbl.on === r[5]) tr.classList.add("on");
     const show = () => { tbl.on = r[5]; body.querySelectorAll("tr.on").forEach(x => x.classList.remove("on")); tr.classList.add("on"); openCard(r); };
     tr.addEventListener("click", e => { if (e.target !== b) show(); });
@@ -3112,8 +3152,8 @@ function drawTable() {
   const more = $("detmore"), left = list.length - tbl.limit;
   more.hidden = left <= 0;
   more.textContent = "Show " + fmt(Math.min(TABLE_STEP, left)) + " more (" + fmt(Math.max(left, 0)) + " not shown)";
-  $("detcsv").textContent = "Download these " + fmt(list.length) + " rows (CSV)";
-  $("detcsv").disabled = !list.length;
+  $("detcsv").textContent = "Download the " + N(list.length, "row") + " (CSV)";
+  $("detcsv").disabled = !list.length; $("detcsv").title = list.length ? "" : "There are no rows to download";
 }
 function downloadTable() {
   if (!tbl) return;
@@ -3254,7 +3294,7 @@ async function drawPoints() {
       : "No " + sat + " detection was recorded " + when + (day ? " across " + inRegion() : " in this view") + ". That is not the same as no fire.") + cap + (list.length ? " Select a time to see that detection on the map. The table lists the satellite shown on the map; change it in Layers." : ""),
     "kahu-ahi_" + D.region.id + (STATE ? "_" + STATE.id : "") + "_" + (day ? selDay : selected + "_view") + "_" + pick.s + ".csv");
   note.textContent = (here.length ? (step > 1 ? "Too many to draw: showing an evenly spaced " + fmt(drawn) + " of the " + fmt(here.length) + " " + SENSOR[pick.s] + " detections in this view " + when + ". Zoom in to see them all. "
-      : fmt(drawn) + " " + SENSOR[pick.s] + " detections in this view " + when + ". ") + fmt(counted) + " counted (red squares), " + fmt(drawn - counted) + " not counted (hollow dashed squares: low confidence or a non-fire heat source)."
+      : fmt(drawn) + " " + SENSOR[pick.s] + (drawn === 1 ? " detection" : " detections") + " in this view " + when + ". ") + fmt(counted) + " counted (red squares), " + fmt(drawn - counted) + " not counted (hollow dashed squares: low confidence or a non-fire heat source)."
     : "No " + SENSOR[pick.s] + " detection was recorded in this view " + when + ". That does not mean nothing burned.")
     + (regionBounds.contains(b) ? "" : " Nothing is shown outside the region box.");
 }
@@ -3311,7 +3351,7 @@ function describeDownload() {
   $("dlnote").textContent = area
     ? "Only rows inside the chosen area are kept, out of " + fmt(rows) + " in the whole region for these years."
     : STATE ? "Only rows in " + STATE.name + " are kept, out of " + fmt(rows) + " in the national files for these years. The national files are read in full, which can take a while."
-    : fmt(rows) + " detections, about " + Math.max(1, Math.round(rows * 62 / 1e6)) + " MB as a CSV file.";
+    : N(rows, "detection") + ", about " + Math.max(1, Math.round(rows * 62 / 1e6)) + " MB as a CSV file.";
 }
 // Keep a CSV row when its point falls in a grid cell of the chosen area: the same cells the calendar counts.
 function keepRow(line) {
@@ -3338,7 +3378,7 @@ async function download() {
     const tag = STATE ? "_" + STATE.id : area ? "_area_" + [area.w, area.s, area.e, area.n].map(v => v.toFixed(1)).join("_") : "";
     const a = el("a", {href: URL.createObjectURL(new Blob(parts, {type: "text/csv"})), download: "kahu-ahi_" + D.region.id + tag + "_hotspots_" + ys[0] + (ys.length > 1 ? "-" + ys[ys.length - 1] : "") + ".csv"});
     document.body.append(a); a.click(); a.remove();
-    $("dlnote").textContent = "Downloaded " + ys.length + (ys.length > 1 ? " years" : " year") + (area ? ", " + fmt(kept) + " detections inside the chosen area." : STATE ? ", " + fmt(kept) + " detections in " + STATE.name + "." : ".");
+    $("dlnote").textContent = "Downloaded " + ys.length + (ys.length > 1 ? " years" : " year") + (area ? ", " + N(kept, "detection") + " inside the chosen area." : STATE ? ", " + N(kept, "detection") + " in " + STATE.name + "." : ".");
   } catch (e) {
     $("dlnote").textContent = "The download could not be prepared in this browser. Try a shorter range of years, or a current version of Chrome, Edge, Firefox or Safari.";
   }
