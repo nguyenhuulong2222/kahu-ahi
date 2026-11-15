@@ -621,5 +621,16 @@
       "vietnam": 1941,
       "conus": 25032
     }
+  },
+  "state_boundaries": {
+    "source": "US Census Bureau, cartographic boundary file, states, 1:5,000,000, 2023 (public domain)",
+    "source_url": "https://www2.census.gov/geo/tiger/GENZ2023/shp/cb_2023_us_state_5m.zip",
+    "file": "cb_2023_us_state_5m.zip",
+    "sha256": "0f606018e81fe99a204d08aa7ac1f8d00516143ddc95900b79eeecfee65da8c3",
+    "bytes": 1121952,
+    "downloaded": "2026-11-15 (UTC)",
+    "used_for": "docs/data/conus_states_geo.json (48 states and DC, coordinates rounded to 4 decimals) and the assignment of detections to states",
+    "detections_in_a_state": 14049582,
+    "detections_outside_every_state": 27962
   }
 }
