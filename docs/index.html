@@ -129,8 +129,11 @@ button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:
 .tl-btn{min-height:40px;padding:6px 10px;background:#fff;color:var(--ink);border-color:#fff;font-weight:600}
 .tl-btn[aria-pressed="true"]{background:#f2a900;color:#14213d;border-color:#f2a900}
 .tl-btn:disabled{opacity:.45}
-#tl-range{flex:1 1 240px;min-width:140px;min-height:32px;padding:0;border:0;background:transparent;accent-color:#f2a900}
-#tl-label{min-width:6.5em;font-weight:700;font-variant-numeric:tabular-nums}
+#tl-range{flex:1 1 120px;min-width:100px;min-height:32px;padding:0;border:0;background:transparent;accent-color:#f2a900}
+.tl-goto{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-weight:700}.tl-goto label{display:inline;color:#fff;font-weight:600;font-size:.9rem;margin:0}.tl-goto>span{display:inline-flex;align-items:center;gap:6px}.tl-goto>span[hidden]{display:none}
+.tl-goto select,.tl-goto input{min-height:40px;padding:4px 8px;border-radius:4px;border:1px solid #cfd6df;background:#fff;color:#14213d;font:inherit;font-variant-numeric:tabular-nums}
+.tl-goto select:focus-visible,.tl-goto input:focus-visible{outline:3px solid #f2a900;outline-offset:2px}.tl-goto [hidden]{display:none}
+#go-msg{flex:1 1 100%;order:20;font-size:.9rem;background:#fff6e5;color:#14213d;border-left:4px solid #f2a900;padding:6px 10px;border-radius:2px}#go-msg:empty{display:none}
 #tl-speed{min-height:40px;padding:6px 8px;font-size:14px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 #biglabel{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:900;pointer-events:none;padding:4px 16px;border-radius:6px;background:rgba(20,33,61,.82);color:#fff;font-weight:700;font-size:clamp(1.6rem,5vw,3rem);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -253,15 +256,17 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
 .areabar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:14px}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:4px}
 #layerspanel.collapsed,#legendpanel.collapsed{width:auto}
+@media(min-width:601px) and (max-width:1180px){.mapshell{--tl-h:102px}}
 @media(max-width:600px){.mapshell{--tl-h:98px}#map{min-height:300px;height:300px}.lede{display:none}.headline{font-size:.92rem}.pagehead{gap:4px 24px}.brand{gap:9px}.brand .mark{width:34px;height:44px}.namenote{font-size:.82rem}.maplabel{margin-top:8px}
   .timeline{gap:6px}#tl-range{order:-1;flex-basis:100%}.tl-word{display:none}
   .tl-btn{flex:0 0 auto;min-width:44px;padding:6px 8px}
   #tl-play{order:-3}#tl-range{order:-2;flex:1 1 52%}#tl-speed{order:-1}
-  #tl-py{order:2}#tl-pm{order:3}#tl-label{order:4;flex:1 1 auto;min-width:0;text-align:center;font-size:.85rem}#tl-nm{order:5}#tl-ny{order:6}
+  #tl-py{order:2}#tl-pm{order:3}#tl-nm{order:5;margin-left:auto}#tl-ny{order:6}
+  .tl-goto{order:7;flex:1 1 100%}#go-msg{order:7}.tl-goto>span{display:flex;flex:1 1 0;align-items:center;gap:6px;min-width:0}.tl-goto select,.tl-goto input{flex:1 1 auto;min-width:0;min-height:44px}
   #legendpanel{width:240px}
   .leaflet-bottom.leaflet-left{bottom:36px}
   #biglabel{top:58px}#mapnotes{top:108px}
-  .mapshell{--tl-h:150px}.tl-levels{order:7;flex:1 1 100%}.tl-levels .tl-btn{flex:1 1 0;padding:6px 4px;font-size:.9rem;min-width:0}
+  .mapshell{--tl-h:200px}.tl-levels{order:8;flex:1 1 100%}.tl-levels .tl-btn{flex:1 1 0;padding:6px 4px;font-size:.9rem;min-width:0}
   #monthrow{grid-template-columns:repeat(6,minmax(0,1fr))}#monthrow strong{grid-column:1/-1}
   .leaflet-control-attribution{font-size:10px}.coords{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
@@ -322,7 +327,13 @@ legend{font-size:.9rem;color:var(--muted);padding:0 4px}
     <input type="range" id="tl-range" min="0" max="0" value="0" step="1" aria-label="Month shown on the map; the first position is all years">
     <button type="button" id="tl-nm" class="tl-btn" aria-label="Next month"><span class="tl-word">Month</span> ›</button>
     <button type="button" id="tl-ny" class="tl-btn" aria-label="Next year"><span class="tl-word">Year</span> »</button>
-    <output id="tl-label" for="tl-range" aria-live="polite">All years</output>
+    <output id="tl-label" class="sr" for="tl-range" aria-live="polite">All years</output>
+    <span id="tl-goto" class="tl-goto" role="group" aria-label="Go to a year, month or date">
+      <span id="go-year-wrap"><label for="go-year">Year</label> <select id="go-year"></select></span>
+      <span id="go-month-wrap"><label for="go-month">Month</label> <select id="go-month"></select></span>
+      <span id="go-date-wrap"><label for="go-date">Date</label> <input type="date" id="go-date"></span>
+    </span>
+    <span id="go-msg" role="status" aria-live="polite"></span>
     <span class="tl-levels" role="group" aria-label="Step the timeline by">
       <button type="button" id="lv-day" class="tl-btn" aria-pressed="false">Days</button><button type="button" id="lv-month" class="tl-btn" aria-pressed="false">Months</button><button type="button" id="lv-year" class="tl-btn" aria-pressed="false">Years</button><button type="button" id="allyears" class="tl-btn" aria-pressed="false">All years</button>
     </span>
@@ -857,6 +868,7 @@ function applySel(sel) {
 function select(sel, opts) {
   if (!D) return Promise.resolve();
   if (!(opts && opts.play)) { pausePlay(); defaultView = false; }
+  gotoMsg("");
   if (reportKey && sel.day !== selDay) closeReport();
   applySel(sel);
   fitNext = !!(opts && opts.fit) && !!selDay;
@@ -1933,12 +1945,60 @@ function updateTimeline() {
   r.setAttribute("aria-label", p.word + " shown on the map" + (p.zero ? "; the first position is all years" : ""));
   r.setAttribute("aria-valuetext", posLabel(p, v));
   $("tl-label").textContent = posLabel(p, v);
+  syncGoto();
   [["tl-pm", "Previous ", p.word], ["tl-nm", "Next ", p.word], ["tl-py", "Previous ", p.coarse], ["tl-ny", "Next ", p.coarse]].forEach(([id, a, w]) => {
     const b = $(id); b.hidden = !w; if (!w) return;
     b.querySelector(".tl-word").textContent = w; b.setAttribute("aria-label", a + w.toLowerCase());
   });
   $("tl-pm").disabled = v === 1; $("tl-nm").disabled = v === n;
   $("tl-py").disabled = v === 1; $("tl-ny").disabled = v === n;
+}
+
+// ---------- go to a year, a month or a date ----------
+// The same selection as the slider, the calendar and the charts; a value outside the record gets a sentence, never a blank map.
+function recordSpan() {
+  const firsts = Object.values(D.sensors || {}).map(v => v.first).filter(Boolean).sort();
+  return {first: firsts[0] || D.months[0].m + "-01", last: D.data_through};
+}
+function gotoMsg(text) { $("go-msg").textContent = text || ""; }
+function spanText() { const sp = recordSpan(); return "The record for this " + (STATE ? "state" : "region") + " runs from " + dayName(sp.first) + " to " + dayName(sp.last) + "."; }
+function syncGoto() {
+  if (!D) return;
+  const lv = level(), ys = [...new Set(D.months.map(x => x.m.slice(0, 4)))], gy = $("go-year"), gm = $("go-month"), gd = $("go-date"), sp = recordSpan();
+  if (gy.dataset.for !== D.region.id + "/" + ys.length) {
+    gy.replaceChildren(el("option", {value: "", text: "All years"}), ...ys.map(y => el("option", {value: y, text: y})));
+    gm.replaceChildren(...MONTH_FULL.map((n, i) => el("option", {value: String(i + 1).padStart(2, "0"), text: n})));
+    gy.dataset.for = D.region.id + "/" + ys.length;
+  }
+  $("go-year-wrap").hidden = lv === "day"; $("go-month-wrap").hidden = lv !== "month"; $("go-date-wrap").hidden = lv !== "day";
+  const y = selDay ? selDay.slice(0, 4) : selected ? selected.slice(0, 4) : selYear || "";
+  gy.value = y;
+  if (selected) gm.value = selected.slice(5, 7);
+  gd.min = sp.first; gd.max = sp.last;
+  if (selDay && document.activeElement !== gd) gd.value = selDay;
+}
+function gotoYear() {
+  const y = $("go-year").value;
+  gotoMsg("");
+  if (level() === "month" && y) {
+    // Keep the month when that year has it; otherwise go to the year's first month in the record.
+    const want = y + "-" + $("go-month").value, first = D.months.find(x => x.m.slice(0, 4) === y);
+    return select({month: D.months.some(x => x.m === want) ? want : first.m});
+  }
+  select(y ? {year: y} : {});
+}
+function gotoMonth() {
+  const y = $("go-year").value, m = y + "-" + $("go-month").value;
+  if (!y) { gotoMsg(""); return select({}); }
+  if (!D.months.some(x => x.m === m)) { gotoMsg(MONTH_FULL[+m.slice(5) - 1] + " " + y + " is outside the record. " + spanText()); syncGoto(); return; }
+  gotoMsg(""); select({month: m});
+}
+function gotoDate() {
+  const gd = $("go-date"), v = gd.value, sp = recordSpan();
+  if (!v) { gotoMsg((gd.validity && gd.validity.badInput ? "That is not a date. " : "Enter a full date. ") + spanText()); return; }
+  if (v < sp.first || v > sp.last) { gotoMsg(dayName(v) + " is outside the record. " + spanText()); return; }
+  if (!validDay(v)) { gotoMsg("There is no file for " + dayName(v) + " yet. " + spanText()); return; }
+  gotoMsg(""); select({day: v}, {fit: true});
 }
 
 // ---------- play through time ----------
@@ -2764,7 +2824,7 @@ async function drawPoints() {
     if (pointCache.key !== D.region.id + "/" + selected + "/" + (STATE ? STATE.id : "")) note.textContent = "Loading the detections for " + monthName(selected) + ".";
     rows = await monthRows(D.region.id + "/" + selected);
   } catch (e) { if (token === pointToken) note.textContent = "The detections for this " + (day ? "day" : "month") + " could not be loaded."; return; }
-  if (token !== pointToken) return;
+  if (token !== pointToken || day !== (level() === "day")) return;   // the selection moved on while the file was loading
   layers.points.clearLayers();
   const dd = day ? +selDay.slice(8) : 0, all = rows.filter(r => r[3] === pick.s && (!day || r[4] === dd));
   // Coming from a daily bar or the Days button: move the map to where that day's detections are.
@@ -2901,6 +2961,10 @@ function downloadMonthly() {
 $("dlmonthly").addEventListener("click", () => { if (D) downloadMonthly(); });
 $("region").addEventListener("change", e => load(e.target.value));
 $("state").addEventListener("change", e => openState(e.target.value));
+$("go-year").addEventListener("change", gotoYear);
+$("go-month").addEventListener("change", gotoMonth);
+$("go-date").addEventListener("change", gotoDate);
+$("go-date").addEventListener("blur", () => { if (!$("go-date").value && selDay) gotoDate(); });
 $("mode").addEventListener("change", () => { if (D) { drawCalendar(); select(curSel()); } });
 $("sensor").addEventListener("change", () => { if (D) select(curSel()); });
 ["toauto", "toauto2"].forEach(id => $(id).addEventListener("click", () => { $("sensor").value = "auto"; if (D) select(curSel()); $("map").focus(); }));
