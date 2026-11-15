@@ -3916,5 +3916,354 @@
    "rows": 167353,
    "has_type": false
   }
- ]
+ ],
+ "states": {
+  "states": 49,
+  "monthly_values_compared": 44450,
+  "per_state": {
+   "AL": {
+    "accepted": true,
+    "error": 15.5,
+    "error_with_national_coefficients": 29.4,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "AR": {
+    "accepted": true,
+    "error": 14.0,
+    "error_with_national_coefficients": 31.9,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "AZ": {
+    "accepted": true,
+    "error": 16.7,
+    "error_with_national_coefficients": 20.6,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "CA": {
+    "accepted": true,
+    "error": 15.7,
+    "error_with_national_coefficients": 20.7,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "CO": {
+    "accepted": true,
+    "error": 21.3,
+    "error_with_national_coefficients": 22.2,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "CT": {
+    "accepted": false,
+    "error": 133.2,
+    "error_with_national_coefficients": 115.1,
+    "months_with_own_k": 0,
+    "adopted": "snpp_coefficients"
+   },
+   "DC": {
+    "accepted": false,
+    "error": null,
+    "error_with_national_coefficients": null,
+    "months_with_own_k": 0,
+    "adopted": "snpp_coefficients"
+   },
+   "DE": {
+    "accepted": false,
+    "error": 114.0,
+    "error_with_national_coefficients": 107.7,
+    "months_with_own_k": 1,
+    "adopted": "noaa20_coefficients"
+   },
+   "FL": {
+    "accepted": true,
+    "error": 14.9,
+    "error_with_national_coefficients": 16.8,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "GA": {
+    "accepted": true,
+    "error": 14.2,
+    "error_with_national_coefficients": 24.7,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "IA": {
+    "accepted": true,
+    "error": 24.6,
+    "error_with_national_coefficients": 37.8,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "ID": {
+    "accepted": true,
+    "error": 14.3,
+    "error_with_national_coefficients": 14.8,
+    "months_with_own_k": 11,
+    "adopted": "snpp_coefficients"
+   },
+   "IL": {
+    "accepted": true,
+    "error": 20.9,
+    "error_with_national_coefficients": 32.4,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "IN": {
+    "accepted": true,
+    "error": 34.5,
+    "error_with_national_coefficients": 35.6,
+    "months_with_own_k": 11,
+    "adopted": "snpp_coefficients"
+   },
+   "KS": {
+    "accepted": true,
+    "error": 19.1,
+    "error_with_national_coefficients": 27.5,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "KY": {
+    "accepted": true,
+    "error": 28.5,
+    "error_with_national_coefficients": 63.1,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "LA": {
+    "accepted": true,
+    "error": 14.8,
+    "error_with_national_coefficients": 26.5,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "MA": {
+    "accepted": false,
+    "error": 104.5,
+    "error_with_national_coefficients": 97.7,
+    "months_with_own_k": 3,
+    "adopted": "noaa20_coefficients"
+   },
+   "MD": {
+    "accepted": false,
+    "error": 93.5,
+    "error_with_national_coefficients": 117.5,
+    "months_with_own_k": 5,
+    "adopted": "snpp_coefficients"
+   },
+   "ME": {
+    "accepted": false,
+    "error": 94.8,
+    "error_with_national_coefficients": 96.9,
+    "months_with_own_k": 3,
+    "adopted": "snpp_coefficients"
+   },
+   "MI": {
+    "accepted": false,
+    "error": 39.6,
+    "error_with_national_coefficients": 60.3,
+    "months_with_own_k": 8,
+    "adopted": "snpp_coefficients"
+   },
+   "MN": {
+    "accepted": true,
+    "error": 26.1,
+    "error_with_national_coefficients": 42.4,
+    "months_with_own_k": 11,
+    "adopted": "snpp_coefficients"
+   },
+   "MO": {
+    "accepted": true,
+    "error": 16.4,
+    "error_with_national_coefficients": 22.2,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "MS": {
+    "accepted": true,
+    "error": 16.4,
+    "error_with_national_coefficients": 26.6,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "MT": {
+    "accepted": true,
+    "error": 16.3,
+    "error_with_national_coefficients": 18.1,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "NC": {
+    "accepted": true,
+    "error": 22.1,
+    "error_with_national_coefficients": 28.7,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "ND": {
+    "accepted": true,
+    "error": 49.8,
+    "error_with_national_coefficients": 91.8,
+    "months_with_own_k": 10,
+    "adopted": "snpp_coefficients"
+   },
+   "NE": {
+    "accepted": true,
+    "error": 25.7,
+    "error_with_national_coefficients": 33.2,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "NH": {
+    "accepted": false,
+    "error": 122.0,
+    "error_with_national_coefficients": 114.3,
+    "months_with_own_k": 0,
+    "adopted": "noaa20_coefficients"
+   },
+   "NJ": {
+    "accepted": false,
+    "error": 46.6,
+    "error_with_national_coefficients": 51.0,
+    "months_with_own_k": 6,
+    "adopted": "snpp_coefficients"
+   },
+   "NM": {
+    "accepted": true,
+    "error": 23.4,
+    "error_with_national_coefficients": 43.3,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "NV": {
+    "accepted": true,
+    "error": 19.5,
+    "error_with_national_coefficients": 21.9,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "NY": {
+    "accepted": false,
+    "error": 49.9,
+    "error_with_national_coefficients": 63.2,
+    "months_with_own_k": 8,
+    "adopted": "snpp_coefficients"
+   },
+   "OH": {
+    "accepted": true,
+    "error": 44.7,
+    "error_with_national_coefficients": 72.5,
+    "months_with_own_k": 10,
+    "adopted": "noaa20_coefficients"
+   },
+   "OK": {
+    "accepted": true,
+    "error": 14.8,
+    "error_with_national_coefficients": 16.1,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "OR": {
+    "accepted": true,
+    "error": 18.3,
+    "error_with_national_coefficients": 23.2,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "PA": {
+    "accepted": true,
+    "error": 40.6,
+    "error_with_national_coefficients": 50.7,
+    "months_with_own_k": 10,
+    "adopted": "snpp_coefficients"
+   },
+   "RI": {
+    "accepted": false,
+    "error": 145.7,
+    "error_with_national_coefficients": 126.2,
+    "months_with_own_k": 0,
+    "adopted": "snpp_coefficients"
+   },
+   "SC": {
+    "accepted": true,
+    "error": 17.0,
+    "error_with_national_coefficients": 19.1,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "SD": {
+    "accepted": true,
+    "error": 37.5,
+    "error_with_national_coefficients": 44.2,
+    "months_with_own_k": 12,
+    "adopted": "snpp_coefficients"
+   },
+   "TN": {
+    "accepted": true,
+    "error": 23.0,
+    "error_with_national_coefficients": 28.4,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "TX": {
+    "accepted": true,
+    "error": 19.4,
+    "error_with_national_coefficients": 47.0,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "UT": {
+    "accepted": true,
+    "error": 21.2,
+    "error_with_national_coefficients": 20.9,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "VA": {
+    "accepted": true,
+    "error": 28.2,
+    "error_with_national_coefficients": 35.0,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "VT": {
+    "accepted": false,
+    "error": 121.4,
+    "error_with_national_coefficients": 129.7,
+    "months_with_own_k": 0,
+    "adopted": "noaa20_coefficients"
+   },
+   "WA": {
+    "accepted": true,
+    "error": 18.4,
+    "error_with_national_coefficients": 20.6,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   },
+   "WI": {
+    "accepted": true,
+    "error": 26.1,
+    "error_with_national_coefficients": 35.6,
+    "months_with_own_k": 9,
+    "adopted": "noaa20_coefficients"
+   },
+   "WV": {
+    "accepted": true,
+    "error": 36.6,
+    "error_with_national_coefficients": 75.2,
+    "months_with_own_k": 10,
+    "adopted": "snpp_coefficients"
+   },
+   "WY": {
+    "accepted": true,
+    "error": 19.9,
+    "error_with_national_coefficients": 27.8,
+    "months_with_own_k": 12,
+    "adopted": "noaa20_coefficients"
+   }
+  }
+ }
 }

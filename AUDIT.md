@@ -64,6 +64,22 @@ The town named on the card is in a different county or district than the detecti
 - **Cosmetic.** Hawaiʻi's percentages of very small numbers; "1 detections".
 - **To watch.** NASA's Aqua page calls the mission active and the downloads hold Aqua rows to 13–14 Nov 2026. A search result, not opened, described a NASA status document from May 2025 that planned to end Aqua's mission in late 2026. If Aqua has in fact stopped, "Aqua still has data" needs rewording and the VIIRS-only record becomes the main one.
 
+## Follow-up: the state split (commits `af0866a`, `43ceae5`)
+
+The contiguous United States is now also shown state by state, and the California test box has left the region list (it stays in the comparison table, named as a rectangle). This removes the overlap noted in B5 from the list of regions; the comparison "test box inside the national fit" is still a lower bound for the reason given there.
+
+`audit/recompute.py` was extended to the states. It assigns every detection with its own point-in-polygon code (written apart from `pipeline/states.py`: candidates from a 1° grid of bounding boxes, edges kept per 0.25° band) against the outlines in `docs/data/conus_states_geo.json`, and recomputes each state from the raw files. Against `docs/data/conus_states.json`: 49 states and the "outside" group, 44,450 monthly values, every factor, every leave-one-year-out error (monthly, whole-year and unconverted; all years, before and from 2022), the as-used test and which factors it adopts, the acceptance decision, the error with national factors and the month-to-date values of accepted states: **zero differences**. The four regions still show zero differences.
+
+Also checked:
+
+- The outline used is the Census 1:5,000,000 file. Against the 1:500,000 county file, 3 of 2,000 sampled detections are assigned differently; all three lie on the Indiana shore of Lake Michigan and fall in no state in the simplified outline. 27,962 of 14,077,544 detections (0.2%) fall in no state and are reported as such.
+- A one-year state download from the page (Georgia, 2003: 4,255 rows, 3,993 counted) is row for row what the pipeline assigns to the state, and its counted rows equal the state file's total for that year.
+- In a state's day view the squares drawn for the judged satellite equal the state's daily count (checked for California, Georgia, Montana and New York).
+
+What the state numbers say, for a reader of section A: 37 of 49 states pass the acceptance rule; 12 do not. In 15 of the 37 the chain as used for recent months fails the same rule and the page marks their recent converted values "not reliable". All but one harmonized state does better with its own factors than with the national ones, which is the measured cost of one conversion for a whole country.
+
+Not checked: time zones (a state is treated as single-zone when all its GeoNames places share a zone; this was not compared with a boundary file, and a town such as West Wendover, Nevada, would not be caught); the look of the "By state" map on real devices; screen-reader use of the new table.
+
 ## Summary
 
 The arithmetic is sound. An independent recomputation from the raw files reproduces every coefficient, every error figure and every month-to-date figure in all four regions, and 3,556 monthly counts with three differences of one detection.

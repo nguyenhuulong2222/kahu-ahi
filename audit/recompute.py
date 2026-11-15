@@ -32,11 +32,12 @@ SETS = {
         "hawaii": (-160.6, 18.7, -154.5, 22.5),
         "vietnam": (102.1, 8.4, 109.5, 23.4)}},
     "usa": {"dir": ROOT / "data/raw/usa", "regions": {
-        "conus": (-125.0, 24.4, -66.9, 49.5),
+        "conus": (-125.0, 24.4, -66.9, 49.5),      # must stay first: the states are cut from it
         # Not published regions: the same boxes cut from the US download, to look for double counting
         # and to see whether two downloads of the same place agree.
         "california_from_usa": (-124.5, 32.5, -114.0, 42.0),
-        "hawaii_from_usa": (-160.6, 18.7, -154.5, 22.5)}},
+        "hawaii_from_usa": (-160.6, 18.7, -154.5, 22.5)},
+        "states": ROOT / "docs/data/conus_states_geo.json"},
 }
 
 ASSUMPTIONS = [
@@ -93,9 +94,51 @@ def cell(lat, lon):
     return (int((lat + 90) / 0.02), int((lon + 180) / 0.02))
 
 
+class StateFinder:
+    """Which state polygon of docs/data/conus_states_geo.json holds a point. Written for the audit, apart from
+    pipeline/states.py: candidates from a 1-degree grid of bounding boxes, then even-odd ray casting over the
+    edges that span the point's latitude (edges kept per 0.25-degree band)."""
+
+    def __init__(self, path):
+        geo = json.loads(Path(path).read_text(encoding="utf-8"))
+        self.ids = [s["id"] for s in geo["states"]]
+        self.names = {s["id"]: s["name"] for s in geo["states"]}
+        self.grid = defaultdict(list)
+        self.edges = []
+        for i, s in enumerate(geo["states"]):
+            w, so, e, n = s["bbox"]
+            for gx in range(math.floor(w), math.floor(e) + 1):
+                for gy in range(math.floor(so), math.floor(n) + 1):
+                    self.grid[(gx, gy)].append(i)
+            bands = defaultdict(list)
+            for flat in s["rings"]:
+                pts = list(zip(flat[0::2], flat[1::2]))
+                for (xa, ya), (xb, yb) in zip(pts, pts[1:] + pts[:1]):
+                    if ya == yb:
+                        continue        # a horizontal edge never satisfies the crossing test
+                    for b in range(math.floor(min(ya, yb) * 4), math.floor(max(ya, yb) * 4) + 1):
+                        bands[b].append((xa, ya, xb, yb))
+            self.edges.append(bands)
+
+    def find(self, lat, lon):
+        for i in self.grid.get((math.floor(lon), math.floor(lat)), ()):
+            inside = False
+            for xa, ya, xb, yb in self.edges[i].get(math.floor(lat * 4), ()):
+                if (ya > lat) != (yb > lat) and lon < (xb - xa) * (lat - ya) / (yb - ya) + xa:
+                    inside = not inside
+            if inside:
+                return self.ids[i]
+        return None
+
+
 def read_set(spec):
     """One pass over a raw folder. Returns per-region tallies and what is needed to apply the mask afterwards."""
-    regions = spec["regions"]
+    regions = dict(spec["regions"])
+    finder = StateFinder(spec["states"]) if spec.get("states") else None
+    state_of = {}
+    if finder:
+        for sid in finder.ids + ["outside"]:
+            regions["state:" + sid] = None          # filled by position, not by a box
     std = {r: defaultdict(lambda: defaultdict(int)) for r in regions}        # region -> (sensor, date) -> {all, veg, vegconf}
     nrt_rows = {r: [] for r in regions}                                      # (sensor, date, cell, lowconf)
     nonveg_all = defaultdict(int)                                            # mask cell -> archive non-veg rows, every year
@@ -104,6 +147,7 @@ def read_set(spec):
     stdcells = {r: defaultdict(lambda: [0, 0]) for r in regions}             # region -> cell -> [veg, nonveg] all standard rows
     types = {r: defaultdict(int) for r in regions}                           # (sensor, type) counts, standard
     files, edge, dup = [], defaultdict(int), {r: defaultdict(int) for r in regions}
+    boxes = [(r, box) for r, box in regions.items() if box is not None]
     seen = {r: set() for r in regions}
     last_date = ""
     utc = {r: defaultdict(int) for r in regions}                             # (sensor, hour) of counted standard rows
@@ -129,11 +173,17 @@ def read_set(spec):
                             nonveg_all[c] += 1
                             if date < "2024":
                                 nonveg_to2023[c] += 1
-                        for r, (w, s, e, nn) in regions.items():
+                        targets = []
+                        for r, box in boxes:
+                            w, s, e, nn = box
                             if not (w <= lon <= e and s <= lat <= nn):
                                 continue
                             if lon in (w, e) or lat in (s, nn):
                                 edge[r] += 1
+                            targets.append(r)
+                            if finder and r == "conus":
+                                targets.append("state:" + (finder.find(lat, lon) or "outside"))
+                        for r in targets:
                             key = (sensor, date, row["acq_time"], row["latitude"], row["longitude"])
                             if key in seen[r]:
                                 dup[r][sensor] += 1
@@ -157,7 +207,7 @@ def read_set(spec):
                                 nrt_rows[r].append((sensor, date, c, lc, row["acq_time"]))
                 files.append({"zip": z.name, "member": member, "quality": quality, "rows": n, "has_type": has_type})
                 print(f"  read {z.name}:{member}  {n:,} rows", flush=True)
-    return {"std": std, "nrt": nrt_rows, "nonveg_all": nonveg_all, "nonveg_to2023": nonveg_to2023, "late": late, "stdcells": stdcells,
+    return {"finder": finder, "std": std, "nrt": nrt_rows, "nonveg_all": nonveg_all, "nonveg_to2023": nonveg_to2023, "late": late, "stdcells": stdcells,
             "types": types, "files": files, "edge": edge, "dup": dup, "last_date": last_date, "utc": utc}
 
 
@@ -252,7 +302,7 @@ def analyse(S, region, mask, label="main"):
     NL, _ = loyo(npairs)
     fwd_k, fwd_a, _, _ = fit([p for p in pairs if p[0] <= 2018])
     def fwd(lo, hi):
-        return err([(d, n / (fwd_k[m] if fwd_k[m] is not None else fwd_a)) for y, m, n, d in pairs if lo <= y <= hi])
+        return err([(d, n / (fwd_k[m] if fwd_k[m] is not None else fwd_a)) for y, m, n, d in pairs if lo <= y <= hi and (fwd_k[m] is not None or fwd_a)])
     # the conversion as used (README, "The conversion as it is used")
     n20_aqua = [(int(m[:4]), int(m[5:]), val("noaa20", m), val("aqua", m)) for m in month_range(N20_FIRST, LAST)]
     def cross(train, test):
@@ -270,7 +320,8 @@ def analyse(S, region, mask, label="main"):
                 f"{SPLIT}_onward": err([(o, p) for y_, _, o, p in rows if y_ >= SPLIT])}
     used_snpp, used_own = periods(cross(pairs, n20_aqua)), periods(cross(n20_aqua, n20_aqua))
     own_k, own_annual, _, _ = fit(n20_aqua)
-    adopt = used_own["all_years"]["abs_error_pct_of_total"] < used_snpp["all_years"]["abs_error_pct_of_total"]
+    pc = lambda e: e["abs_error_pct_of_total"] if e else None
+    adopt = pc(used_own["all_years"]) is not None and pc(used_snpp["all_years"]) is not None and pc(used_own["all_years"]) < pc(used_snpp["all_years"])
     kn, an = (own_k, own_annual) if adopt else (k, annual)
     # month to date
     last = S["last_date"]
@@ -306,12 +357,12 @@ def analyse(S, region, mask, label="main"):
                           "noaa20_on_aqua_scale": round(raw_n20 / kc, 1) if kc else None, "k_used": round(kc, 3) if kc else None,
                           "baseline_years": len(base), "baseline_median": median(base), "baseline_min": min(base), "baseline_max": max(base),
                           "years_below_current": sum(1 for b in base if kc and b < raw_n20 / kc)},
-        "calibration_would_be_accepted": bool(L["monthly_k"]["all_years"]["abs_error_pct_of_total"] <= 50 and sum(1 for v in k.values() if v is not None) >= 9),
+        "calibration_would_be_accepted": bool(pc(L["monthly_k"]["all_years"]) is not None and pc(L["monthly_k"]["all_years"]) <= 50 and sum(1 for v in k.values() if v is not None) >= 9),
         "conversion_as_used_nrt_months": used,
         "as_used": {"paired_months": len(n20_aqua), "with_snpp_coefficients": used_snpp, "with_noaa20_coefficients": used_own,
                     "adopted": "noaa20_coefficients" if adopt else "snpp_coefficients",
                     "noaa20_k_by_month": {m: (round(own_k[m], 3) if own_k[m] is not None else None) for m in own_k},
-                    "nrt_error": err([(u["aqua_nrt"], u["noaa20_on_aqua_scale_unrounded"]) for u in used]) if used else None},
+                    "nrt_error": err([(u["aqua_nrt"], u["noaa20_on_aqua_scale_unrounded"]) for u in used if u["noaa20_on_aqua_scale_unrounded"] is not None]) if used else None},
         "nrt_rows_not_low_confidence": {s: v[0] for s, v in dropped.items()}, "nrt_rows_masked": {s: v[1] for s, v in dropped.items()},
         "_months": months, "_days": days, "_present": present, "_pairs": pairs,
     }
@@ -441,6 +492,78 @@ def compare(region, A, diffs):
     return n_cells, n_web
 
 
+def compare_states(S, mask, conus, diffs):
+    """Every state, recomputed from the raw files with the audit's own point-in-polygon, against docs/data/conus_states.json."""
+    path = ROOT / "docs/data/conus_states.json"
+    if not path.exists() or not S.get("finder"):
+        return None
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    months, n_values, n_states = doc["months"], 0, 0
+    def note(sid, what, mine, theirs):
+        if mine is None and theirs is None:
+            return
+        try:
+            size = round(float(mine) - float(theirs), 3)
+        except (TypeError, ValueError):
+            size = None
+        if not (mine == theirs or (size is not None and abs(size) < 1e-9)):
+            diffs.append({"region": "state " + sid, "what": what, "recomputed": mine, "project": theirs, "difference": size, "file": "docs/data/conus_states.json"})
+    out = {}
+    for sid in S["finder"].ids + ["outside"]:
+        A = analyse(S, "state:" + sid, mask)
+        if sid == "outside":
+            for s_, col in (("terra", "terra"), ("aqua", "aqua"), ("snpp", "snpp"), ("noaa20", "noaa20")):
+                for i, m in enumerate(months):
+                    theirs = doc["outside"][col][i]
+                    if theirs is not None:
+                        n_values += 1
+                        note(sid, f"monthly count {s_} {m}", A["_months"][(s_, m)]["standard"] + A["_months"][(s_, m)]["nrt"], theirs)
+            continue
+        n_states += 1
+        v = doc["states"][sid]
+        for s_, col in (("terra", "terra"), ("aqua", "aqua"), ("snpp", "snpp"), ("noaa20", "n20")):
+            for i, m in enumerate(months):
+                if v[col][i] is not None:
+                    n_values += 1
+                    note(sid, f"monthly count {s_} {m}", A["_months"][(s_, m)]["standard"] + A["_months"][(s_, m)]["nrt"], v[col][i])
+        sa = v["snpp_to_aqua"]
+        note(sid, "annual k", A["annual_k"], sa["coefficients"]["annual_k"])
+        for m in range(1, 13):
+            note(sid, f"k({m})", A["k_by_month"][m], sa["coefficients"]["by_month"][str(m)]["k"])
+        for mode in ("monthly_k", "annual_k", "uncalibrated"):
+            for period in ("all_years", f"before_{SPLIT}", f"{SPLIT}_onward"):
+                mine, theirs = A["loyo"][mode][period], sa["leave_one_year_out"][mode][period]
+                for f_ in ("months", "abs_error_pct_of_total", "bias_pct"):
+                    note(sid, f"LOYO {mode} {period} {f_}", mine and mine[f_], theirs and theirs[f_])
+        accepted = bool(A["loyo"]["monthly_k"]["all_years"] and A["loyo"]["monthly_k"]["all_years"]["abs_error_pct_of_total"] is not None
+                        and A["loyo"]["monthly_k"]["all_years"]["abs_error_pct_of_total"] <= 50 and A["months_with_own_k"] >= 9)
+        note(sid, "accepted", accepted, v["calibration_accepted"])
+        st, mine_u = v["as_used"]["noaa20_standard"], A["as_used"]
+        note(sid, "as used: adopted", mine_u["adopted"], st["adopted"])
+        for which in ("with_snpp_coefficients", "with_noaa20_coefficients"):
+            a_, b_ = mine_u[which]["all_years"], st[which]["all_years"]
+            note(sid, f"as used: {which} error", a_ and a_["abs_error_pct_of_total"], b_ and b_["abs_error_pct_of_total"])
+        # the state's error with the national coefficients
+        rows = []
+        for year in sorted({p[0] for p in A["_pairs"]}):
+            kk, aa, _, _ = fit([p for p in conus["_pairs"] if p[0] != year])
+            for yy, mm, n, d in A["_pairs"]:
+                if yy == year:
+                    c = kk[mm] if kk[mm] is not None else aa
+                    if c:
+                        rows.append((d, n / c))
+        nat = err(rows)
+        theirs = v["with_national_coefficients"]["all_years"]
+        note(sid, "error with national coefficients", nat and nat["abs_error_pct_of_total"], theirs and theirs["abs_error_pct_of_total"])
+        if accepted:
+            mt, cm = A["month_to_date"], v["current_month"]
+            note(sid, "month to date NOAA-20 on the Aqua scale", mt["noaa20_on_aqua_scale"], cm["value_aqua_equiv"])
+            note(sid, "month to date Aqua", mt["aqua_nrt"], cm["aqua_nrt_same_days"])
+        out[sid] = {"accepted": accepted, "error": A["loyo"]["monthly_k"]["all_years"] and A["loyo"]["monthly_k"]["all_years"]["abs_error_pct_of_total"],
+                    "error_with_national_coefficients": nat and nat["abs_error_pct_of_total"], "months_with_own_k": A["months_with_own_k"], "adopted": mine_u["adopted"]}
+    return {"states": n_states, "monthly_values_compared": n_values, "per_state": out}
+
+
 def strip(A):
     return {k: v for k, v in A.items() if not k.startswith("_")}
 
@@ -454,6 +577,8 @@ def main():
         mask = {c for c, n in S["nonveg_all"].items() if n >= 3}
         result[f"files_{set_name}"] = S["files"]
         for region in spec["regions"]:
+            if spec["regions"][region] is None:
+                continue
             A = analyse(S, region, mask)
             A["mask"] = mask_checks(S, region, mask)
             A["rows_exactly_on_box_edge"] = S["edge"][region]
@@ -482,6 +607,13 @@ def main():
                 n_cells, n_web = compare(region, A, diffs)
                 summary.append(f"{region}: compared {n_cells} monthly values in monthly_series.csv, {n_web} in docs/data/{region}.json, "
                                f"the coefficients, the error tables and the month-to-date figures: {len(diffs) - before} differences")
+            if region == "conus" and S.get("finder"):
+                before = len(diffs)
+                st = compare_states(S, mask, A, diffs)
+                if st:
+                    result["states"] = st
+                    summary.append(f"states: {st['states']} states and 'outside', {st['monthly_values_compared']} monthly values, the coefficients, the error tables, "
+                                   f"the as-used test, the acceptance decisions and the error with national coefficients: {len(diffs) - before} differences")
             A["_keep"] = None
             result["regions"][region] = strip(A)
     (OUT / "recomputed.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
