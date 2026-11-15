@@ -118,3 +118,65 @@ not a fault of the page.
 - **README and the method notes still say "refused" and "S-NPP"** where they describe the acceptance rule and the
   data fields; the page itself does not. The vocabulary table in README says which word is used where.
 - The open items of AUDIT.md ("Remains") are unchanged by this pass.
+
+## Second pass: nine design defects found by looking at the screenshots
+
+Date: 14 Nov 2026. No count or coefficient was changed; `python3 audit/recompute.py` was re-run and reports
+0 differences for the four regions and the 49 states. The "before" screenshots were copied to `qa/before9/` before
+any change; the "after" ones were re-shot on the final page and looked at.
+
+| # | Defect | Fix | Before | After |
+|---|---|---|---|---|
+| 1 | The open legend covered the map's zoom-out button. | The legend is never taller than the room under the zoom buttons and scrolls inside it, with a shadow at the edge that has more. Layers is never taller than the map; the scale and the coordinates move aside while it is open. On a phone one panel is open at a time, and Layers stops short of the Expand button. | `before9/us_day-latest_desk.png` | `us_day-latest_desk.png` |
+| 2 | Detection card: the place wrapped one word per line beside the locator; the card's bottom was cut at the map edge and it lay over the zoom and Expand buttons. | The place is the first row at full width with the locator right-aligned under it. The card is 380 px wide, scrolls inside the map, and the zoom buttons, Expand and the attribution move left of it; the legend is put away while it is open. On a phone the card is a block under the timeline instead of a sheet over the map. | `before9/us_day-latest_desk_card.png` | `us_day-latest_desk_card.png`, `us_day-latest_mid_card.png`, `us_day-latest_phone_card.png` |
+| 3 | Layers started open on desktop and was cut mid-row. | It starts as a "Layers" button at every width. Open at 1440x900 it shows all of its content (324 px, no scroll); at 1024x768 and on the phone the map is shorter than the content (341 px against 320, 383 against 169), so it scrolls with a shadow cue. The legend starts open only when it covers neither the region box nor a control. | `before9/us_day-latest_desk_layers.png` | `us_day-latest_desk_layers.png`, `us_day-latest_mid_layers.png`, `us_day-latest_phone_layers.png` |
+| 4 | Grouped markers read "1+3". | The marker shows the lowest rank with a small "+3" badge; its accessible name is "Areas 1, 2, 8 and 10"; the legend has a line for it. Clicking opens area 1, and Next goes 1, 2, 8, 10 and then the rest (checked in the browser). Opening from a list row keeps the list order. | `before9/us_day-latest_desk.png` | `us_day-latest_desk_markers.png` |
+| 5 | Trust section, United States: "Other parts of the country were not measured this way", and the old rectangle called "this page's California region". | The section now says every one of the 49 is measured with the national factors, gives the range read from the state file (14.8%, Idaho, to 129.7%, Vermont; one with no computable error) and links to the By state table. The rectangle is "California test box" everywhere. Other sentences changed, listed below. | `before9/us_day-latest_desk_trust.png` | `us_day-latest_desk_trust.png` |
+| 6 | "New York: not harmonized (only 8 of 12 ... (9 needed)), so only MODIS Aqua is shown." | "New York: not harmonized. Only 8 of 12 calendar months have enough detections for a factor; 9 are needed. Only MODIS Aqua is shown." Hawaiʻi: "... The tested error is 256.2%, over the 50% limit. Only 5 of 12 ...". | `before9/newyork_year_desk.png` | `newyork_year_desk.png` |
+| 7 | Phone timeline: speed was a full-width field; the "Centre ..." box sat on the small map. | Speed is a compact select (110 px) beside Play and the four step buttons; the slider has its own row; the coordinates box is not shown on phones. The timeline is 194 px tall inside its 200 px, with the level switch fully visible. The slider now follows the step buttons in the document and on screen at every width, so keyboard order still equals reading order. | `before9/us_day-latest_phone.png` | `us_day-latest_phone_timeline.png` |
+| 8 | Sections below the fold used the left half only at 1440. | At 1100 px and wider the page body is as wide as the two sections under the timeline. Text sits beside its chart (activity over time), its table (calendar with the selected month beside it, by state), its form (choose an area); "What you are looking at", the detections notes, the trust section, the compare notes, the downloads and the limits take two columns. Lines stay at 68 characters or fewer; the header text is held to 78. | `before9/us_day-latest_desk_trust.png`, `before9/us_day-latest_desk_drill.png`, `before9/us_day-latest_desk_calendar.png` | `us_day-latest_desk_what.png`, `_table`, `_drill`, `_calendar`, `_area`, `_trust`, `_downloads`, `_limits` |
+| 9 | By state legend did not say which end is better. | "Lighter = smaller error; from best to worst:" before the steps, which run from "up to 10%" to "over 35% to 50%", then the hatched "Not harmonized". | `before9/us_day-latest_desk_bystate.png` | `us_day-latest_desk_bystate.png` |
+
+### Sentences made untrue by the state split, and what they say now (item 5)
+
+Page:
+- Trust section: "Measured for one part: applied to this page's California region ... Other parts of the country were not
+  measured this way." is now the two paragraphs described in item 5.
+- "Choose an area": "as in California, Hawaiʻi and the contiguous United States" is now "as in Hawaiʻi and the
+  contiguous United States" (California is no longer a region of the page).
+- Method paragraph: "For each region, the months when ..." is now "For each region, and for each state of the contiguous
+  United States, ...".
+- Limits: "An area you choose inside a region uses that region's conversion ..." now also says each of the 48 states
+  and DC is checked on its own data, and that a drawn area uses its region's or state's conversion.
+- Compare note: "in the State list under United States" is now "under Contiguous United States".
+
+README:
+- "No other part of the country was measured this way." is now a sentence saying every state is measured by
+  `pipeline/states.py`, with a pointer to the By state table.
+- "this project's California region" is now "the California test box".
+- The rectangle is named "California test box" in the month-to-date table and notes, the validation tables, the
+  forward test, the sizes, the browser check, the limits (2022 onward, calendar months, static-source mask, county
+  of the nearest town) and the "Compare regions" entry. The `--name "California"` argument of the pipeline command
+  is unchanged, because it is the name written in the data file.
+
+### Found on the way and fixed
+
+- The compare table wrote percentages as stored ("168%", "12%", "16808.2%"); it now uses the page's one format
+  ("168.0%", "12.0%", "16,808.2%"). Its column "NOAA-20 in place of S-NPP" is now "... Suomi NPP".
+- The share of faint cells in "What you are looking at" had no decimal; it has one.
+
+### Check that no panel covers a map control (item 1)
+
+All 147 cells (7 regions x 7 levels x 1440x900, 1024x768, 390x844) were loaded and measured in four states: as
+loaded; legend opened; Layers opened after it; and, on the busy day of each region, a detection card open, then
+Layers reopened with the card open. Measured: any overlap of the Layers panel, the legend, the card or the
+satellite chip with the zoom buttons, Expand, the scale bar, the coordinates box or the attribution, with each
+other, or beyond the map's edge. First run: clean at 1440 in every state; at 1024, Layers lay over the attribution
+when a card was open; on the phone, Layers and the legend open together overlapped each other and Layers reached
+Expand. After the fixes: 0 overlaps in 147 cells, console clean. The top-of-page screenshots of the matrix were
+re-shot in that run.
+
+Not verified in this second pass: the 250-step control tour of the first pass was not repeated in full after these
+layout changes (the panel states, the card, the grouped markers and the phone timeline were exercised by the
+checks above); the full-screen map; print of the report; other browsers and real phones. With the card open on
+desktop, a long Esri attribution is shortened with an ellipsis rather than wrapped.
